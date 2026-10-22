@@ -1,0 +1,3233 @@
+# KANDOO P-04 — DOCUMENTATION-ONLY OPENAPI 3.1 CONTRACT
+# Normative narrative: docs/cloud-api-contract.md
+# No implementation, credentials, production host, or live SMS behavior is claimed.
+openapi: 3.1.0
+info:
+  title: Kandoo Cloud API
+  version: 1.0.0
+  summary: P-04 documentation-only contract for Hub replication, administration, restore, and invoice delivery.
+  description: Normative HTTP contract for P-05/P-07 and downstream P-06/P-08/P-09 implementation. It does not claim an implemented
+    service. Store Hub authority, P-02 canonical hashes, strict store isolation, SEC-1 restore second factor, SMS stub, and
+    lawyer-copy gates are mandatory. Path version /v1 is independent of kandoo.sync.v0 and Canonical Invoice v0.
+  license:
+    name: Proprietary
+    identifier: LicenseRef-Proprietary
+servers:
+- url: https://api.kandoo.invalid
+  description: Non-routable documentation origin; deployment selects the real origin later.
+tags:
+- name: Store Registration
+  description: Owner OTP verification, store_id allocation, and initial Hub bootstrap.
+- name: Device Pairing
+  description: Owner/Hub QR grants, Hub-authored pairing, device tokens, listing, revocation, and rotation.
+- name: Operation Ingest
+  description: Ordered atomic append-only Hub log replication and cursor reads.
+- name: Locks
+  description: Cloud-replica D11 lock queries and active-Hub release entries.
+- name: Restore
+  description: OTP plus second factor, manifest/log replay, consistency verification, and writer activation.
+- name: Invoice Delivery
+  description: SMS stub, QR/share links, and anonymous single-invoice public-token view.
+security:
+- DeviceBearer: []
+paths:
+  /v1/otp/challenges:
+    post:
+      tags:
+      - Store Registration
+      operationId: requestOtpChallenge
+      summary: Request an owner OTP challenge
+      description: Creates an SMS OTP challenge for STORE_REGISTRATION or RESTORE. The v1 provider is a deterministic stub
+        for local synthetic use; it never makes an external call and cannot enable production authentication.
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Request an owner OTP challenge success.
+          headers: &id001
+            RateLimit-Limit: &id006
+              $ref: '#/components/headers/RateLimitLimit'
+            RateLimit-Remaining: &id007
+              $ref: '#/components/headers/RateLimitRemaining'
+            RateLimit-Reset: &id008
+              $ref: '#/components/headers/RateLimitReset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OtpChallengeResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      x-error-codes:
+      - VALIDATION_ERROR
+      - IDEMPOTENCY_KEY_REQUIRED
+      - IDEMPOTENCY_CONFLICT
+      - RATE_LIMITED
+      - SMS_PROVIDER_NOT_CONFIGURED
+      - SERVICE_UNAVAILABLE
+      - INTERNAL_ERROR
+      x-rate-limit:
+        limit: 5
+        window_seconds: 900
+        scope: normalized phone + source IP + purpose
+      x-domain-decisions:
+      - D4
+      - SEC-1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OtpChallengeRequest'
+      security: &id002 []
+  /v1/otp/challenges/{challenge_id}/verify:
+    post:
+      tags:
+      - Store Registration
+      operationId: verifyOtpChallenge
+      summary: Verify an owner OTP challenge
+      description: Verifies the code and returns a short-lived, single-use verification token bound to phone, purpose, and
+        store. OTP alone never authorizes restore export.
+      parameters:
+      - $ref: '#/components/parameters/ChallengeId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Verify an owner OTP challenge success.
+          headers: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OtpVerificationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '410':
+          $ref: '#/components/responses/Gone'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      x-error-codes:
+      - VALIDATION_ERROR
+      - IDEMPOTENCY_KEY_REQUIRED
+      - OTP_INVALID
+      - OTP_EXPIRED
+      - IDEMPOTENCY_CONFLICT
+      - RATE_LIMITED
+      - OTP_ATTEMPTS_EXCEEDED
+      - SERVICE_UNAVAILABLE
+      - INTERNAL_ERROR
+      x-rate-limit:
+        limit: 10
+        window_seconds: 900
+        scope: challenge + source IP
+      x-domain-decisions:
+      - D4
+      - SEC-1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OtpVerifyRequest'
+      security: *id002
+  /v1/stores:
+    post:
+      tags:
+      - Store Registration
+      operationId: registerStore
+      summary: Register a store and allocate store_id
+      description: Consumes STORE_REGISTRATION OTP proof and a digital acceptance of the configured lawyer-approved onboarding agreement, then atomically creates Business, Store, owner User/Membership, initial HUB Device, writer epoch 1, and its per-device credential. Missing approved agreement configuration returns LEGAL_COPY_UNAVAILABLE; invalid acceptance returns VALIDATION_ERROR with no effects. This is the only bootstrap before a Hub exists; subsequent domain writes are Hub-authored.
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Register a store and allocate store_id success.
+          headers: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoreRegistrationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '410':
+          $ref: '#/components/responses/Gone'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      x-error-codes:
+      - VALIDATION_ERROR
+      - IDEMPOTENCY_KEY_REQUIRED
+      - OTP_EXPIRED
+      - VERIFICATION_TOKEN_INVALID
+      - OTP_PURPOSE_MISMATCH
+      - IDEMPOTENCY_CONFLICT
+      - DEVICE_STORE_CONFLICT
+      - RATE_LIMITED
+      - LEGAL_COPY_UNAVAILABLE
+      - SERVICE_UNAVAILABLE
+      - INTERNAL_ERROR
+      x-rate-limit:
+        limit: 10
+        window_seconds: 3600
+        scope: verification token + source IP
+      x-domain-decisions:
+      - D6
+      - D7
+      - D10
+      - D11
+      - D14
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreRegistrationRequest'
+      security: *id002
+  /v1/stores/{store_id}:
+    get:
+      tags:
+      - Store Registration
+      operationId: getStore
+      summary: Read store and writer status
+      description: Returns the store and Cloud replication/writer watermark within the authenticated store scope. A fenced
+        writer may read but cannot mutate.
+      parameters:
+      - $ref: '#/components/parameters/StoreId'
+      responses:
+        '200':
+          description: Read store and writer status success.
+          headers: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoreView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      x-error-codes:
+      - VALIDATION_ERROR
+      - UNAUTHENTICATED
+      - TOKEN_EXPIRED
+      - TOKEN_ROTATED
+      - FORBIDDEN
+      - DEVICE_REVOKED
+      - STORE_SUSPENDED
+      - STORE_NOT_FOUND
+      - RATE_LIMITED
+      - SERVICE_UNAVAILABLE
+      - INTERNAL_ERROR
+      x-rate-limit:
+        limit: 60
+        window_seconds: 60
+        scope: store + device
+      x-domain-decisions:
+      - D6
+      - D7
+  /v1/stores/{store_id}/pairing-grants:
+    post:
+      tags:
+      - Device Pairing
+      operationId: createPairingGrant
+      summary: Register a Hub-generated QR pairing grant
+      description: Called by the active Hub for an active OWNER after the Hub generates the QR secret locally. Cloud registers only pairing metadata and SHA-256 fingerprints; the raw nonce and QR generation remain on the Hub. The default lifetime is 300 seconds. Registration may replicate late after a WAN outage and is not a prerequisite for Hub-local LAN pairing.
+      parameters:
+      - $ref: '#/components/parameters/StoreId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Create an owner-authorized QR pairing grant success.
+          headers: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PairingGrantResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      x-error-codes:
+      - VALIDATION_ERROR
+      - IDEMPOTENCY_KEY_REQUIRED
+      - UNAUTHENTICATED
+      - TOKEN_EXPIRED
+      - TOKEN_ROTATED
+      - FORBIDDEN
+      - DEVICE_REVOKED
+      - STORE_SUSPENDED
+      - HUB_AUTHORITY_REQUIRED
+      - STORE_NOT_FOUND
+      - IDEMPOTENCY_CONFLICT
+      - WRITER_FENCED
+      - RATE_LIMITED
+      - SERVICE_UNAVAILABLE
+      - INTERNAL_ERROR
+      x-rate-limit:
+        limit: 30
+        window_seconds: 60
+        scope: store + active Hub
+      x-domain-decisions:
+      - D7
+      - ASM-14
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PairingGrantRequest'
+  /v1/pairing-grants/{pairing_id}/consume:
+    post:
+      tags:
+      - Device Pairing
+      operationId: consumePairingGrant
+      summary: Consume QR pairing and issue a device token
+      description: Called by the active Hub after the companion consumed the Hub-generated QR over LAN and the Hub committed device.pair. Cloud validates the registered grant fingerprints and Hub-authored entry, ingests atomically (or recognizes an exact duplicate), consumes the Cloud grant record, and issues the companion token. QR expiry is evaluated against the authoritative Hub pairing outcome, not Cloud receipt time, so delayed replication remains valid. It never grants HUB role or a LAN session.
+      parameters:
+      - $ref: '#/components/parameters/PairingId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Consume QR pairing and issue a device token success.
+          headers: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PairingConsumeResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '410':
+          $ref: '#/components/responses/Gone'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      x-error-codes:
+      - VALIDATION_ERROR
+      - IDEMPOTENCY_KEY_REQUIRED
+      - REQUEST_HASH_MISMATCH
+      - ENTRY_HASH_MISMATCH
+      - PAIRING_INVALID
+      - UNAUTHENTICATED
+      - TOKEN_EXPIRED
+      - TOKEN_ROTATED
+      - FORBIDDEN
+      - DEVICE_REVOKED
+      - STORE_SUSPENDED
+      - HUB_AUTHORITY_REQUIRED
+      - STORE_NOT_FOUND
+      - PAIRING_EXPIRED
+      - IDEMPOTENCY_CONFLICT
+      - OPERATION_ID_CONFLICT
+      - DEVICE_STORE_CONFLICT
+      - HUB_ALREADY_ACTIVE
+      - PAIRING_REPLAY_REJECTED
+      - WRITER_FENCED
+      - GAP_DETECTED
+      - LOG_CONFLICT
+      - PAYLOAD_TOO_LARGE
+      - RATE_LIMITED
+      - THROTTLED
+      - SERVICE_UNAVAILABLE
+      - INTERNAL_ERROR
+      x-rate-limit:
+        limit: 10
+        window_seconds: 300
+        scope: pairing grant + active Hub
+      x-domain-decisions:
+      - D7
+      - D10
+      - ASM-14
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PairingConsumeRequest'
+  /v1/stores/{store_id}/devices:
+    get:
+      tags:
+      - Device Pairing
+      operationId: listDevices
+      summary: List store devices
+      description: Lists current and historical Device projections in immutable device_id order using cursor pagination. Revoked
+        devices remain visible for audit.
+      parameters:
+      - $ref: '#/components/parameters/StoreId'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: List store devices success.
+          headers: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevicePage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      x-error-codes:
+      - VALIDATION_ERROR
+      - CURSOR_INVALID
+      - UNAUTHENTICATED
+      - TOKEN_EXPIRED
+      - TOKEN_ROTATED
+      - FORBIDDEN
+      - DEVICE_REVOKED
+      - STORE_SUSPENDED
+      - STORE_NOT_FOUND
+      - RATE_LIMITED
+      - SERVICE_UNAVAILABLE
+      - INTERNAL_ERROR
+      x-rate-limit:
+        limit: 60
+        window_seconds: 60
+        scope: store + device
+      x-domain-decisions:
+      - D6
+      - D7
+  /v1/stores/{store_id}/devices/{device_id}/revoke:
+    post:
+      tags:
+      - Device Pairing
+      operationId: revokeDevice
+      summary: Revoke a device and its Cloud credential
+      description: Accepts the active Hub-authored device.revoke entry for a COMPANION, applies ordered ingest semantics, revokes Cloud tokens/sessions, and projects owned-lock releases as DISCONNECT. Historical operations and locks are retained. HUB targets return FORBIDDEN; replacement requires authorized restore. Emergency token compromise uses revocation, not rotation.
+      parameters:
+      - $ref: '#/components/parameters/StoreId'
+      - $ref: '#/components/parameters/DeviceId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Revoke a device and its Cloud credential success.
+          headers: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceRevocationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      x-error-codes:
+      - VALIDATION_ERROR
+      - IDEMPOTENCY_KEY_REQUIRED
+      - REQUEST_HASH_MISMATCH
+      - ENTRY_HASH_MISMATCH
+      - UNAUTHENTICATED
+      - TOKEN_EXPIRED
+      - TOKEN_ROTATED
+      - FORBIDDEN
+      - DEVICE_REVOKED
+      - STORE_SUSPENDED
+      - HUB_AUTHORITY_REQUIRED
+      - STORE_NOT_FOUND
+      - DEVICE_NOT_FOUND
+      - IDEMPOTENCY_CONFLICT
+      - OPERATION_ID_CONFLICT
+      - DEVICE_STORE_CONFLICT
+      - WRITER_FENCED
+      - GAP_DETECTED
+      - LOG_CONFLICT
+      - PAYLOAD_TOO_LARGE
+      - RATE_LIMITED
+      - THROTTLED
+      - SERVICE_UNAVAILABLE
+      - INTERNAL_ERROR
+      x-rate-limit:
+        limit: 30
+        window_seconds: 60
+        scope: store + active Hub
+      x-domain-decisions:
+      - D7
+      - D11
+      - ASM-14
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceRevokeRequest'
+  /v1/stores/{store_id}/devices/{device_id}/token-rotation:
+    post:
+      tags:
+      - Device Pairing
+      operationId: rotateDeviceToken
+      summary: Rotate a per-device bearer token
+      description: Rotates the presented device credential without changing device_id, pairing, operation identity, or writer
+        epoch. The old token is revoked for ordinary use and has only a 60-second exact-replay grace for this endpoint and
+        the same idempotency key.
+      parameters:
+      - $ref: '#/components/parameters/StoreId'
+      - $ref: '#/components/parameters/DeviceId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Rotate a per-device bearer token success.
+          headers: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceTokenRotationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      x-error-codes:
+      - VALIDATION_ERROR
+      - IDEMPOTENCY_KEY_REQUIRED
+      - UNAUTHENTICATED
+      - TOKEN_EXPIRED
+      - TOKEN_ROTATED
+      - FORBIDDEN
+      - DEVICE_REVOKED
+      - STORE_SUSPENDED
+      - STORE_NOT_FOUND
+      - DEVICE_NOT_FOUND
+      - IDEMPOTENCY_CONFLICT
+      - RATE_LIMITED
+      - SERVICE_UNAVAILABLE
+      - INTERNAL_ERROR
+      x-rate-limit:
+        limit: 5
+        window_seconds: 900
+        scope: store + device
+      x-domain-decisions:
+      - D7
+      - D10
+  /v1/stores/{store_id}/operation-batches:
+    post:
+      tags:
+      - Operation Ingest
+      operationId: ingestOperationBatch
+      summary: Append an ordered Hub operation batch
+      description: Atomically validates active writer epoch, batch completeness, contiguous ascending sequences, request/entry hashes, operation identity, and store scope. Writer fencing is evaluated first, including for an empty batch, so a stale writer receives WRITER_FENCED as required by CLOUD-008. An active writer submitting zero entries receives INCOMPLETE_BATCH with no effects. Exact duplicate prefixes are acknowledged; gaps and conflicts apply no partial suffix. Idempotency-Key must equal batch_id.
+      parameters:
+      - $ref: '#/components/parameters/StoreId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Append an ordered Hub operation batch success.
+          headers: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestAck'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      x-error-codes:
+      - VALIDATION_ERROR
+      - IDEMPOTENCY_KEY_REQUIRED
+      - REQUEST_HASH_MISMATCH
+      - INCOMPLETE_BATCH
+      - SEQUENCE_ORDER_VIOLATION
+      - ENTRY_HASH_MISMATCH
+      - UNAUTHENTICATED
+      - TOKEN_EXPIRED
+      - TOKEN_ROTATED
+      - FORBIDDEN
+      - DEVICE_REVOKED
+      - STORE_SUSPENDED
+      - HUB_AUTHORITY_REQUIRED
+      - STORE_NOT_FOUND
+      - IDEMPOTENCY_CONFLICT
+      - OPERATION_ID_CONFLICT
+      - WRITER_FENCED
+      - GAP_DETECTED
+      - LOG_CONFLICT
+      - PAYLOAD_TOO_LARGE
+      - RATE_LIMITED
+      - THROTTLED
+      - SERVICE_UNAVAILABLE
+      - INTERNAL_ERROR
+      x-rate-limit:
+        limit: 120
+        window_seconds: 60
+        scope: store + active Hub; maximum 100 entries or 1 MiB per batch
+      x-domain-decisions:
+      - D7
+      - D10
+      - ASM-15
+      - ASM-17
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OperationBatch'
+  /v1/stores/{store_id}/operations:
+    get:
+      tags:
+      - Operation Ingest
+      operationId: listOperationLog
+      summary: Read the replicated operation log
+      description: Returns immutable Hub log entries in ascending operation_seq order. Cursor values are for pagination only
+        and never replace sequence/gap checks. The response watermark is the Cloud replica state, not a new authority.
+      parameters:
+      - $ref: '#/components/parameters/StoreId'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Read the replicated operation log success.
+          headers: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationLogPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      x-error-codes:
+      - VALIDATION_ERROR
+      - CURSOR_INVALID
+      - UNAUTHENTICATED
+      - TOKEN_EXPIRED
+      - TOKEN_ROTATED
+      - FORBIDDEN
+      - DEVICE_REVOKED
+      - STORE_SUSPENDED
+      - STORE_NOT_FOUND
+      - RATE_LIMITED
+      - CLOUD_REPLICA_INVALID
+      - SERVICE_UNAVAILABLE
+      - INTERNAL_ERROR
+      x-rate-limit:
+        limit: 60
+        window_seconds: 60
+        scope: store + device
+      x-domain-decisions:
+      - D7
+      - D10
+      - ASM-15
+  /v1/stores/{store_id}/locks/current:
+    get:
+      tags:
+      - Locks
+      operationId: queryCurrentLock
+      summary: Query current per-phone lock state
+      description: Returns the ACTIVE lock or null as of the Cloud replica watermark. The Hub remains authoritative; companions
+        must not use this Cloud read to bypass an unavailable LAN Hub.
+      parameters:
+      - $ref: '#/components/parameters/StoreId'
+      - $ref: '#/components/parameters/CustomerPhone'
+      responses:
+        '200':
+          description: Query current per-phone lock state success.
+          headers: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LockQueryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      x-error-codes:
+      - VALIDATION_ERROR
+      - UNAUTHENTICATED
+      - TOKEN_EXPIRED
+      - TOKEN_ROTATED
+      - FORBIDDEN
+      - DEVICE_REVOKED
+      - STORE_SUSPENDED
+      - STORE_NOT_FOUND
+      - RATE_LIMITED
+      - SERVICE_UNAVAILABLE
+      - INTERNAL_ERROR
+      x-rate-limit:
+        limit: 120
+        window_seconds: 60
+        scope: store + device + normalized phone
+      x-domain-decisions:
+      - D7
+      - D11
+  /v1/stores/{store_id}/locks/{lock_id}/release:
+    post:
+      tags:
+      - Locks
+      operationId: releaseLock
+      summary: Replicate a Hub-authored lock release
+      description: Accepts one active-Hub log entry. TIMEOUT is Hub-evaluated; MANUAL maps to domain CANCEL and retires the
+        pre-issuance draft; HUB_OFF maps to DISCONNECT only when the Hub records an orderly shutdown/fencing release. Cloud
+        never infers HUB_OFF from connectivity and never releases a lock autonomously.
+      parameters:
+      - $ref: '#/components/parameters/StoreId'
+      - $ref: '#/components/parameters/LockId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Replicate a Hub-authored lock release success.
+          headers: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LockReleaseResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      x-error-codes:
+      - VALIDATION_ERROR
+      - IDEMPOTENCY_KEY_REQUIRED
+      - REQUEST_HASH_MISMATCH
+      - ENTRY_HASH_MISMATCH
+      - UNAUTHENTICATED
+      - TOKEN_EXPIRED
+      - TOKEN_ROTATED
+      - FORBIDDEN
+      - DEVICE_REVOKED
+      - STORE_SUSPENDED
+      - HUB_AUTHORITY_REQUIRED
+      - STORE_NOT_FOUND
+      - LOCK_NOT_FOUND
+      - IDEMPOTENCY_CONFLICT
+      - OPERATION_ID_CONFLICT
+      - WRITER_FENCED
+      - GAP_DETECTED
+      - LOG_CONFLICT
+      - LOCK_STATE_CONFLICT
+      - PAYLOAD_TOO_LARGE
+      - RATE_LIMITED
+      - THROTTLED
+      - SERVICE_UNAVAILABLE
+      - INTERNAL_ERROR
+      x-rate-limit:
+        limit: 60
+        window_seconds: 60
+        scope: store + active Hub
+      x-domain-decisions:
+      - D7
+      - D11
+      - ASM-09
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LockReleaseRequest'
+  /v1/stores/{store_id}/restore-requests:
+    post:
+      tags:
+      - Restore
+      operationId: createRestoreRequest
+      summary: Authorize a replacement-Hub restore
+      description: Requires RESTORE OTP proof plus recovery-key proof or previously paired-device approval. OTP-only is a preflight that returns 403 SECOND_FACTOR_REQUIRED with restore_request_id and manifest_state_hash in retry_hint, releases no manifest, key envelope, credential, or epoch change, and does not consume the OTP verification token. Only successful two-factor authorization consumes that token. The client-generated restore_request_id permits paired-approval binding before retrying with a second factor and a new idempotency key.
+      parameters:
+      - $ref: '#/components/parameters/StoreId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Authorize a replacement-Hub restore success.
+          headers: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestoreAuthorizationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '410':
+          $ref: '#/components/responses/Gone'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      x-error-codes:
+      - VALIDATION_ERROR
+      - IDEMPOTENCY_KEY_REQUIRED
+      - OTP_EXPIRED
+      - VERIFICATION_TOKEN_INVALID
+      - OTP_PURPOSE_MISMATCH
+      - STORE_SUSPENDED
+      - SECOND_FACTOR_REQUIRED
+      - SECOND_FACTOR_INVALID
+      - STORE_NOT_FOUND
+      - IDEMPOTENCY_CONFLICT
+      - DEVICE_STORE_CONFLICT
+      - RATE_LIMITED
+      - CLOUD_REPLICA_INVALID
+      - SERVICE_UNAVAILABLE
+      - INTERNAL_ERROR
+      x-rate-limit:
+        limit: 5
+        window_seconds: 900
+        scope: store + owner phone + replacement device
+      x-domain-decisions:
+      - D8
+      - SEC-1
+      - ASM-16
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestoreCreateRequest'
+      security: *id002
+  /v1/stores/{store_id}/restore-requests/{restore_request_id}/manifest:
+    get:
+      tags:
+      - Restore
+      operationId: getRestoreManifest
+      summary: Read the authorized restore manifest
+      description: Returns the manifest and SEC-1 key envelope bound to the replacement device. The v1 contract uses full-log
+        replay from genesis; no snapshot optimization is implied.
+      parameters:
+      - $ref: '#/components/parameters/StoreId'
+      - $ref: '#/components/parameters/RestoreRequestId'
+      responses:
+        '200':
+          description: Read the authorized restore manifest success.
+          headers: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestoreManifest'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '410':
+          $ref: '#/components/responses/Gone'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      x-error-codes:
+      - VALIDATION_ERROR
+      - UNAUTHENTICATED
+      - TOKEN_EXPIRED
+      - FORBIDDEN
+      - STORE_SUSPENDED
+      - STORE_NOT_FOUND
+      - RESTORE_NOT_FOUND
+      - RESTORE_REQUEST_EXPIRED
+      - RESTORE_STATE_INVALID
+      - RATE_LIMITED
+      - CLOUD_REPLICA_INVALID
+      - SERVICE_UNAVAILABLE
+      - INTERNAL_ERROR
+      x-rate-limit:
+        limit: 30
+        window_seconds: 60
+        scope: restore request + replacement device
+      x-domain-decisions:
+      - D8
+      - SEC-1
+      - ASM-16
+      security: &id003
+      - RestoreBearer: []
+  /v1/stores/{store_id}/restore-requests/{restore_request_id}/entries:
+    get:
+      tags:
+      - Restore
+      operationId: listRestoreEntries
+      summary: Replay the authorized operation log
+      description: Downloads immutable entries in ascending operation_seq through the manifest watermark. The cursor is bound
+        to restore_request_id and manifest state_hash; any manifest change invalidates it.
+      parameters:
+      - $ref: '#/components/parameters/StoreId'
+      - $ref: '#/components/parameters/RestoreRequestId'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Replay the authorized operation log success.
+          headers: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestoreEntryPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '410':
+          $ref: '#/components/responses/Gone'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      x-error-codes:
+      - VALIDATION_ERROR
+      - CURSOR_INVALID
+      - UNAUTHENTICATED
+      - TOKEN_EXPIRED
+      - FORBIDDEN
+      - STORE_SUSPENDED
+      - STORE_NOT_FOUND
+      - RESTORE_NOT_FOUND
+      - RESTORE_REQUEST_EXPIRED
+      - RESTORE_STATE_INVALID
+      - RATE_LIMITED
+      - CLOUD_REPLICA_INVALID
+      - SERVICE_UNAVAILABLE
+      - INTERNAL_ERROR
+      x-rate-limit:
+        limit: 60
+        window_seconds: 60
+        scope: restore request + replacement device
+      x-domain-decisions:
+      - D8
+      - SEC-1
+      - ASM-15
+      - ASM-16
+      security: *id003
+  /v1/stores/{store_id}/restore-requests/{restore_request_id}/verification:
+    post:
+      tags:
+      - Restore
+      operationId: verifyRestoreReplay
+      summary: Verify replayed-state consistency
+      description: Compares the replacement Hub high watermark, head hash, and canonical replayed state_hash with the authorized
+        manifest. MATCH only records verification; it does not activate a writer. A mismatch quarantines/destroys staging
+        and leaves the current writer unchanged.
+      parameters:
+      - $ref: '#/components/parameters/StoreId'
+      - $ref: '#/components/parameters/RestoreRequestId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Verify replayed-state consistency success.
+          headers: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestoreVerificationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '410':
+          $ref: '#/components/responses/Gone'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      x-error-codes:
+      - VALIDATION_ERROR
+      - IDEMPOTENCY_KEY_REQUIRED
+      - UNAUTHENTICATED
+      - TOKEN_EXPIRED
+      - FORBIDDEN
+      - STORE_SUSPENDED
+      - STORE_NOT_FOUND
+      - RESTORE_NOT_FOUND
+      - RESTORE_REQUEST_EXPIRED
+      - IDEMPOTENCY_CONFLICT
+      - RESTORE_STATE_INVALID
+      - CONSISTENCY_MISMATCH
+      - RATE_LIMITED
+      - CLOUD_REPLICA_INVALID
+      - SERVICE_UNAVAILABLE
+      - INTERNAL_ERROR
+      x-rate-limit:
+        limit: 10
+        window_seconds: 900
+        scope: restore request + replacement device
+      x-domain-decisions:
+      - D8
+      - SEC-1
+      - ASM-16
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestoreVerificationRequest'
+      security: *id003
+  /v1/stores/{store_id}/restore-requests/{restore_request_id}/activation:
+    post:
+      tags:
+      - Restore
+      operationId: activateRestoredHub
+      summary: Activate the verified replacement Hub
+      description: Requires a MATCH verification. Atomically fences the old writer, increments writer_epoch, binds the replacement, preserves next_operation_seq, and issues a new Hub credential. Known unsynced losses require explicit owner acknowledgement; RESTORED never claims recovery beyond the Cloud high watermark. For 60 seconds after success, the original restore token may repeat only the identical activation request with the same idempotency key to recover the lost response; replay_grace_expires_at advertises that boundary and no other restore-token call is allowed after activation.
+      parameters:
+      - $ref: '#/components/parameters/StoreId'
+      - $ref: '#/components/parameters/RestoreRequestId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Activate the verified replacement Hub success.
+          headers: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestoreActivationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '410':
+          $ref: '#/components/responses/Gone'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      x-error-codes:
+      - VALIDATION_ERROR
+      - IDEMPOTENCY_KEY_REQUIRED
+      - UNAUTHENTICATED
+      - TOKEN_EXPIRED
+      - FORBIDDEN
+      - STORE_SUSPENDED
+      - STORE_NOT_FOUND
+      - RESTORE_NOT_FOUND
+      - RESTORE_REQUEST_EXPIRED
+      - IDEMPOTENCY_CONFLICT
+      - DEVICE_STORE_CONFLICT
+      - RESTORE_STATE_INVALID
+      - CONSISTENCY_MISMATCH
+      - LOSS_ACKNOWLEDGEMENT_REQUIRED
+      - RATE_LIMITED
+      - CLOUD_REPLICA_INVALID
+      - SERVICE_UNAVAILABLE
+      - INTERNAL_ERROR
+      x-rate-limit:
+        limit: 5
+        window_seconds: 900
+        scope: restore request + replacement device
+      x-domain-decisions:
+      - D7
+      - D8
+      - D12
+      - SEC-1
+      - ASM-16
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestoreActivationRequest'
+      security: *id003
+  /v1/stores/{store_id}/invoices/{invoice_id}/delivery/sms:
+    post:
+      tags:
+      - Invoice Delivery
+      operationId: sendInvoiceSmsStub
+      summary: Record an invoice SMS in the stub provider
+      description: Ingests a Hub-authored delivery operation and records exactly one deterministic SMS stub result containing the single-invoice link. It makes no external network call; a live flow fails closed until the Owner selects a provider. Public rendering is gated separately by lawyer-approved copy.
+      parameters:
+      - $ref: '#/components/parameters/StoreId'
+      - $ref: '#/components/parameters/InvoiceId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Record an invoice SMS in the stub provider success.
+          headers: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      x-error-codes:
+      - VALIDATION_ERROR
+      - IDEMPOTENCY_KEY_REQUIRED
+      - REQUEST_HASH_MISMATCH
+      - ENTRY_HASH_MISMATCH
+      - UNAUTHENTICATED
+      - TOKEN_EXPIRED
+      - TOKEN_ROTATED
+      - FORBIDDEN
+      - DEVICE_REVOKED
+      - STORE_SUSPENDED
+      - HUB_AUTHORITY_REQUIRED
+      - STORE_NOT_FOUND
+      - INVOICE_NOT_FOUND
+      - IDEMPOTENCY_CONFLICT
+      - OPERATION_ID_CONFLICT
+      - WRITER_FENCED
+      - GAP_DETECTED
+      - LOG_CONFLICT
+      - INVOICE_NOT_ISSUED
+      - PAYLOAD_TOO_LARGE
+      - RATE_LIMITED
+      - THROTTLED
+      - SMS_PROVIDER_NOT_CONFIGURED
+      - SERVICE_UNAVAILABLE
+      - INTERNAL_ERROR
+      x-rate-limit:
+        limit: 30
+        window_seconds: 60
+        scope: store + active Hub + invoice
+      x-domain-decisions:
+      - D4
+      - D10
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliveryRequest'
+  /v1/stores/{store_id}/invoices/{invoice_id}/delivery/qr-link:
+    post:
+      tags:
+      - Invoice Delivery
+      operationId: createInvoiceQrLink
+      summary: Create an invoice QR link
+      description: Ingests a Hub-authored delivery operation and returns the existing DigitalInvoice public URL as QR payload. It does not rotate or replace public_token and does not create customer history access. Public rendering is gated separately by lawyer-approved copy.
+      parameters:
+      - $ref: '#/components/parameters/StoreId'
+      - $ref: '#/components/parameters/InvoiceId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Create an invoice QR link success.
+          headers: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      x-error-codes:
+      - VALIDATION_ERROR
+      - IDEMPOTENCY_KEY_REQUIRED
+      - REQUEST_HASH_MISMATCH
+      - ENTRY_HASH_MISMATCH
+      - UNAUTHENTICATED
+      - TOKEN_EXPIRED
+      - TOKEN_ROTATED
+      - FORBIDDEN
+      - DEVICE_REVOKED
+      - STORE_SUSPENDED
+      - HUB_AUTHORITY_REQUIRED
+      - STORE_NOT_FOUND
+      - INVOICE_NOT_FOUND
+      - IDEMPOTENCY_CONFLICT
+      - OPERATION_ID_CONFLICT
+      - WRITER_FENCED
+      - GAP_DETECTED
+      - LOG_CONFLICT
+      - INVOICE_NOT_ISSUED
+      - PAYLOAD_TOO_LARGE
+      - RATE_LIMITED
+      - THROTTLED
+      - SERVICE_UNAVAILABLE
+      - INTERNAL_ERROR
+      x-rate-limit:
+        limit: 120
+        window_seconds: 60
+        scope: store + active Hub + invoice
+      x-domain-decisions:
+      - D4
+      - D10
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliveryRequest'
+  /v1/stores/{store_id}/invoices/{invoice_id}/delivery/share-link:
+    post:
+      tags:
+      - Invoice Delivery
+      operationId: createInvoiceShareLink
+      summary: Create an invoice share link
+      description: Ingests a Hub-authored delivery operation and returns the existing single-invoice public URL for OS/Web sharing. It grants no store or cross-purchase authorization. Public rendering is gated separately by lawyer-approved copy.
+      parameters:
+      - $ref: '#/components/parameters/StoreId'
+      - $ref: '#/components/parameters/InvoiceId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Create an invoice share link success.
+          headers: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      x-error-codes:
+      - VALIDATION_ERROR
+      - IDEMPOTENCY_KEY_REQUIRED
+      - REQUEST_HASH_MISMATCH
+      - ENTRY_HASH_MISMATCH
+      - UNAUTHENTICATED
+      - TOKEN_EXPIRED
+      - TOKEN_ROTATED
+      - FORBIDDEN
+      - DEVICE_REVOKED
+      - STORE_SUSPENDED
+      - HUB_AUTHORITY_REQUIRED
+      - STORE_NOT_FOUND
+      - INVOICE_NOT_FOUND
+      - IDEMPOTENCY_CONFLICT
+      - OPERATION_ID_CONFLICT
+      - WRITER_FENCED
+      - GAP_DETECTED
+      - LOG_CONFLICT
+      - INVOICE_NOT_ISSUED
+      - PAYLOAD_TOO_LARGE
+      - RATE_LIMITED
+      - THROTTLED
+      - SERVICE_UNAVAILABLE
+      - INTERNAL_ERROR
+      x-rate-limit:
+        limit: 120
+        window_seconds: 60
+        scope: store + active Hub + invoice
+      x-domain-decisions:
+      - D4
+      - D10
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliveryRequest'
+  /v1/public/invoices/{public_token}:
+    get:
+      tags:
+      - Invoice Delivery
+      operationId: getPublicInvoice
+      summary: View one invoice by public token
+      description: Anonymous capability read of exactly one issued DigitalInvoice. Invalid/enumerated tokens have the same
+        404. No customer profile, store list, other invoice, or history is exposed. Missing signed lawyer-approved copy returns
+        LEGAL_COPY_UNAVAILABLE before any invoice data is rendered.
+      parameters:
+      - $ref: '#/components/parameters/PublicToken'
+      responses:
+        '200':
+          description: View one invoice by public token success.
+          headers: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicInvoiceView'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+      x-error-codes:
+      - PUBLIC_INVOICE_NOT_FOUND
+      - RATE_LIMITED
+      - LEGAL_COPY_UNAVAILABLE
+      - SERVICE_UNAVAILABLE
+      - INTERNAL_ERROR
+      x-rate-limit:
+        limit: 60
+        window_seconds: 60
+        scope: public token + source IP
+      x-domain-decisions:
+      - D4
+      - D14
+      - ASM-11
+      security: *id002
+components:
+  securitySchemes:
+    DeviceBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+      description: Per-device, store-bound opaque token. Active HUB tokens alone authorize replicated domain mutations; companion
+        tokens never do.
+    RestoreBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+      description: Short-lived token bound to restore_request_id, replacement device, and manifest state_hash after OTP plus
+        second factor.
+  parameters:
+    StoreId:
+      name: store_id
+      in: path
+      required: true
+      schema: &id005
+        type: string
+        format: uuid
+      description: Mandatory tenant scope.
+    ChallengeId:
+      name: challenge_id
+      in: path
+      required: true
+      schema: &id004
+        type: string
+        minLength: 1
+        maxLength: 128
+        pattern: ^[A-Za-z0-9][A-Za-z0-9._~-]{0,127}$
+      description: OTP challenge identifier.
+    PairingId:
+      name: pairing_id
+      in: path
+      required: true
+      schema: *id004
+      description: Single-use pairing grant identifier.
+    DeviceId:
+      name: device_id
+      in: path
+      required: true
+      schema: *id005
+      description: Store-scoped device identifier.
+    LockId:
+      name: lock_id
+      in: path
+      required: true
+      schema: *id005
+      description: Store-scoped lock identifier.
+    RestoreRequestId:
+      name: restore_request_id
+      in: path
+      required: true
+      schema: *id004
+      description: Client-generated restore flow identifier used in approval binding.
+    InvoiceId:
+      name: invoice_id
+      in: path
+      required: true
+      schema: *id005
+      description: Store-scoped invoice identifier.
+    PublicToken:
+      name: public_token
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Opaque lookup value with no route-level syntax validation. Every malformed, invalid, or unknown value uses the same PUBLIC_INVOICE_NOT_FOUND response; generated tokens remain 22–128 base64url characters.
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: *id004
+      description: Required on every mutation. Exact replay must match the canonical request; domain entry endpoints use the
+        entry operation_id and ingest uses batch_id.
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      schema:
+        type: string
+        minLength: 1
+      description: Opaque forward cursor bound to store, filters, and (for restore) manifest state hash.
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 50
+      description: Maximum items per page; default 50, maximum 100.
+    CustomerPhone:
+      name: customer_phone
+      in: query
+      required: true
+      schema: &id010
+        type: string
+        pattern: ^\+[1-9][0-9]{7,14}$
+        description: Normalized E.164 phone number.
+      description: Normalized phone identifying the per-store D11 lock resource.
+  headers:
+    RateLimitLimit:
+      description: Configured request budget for the matched bucket.
+      schema:
+        type: integer
+        minimum: 1
+    RateLimitRemaining:
+      description: Requests remaining in the current window after this response.
+      schema:
+        type: integer
+        minimum: 0
+    RateLimitReset:
+      description: Seconds until the current rate window resets (delta-seconds, not a timestamp).
+      schema:
+        type: integer
+        minimum: 0
+    RetryAfter:
+      description: Minimum delay before retrying, in delta-seconds.
+      schema:
+        type: integer
+        minimum: 0
+  responses:
+    BadRequest:
+      description: 400 error using the stable error envelope; the operation x-error-codes list is exact.
+      headers:
+        RateLimit-Limit: *id006
+        RateLimit-Remaining: *id007
+        RateLimit-Reset: *id008
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: 401 error using the stable error envelope; the operation x-error-codes list is exact.
+      headers:
+        RateLimit-Limit: *id006
+        RateLimit-Remaining: *id007
+        RateLimit-Reset: *id008
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: 403 error using the stable error envelope; the operation x-error-codes list is exact.
+      headers:
+        RateLimit-Limit: *id006
+        RateLimit-Remaining: *id007
+        RateLimit-Reset: *id008
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: 404 error using the stable error envelope; the operation x-error-codes list is exact.
+      headers:
+        RateLimit-Limit: *id006
+        RateLimit-Remaining: *id007
+        RateLimit-Reset: *id008
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: 409 error using the stable error envelope; the operation x-error-codes list is exact.
+      headers:
+        RateLimit-Limit: *id006
+        RateLimit-Remaining: *id007
+        RateLimit-Reset: *id008
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Gone:
+      description: 410 error using the stable error envelope; the operation x-error-codes list is exact.
+      headers:
+        RateLimit-Limit: *id006
+        RateLimit-Remaining: *id007
+        RateLimit-Reset: *id008
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    PayloadTooLarge:
+      description: 413 error using the stable error envelope; the operation x-error-codes list is exact.
+      headers:
+        RateLimit-Limit: *id006
+        RateLimit-Remaining: *id007
+        RateLimit-Reset: *id008
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    TooManyRequests:
+      description: 429 error using the stable error envelope; the operation x-error-codes list is exact.
+      headers:
+        RateLimit-Limit: *id006
+        RateLimit-Remaining: *id007
+        RateLimit-Reset: *id008
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalError:
+      description: 500 error using the stable error envelope; the operation x-error-codes list is exact.
+      headers:
+        RateLimit-Limit: *id006
+        RateLimit-Remaining: *id007
+        RateLimit-Reset: *id008
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ServiceUnavailable:
+      description: 503 error using the stable error envelope; the operation x-error-codes list is exact.
+      headers:
+        RateLimit-Limit: *id006
+        RateLimit-Remaining: *id007
+        RateLimit-Reset: *id008
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    ErrorCode:
+      type: string
+      enum:
+      - VALIDATION_ERROR
+      - IDEMPOTENCY_KEY_REQUIRED
+      - REQUEST_HASH_MISMATCH
+      - INCOMPLETE_BATCH
+      - SEQUENCE_ORDER_VIOLATION
+      - ENTRY_HASH_MISMATCH
+      - OTP_INVALID
+      - OTP_EXPIRED
+      - VERIFICATION_TOKEN_INVALID
+      - OTP_PURPOSE_MISMATCH
+      - PAIRING_INVALID
+      - CURSOR_INVALID
+      - UNAUTHENTICATED
+      - TOKEN_EXPIRED
+      - TOKEN_ROTATED
+      - FORBIDDEN
+      - DEVICE_REVOKED
+      - STORE_SUSPENDED
+      - HUB_AUTHORITY_REQUIRED
+      - SECOND_FACTOR_REQUIRED
+      - SECOND_FACTOR_INVALID
+      - STORE_NOT_FOUND
+      - DEVICE_NOT_FOUND
+      - LOCK_NOT_FOUND
+      - RESTORE_NOT_FOUND
+      - INVOICE_NOT_FOUND
+      - PUBLIC_INVOICE_NOT_FOUND
+      - PAIRING_EXPIRED
+      - RESTORE_REQUEST_EXPIRED
+      - IDEMPOTENCY_CONFLICT
+      - OPERATION_ID_CONFLICT
+      - DEVICE_STORE_CONFLICT
+      - HUB_ALREADY_ACTIVE
+      - PAIRING_REPLAY_REJECTED
+      - WRITER_FENCED
+      - GAP_DETECTED
+      - LOG_CONFLICT
+      - LOCK_STATE_CONFLICT
+      - RESTORE_STATE_INVALID
+      - CONSISTENCY_MISMATCH
+      - LOSS_ACKNOWLEDGEMENT_REQUIRED
+      - INVOICE_NOT_ISSUED
+      - PAYLOAD_TOO_LARGE
+      - RATE_LIMITED
+      - THROTTLED
+      - OTP_ATTEMPTS_EXCEEDED
+      - SMS_PROVIDER_NOT_CONFIGURED
+      - CLOUD_REPLICA_INVALID
+      - LEGAL_COPY_UNAVAILABLE
+      - SERVICE_UNAVAILABLE
+      - INTERNAL_ERROR
+      description: Every stable Cloud API v1 error code.
+    RetryHint:
+      type: object
+      properties:
+        action:
+          type: string
+          enum:
+          - NONE
+          - FIX_REQUEST
+          - RETRY_SAME
+          - RETRY_AFTER
+          - REAUTHENTICATE
+          - ROTATE_TOKEN
+          - PROVIDE_SECOND_FACTOR
+          - RESUME_FROM_SEQUENCE
+          - STOP_WRITER
+          - REVIEW
+          - ENABLE_PROVIDER
+          - ENABLE_LEGAL_COPY
+          - ACKNOWLEDGE_LOSS
+        retry_after_ms:
+          type: integer
+          minimum: 0
+        expected_seq:
+          type: integer
+          minimum: 0
+        received_seq:
+          type: integer
+          minimum: 1
+        accepted_through_seq:
+          type: integer
+          minimum: 0
+        max_batch_entries:
+          type: integer
+          minimum: 1
+        max_batch_bytes:
+          type: integer
+          minimum: 1
+        current_version:
+          type: integer
+          minimum: 1
+        restore_request_id: *id004
+        manifest_state_hash: &id012
+          type: string
+          pattern: ^[0-9a-f]{64}$
+          description: Lowercase SHA-256 hexadecimal digest.
+        details: &id011
+          type: object
+          additionalProperties: true
+      additionalProperties: false
+      description: Machine-actionable recovery data. Missing optional fields are not implied by a default.
+      required:
+      - action
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          $ref: '#/components/schemas/ErrorCode'
+        message:
+          type: string
+          minLength: 1
+          description: Safe diagnostic text; never contains OTPs, tokens, keys, signatures, or customer payload.
+        retry_hint:
+          $ref: '#/components/schemas/RetryHint'
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - retry_hint
+    Business:
+      type: object
+      properties:
+        business_id: *id005
+        name:
+          type: string
+          minLength: 1
+        status:
+          type: string
+          enum:
+          - ACTIVE
+          - SUSPENDED
+          - ARCHIVED
+        created_at: &id009
+          type: string
+          format: date-time
+          description: RFC 3339 UTC instant.
+      additionalProperties: false
+      x-domain-entity: Business
+      x-domain-ref: docs/domain-model.md#21-business
+      required:
+      - business_id
+      - name
+      - status
+      - created_at
+    Store:
+      type: object
+      properties:
+        store_id: *id005
+        business_id: *id005
+        name:
+          type: string
+          minLength: 1
+        operating_mode:
+          type: string
+          enum:
+          - A
+          - B
+        status:
+          type: string
+          enum:
+          - ACTIVE
+          - SUSPENDED
+          - ARCHIVED
+        draft_lock_timeout_seconds:
+          type: integer
+          minimum: 1
+          default: 300
+        created_at: *id009
+      additionalProperties: false
+      x-domain-entity: Store
+      x-domain-ref: docs/domain-model.md#22-store
+      required:
+      - store_id
+      - business_id
+      - name
+      - operating_mode
+      - status
+      - draft_lock_timeout_seconds
+      - created_at
+    User:
+      type: object
+      properties:
+        user_id: *id005
+        display_name:
+          type: string
+          minLength: 1
+        status:
+          type: string
+          enum:
+          - ACTIVE
+          - SUSPENDED
+          - DISABLED
+        created_at: *id009
+      additionalProperties: false
+      x-domain-entity: User
+      x-domain-ref: docs/domain-model.md#23-user
+      required:
+      - user_id
+      - display_name
+      - status
+      - created_at
+    Membership:
+      type: object
+      properties:
+        membership_id: *id005
+        user_id: *id005
+        store_id: *id005
+        role:
+          type: string
+          enum:
+          - OWNER
+          - OPERATOR
+          - CUSTOMER
+        customer_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        status:
+          type: string
+          enum:
+          - ACTIVE
+          - SUSPENDED
+          - REVOKED
+        created_at: *id009
+      additionalProperties: false
+      x-domain-entity: Membership
+      x-domain-ref: docs/domain-model.md#25-membership
+      required:
+      - membership_id
+      - user_id
+      - store_id
+      - role
+      - status
+      - created_at
+    Device:
+      type: object
+      properties:
+        device_id: *id005
+        store_id: *id005
+        device_role:
+          type: string
+          enum:
+          - HUB
+          - COMPANION
+        label:
+          type: string
+          minLength: 1
+        platform:
+          type: string
+          enum:
+          - WINDOWS
+          - ANDROID
+        pairing_status:
+          type: string
+          enum:
+          - ACTIVE
+          - REVOKED
+        paired_at: *id009
+        last_seen_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+          description: RFC 3339 UTC instant.
+      additionalProperties: false
+      x-domain-entity: Device
+      x-domain-ref: docs/domain-model.md#24-device
+      required:
+      - device_id
+      - store_id
+      - device_role
+      - label
+      - platform
+      - pairing_status
+      - paired_at
+    Lock:
+      type: object
+      properties:
+        lock_id: *id005
+        store_id: *id005
+        customer_phone: *id010
+        invoice_id: *id005
+        device_id: *id005
+        acquired_at: *id009
+        last_activity_at: *id009
+        timeout_seconds:
+          type: integer
+          minimum: 1
+          default: 300
+        expires_at: *id009
+        state:
+          type: string
+          enum:
+          - ACTIVE
+          - RELEASED
+        release_reason:
+          type:
+          - string
+          - 'null'
+          enum:
+          - ISSUE
+          - CANCEL
+          - DISCONNECT
+          - TIMEOUT
+          - null
+        released_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+          description: RFC 3339 UTC instant.
+      additionalProperties: false
+      x-domain-entity: Lock
+      x-domain-ref: docs/domain-model.md#215-lock
+      required:
+      - lock_id
+      - store_id
+      - customer_phone
+      - invoice_id
+      - device_id
+      - acquired_at
+      - last_activity_at
+      - timeout_seconds
+      - expires_at
+      - state
+    Outcome:
+      type: object
+      properties:
+        result_status:
+          type: string
+          enum:
+          - SUCCEEDED
+          - REJECTED
+          - WARNING
+        domain_events:
+          type: array
+          items: *id011
+      additionalProperties: true
+      description: Authoritative Hub outcome; additional fields and domain events are replay data, not Cloud re-execution
+        instructions.
+      required:
+      - result_status
+    LogEntry:
+      type: object
+      properties:
+        protocol_version:
+          const: '0'
+        store_id: *id005
+        writer_device_id: *id005
+        writer_epoch:
+          type: integer
+          minimum: 1
+        operation_seq:
+          type: integer
+          minimum: 1
+        previous_entry_hash: *id012
+        entry_hash: *id012
+        operation_id: *id004
+        device_id: *id005
+        operation_type:
+          type: string
+          minLength: 1
+        base_version:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+        request_hash: *id012
+        payload: *id011
+        outcome:
+          $ref: '#/components/schemas/Outcome'
+        response_snapshot: *id011
+        hub_recorded_at: *id009
+      additionalProperties: false
+      x-domain-entity: Operation replication envelope
+      x-protocol-ref: docs/sync-protocol.md#31-append-only-operation-log
+      required:
+      - protocol_version
+      - store_id
+      - writer_device_id
+      - writer_epoch
+      - operation_seq
+      - previous_entry_hash
+      - entry_hash
+      - operation_id
+      - device_id
+      - operation_type
+      - base_version
+      - request_hash
+      - payload
+      - outcome
+      - response_snapshot
+      - hub_recorded_at
+    OperationBatch:
+      type: object
+      properties:
+        batch_id: *id004
+        store_id: *id005
+        writer_device_id: *id005
+        writer_epoch:
+          type: integer
+          minimum: 1
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/LogEntry'
+          minItems: 0
+          maxItems: 100
+      additionalProperties: false
+      x-protocol-ref: docs/sync-protocol.md#32-batch-ingest
+      required:
+      - batch_id
+      - store_id
+      - writer_device_id
+      - writer_epoch
+      - entries
+    EntryIngestAck:
+      type: object
+      properties:
+        operation_id: *id004
+        status:
+          type: string
+          enum:
+          - ACCEPTED
+          - DUPLICATE
+        accepted_through_seq:
+          type: integer
+          minimum: 0
+        ingested_count:
+          type: integer
+          minimum: 0
+          maximum: 1
+        duplicate_count:
+          type: integer
+          minimum: 0
+          maximum: 1
+        head_entry_hash:
+          type:
+          - string
+          - 'null'
+          pattern: ^[0-9a-f]{64}$
+          description: Lowercase SHA-256 hexadecimal digest.
+        next_expected_seq:
+          type: integer
+          minimum: 1
+        cloud_cursor:
+          type:
+          - string
+          - 'null'
+          minLength: 1
+      additionalProperties: false
+      description: Acknowledgment for a mutation containing exactly one P-02 log entry; operation_id is the entry ID and Idempotency-Key.
+      required:
+      - operation_id
+      - status
+      - accepted_through_seq
+      - ingested_count
+      - duplicate_count
+      - head_entry_hash
+      - next_expected_seq
+    IngestAck:
+      type: object
+      properties:
+        batch_id: *id004
+        status:
+          type: string
+          enum:
+          - ACCEPTED
+          - DUPLICATE
+        accepted_through_seq:
+          type: integer
+          minimum: 0
+        ingested_count:
+          type: integer
+          minimum: 0
+        duplicate_count:
+          type: integer
+          minimum: 0
+        head_entry_hash:
+          type:
+          - string
+          - 'null'
+          pattern: ^[0-9a-f]{64}$
+          description: Lowercase SHA-256 hexadecimal digest.
+        next_expected_seq:
+          type: integer
+          minimum: 1
+        cloud_cursor:
+          type:
+          - string
+          - 'null'
+          minLength: 1
+      additionalProperties: false
+      required:
+      - batch_id
+      - status
+      - accepted_through_seq
+      - ingested_count
+      - duplicate_count
+      - head_entry_hash
+      - next_expected_seq
+    PageInfo:
+      type: object
+      properties:
+        next_cursor:
+          type:
+          - string
+          - 'null'
+          minLength: 1
+        has_more:
+          type: boolean
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+      additionalProperties: false
+      required:
+      - next_cursor
+      - has_more
+      - limit
+    NewDevice:
+      type: object
+      properties:
+        device_id: *id005
+        label:
+          type: string
+          minLength: 1
+        platform:
+          type: string
+          enum:
+          - WINDOWS
+          - ANDROID
+        device_public_key:
+          type: string
+          minLength: 1
+          description: Public key only; private keys never cross the API.
+      additionalProperties: false
+      required:
+      - device_id
+      - label
+      - platform
+      - device_public_key
+    DeviceCredential:
+      type: object
+      properties:
+        access_token:
+          type: string
+          minLength: 1
+          description: Opaque secret returned only in issuance/rotation/activation success and exact idempotent replay.
+        token_type:
+          const: Bearer
+        token_id:
+          type: string
+          minLength: 1
+        token_use:
+          type: string
+          enum:
+          - DEVICE
+          - RESTORE
+        store_id: *id005
+        device_id: *id005
+        device_role:
+          type: string
+          enum:
+          - HUB
+          - COMPANION
+        writer_epoch:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+        issued_at: *id009
+        expires_at: *id009
+      additionalProperties: false
+      required:
+      - access_token
+      - token_type
+      - token_id
+      - token_use
+      - store_id
+      - device_id
+      - device_role
+      - writer_epoch
+      - issued_at
+      - expires_at
+    OtpChallengeRequest:
+      type: object
+      properties:
+        phone: *id010
+        purpose:
+          type: string
+          enum:
+          - STORE_REGISTRATION
+          - RESTORE
+        store_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+      additionalProperties: false
+      description: store_id is required for RESTORE and must be null for STORE_REGISTRATION.
+      required:
+      - phone
+      - purpose
+    OtpChallengeResponse:
+      type: object
+      properties:
+        challenge_id: *id004
+        purpose:
+          type: string
+          enum:
+          - STORE_REGISTRATION
+          - RESTORE
+        store_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        provider:
+          const: STUB
+        status:
+          const: STUB_RECORDED
+        external_delivery:
+          const: false
+        expires_at: *id009
+        resend_after_seconds:
+          type: integer
+          minimum: 1
+      additionalProperties: false
+      required:
+      - challenge_id
+      - purpose
+      - store_id
+      - provider
+      - status
+      - external_delivery
+      - expires_at
+      - resend_after_seconds
+    OtpVerifyRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          pattern: ^[0-9]{6,8}$
+          writeOnly: true
+      additionalProperties: false
+      required:
+      - code
+    OtpVerificationResponse:
+      type: object
+      properties:
+        verification_token:
+          type: string
+          minLength: 1
+          description: Short-lived, single-use proof bound to phone, purpose, and store scope.
+        phone_status:
+          const: VERIFIED
+        purpose:
+          type: string
+          enum:
+          - STORE_REGISTRATION
+          - RESTORE
+        store_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        expires_at: *id009
+      additionalProperties: false
+      required:
+      - verification_token
+      - phone_status
+      - purpose
+      - store_id
+      - expires_at
+    AgreementAcceptance:
+      type: object
+      description: References configured lawyer-approved text; this contract carries no legal wording. The signature is the installer's digital acceptance of the exact identified resource.
+      properties:
+        agreement_resource_id:
+          type: string
+          minLength: 1
+        version:
+          type: integer
+          minimum: 1
+        content_sha256: *id012
+        accepted_at: *id009
+        signature:
+          type: string
+          minLength: 1
+          writeOnly: true
+      additionalProperties: false
+      required:
+      - agreement_resource_id
+      - version
+      - content_sha256
+      - accepted_at
+      - signature
+    StoreRegistrationRequest:
+      type: object
+      properties:
+        business_name:
+          type: string
+          minLength: 1
+        store_name:
+          type: string
+          minLength: 1
+        operating_mode:
+          type: string
+          enum:
+          - A
+          - B
+        draft_lock_timeout_seconds:
+          type: integer
+          minimum: 1
+          default: 300
+        owner_display_name:
+          type: string
+          minLength: 1
+        initial_hub:
+          $ref: '#/components/schemas/NewDevice'
+        agreement_acceptance:
+          $ref: '#/components/schemas/AgreementAcceptance'
+        otp_verification_token:
+          type: string
+          minLength: 1
+          writeOnly: true
+      additionalProperties: false
+      required:
+      - business_name
+      - store_name
+      - operating_mode
+      - owner_display_name
+      - initial_hub
+      - agreement_acceptance
+      - otp_verification_token
+    StoreRegistrationResponse:
+      type: object
+      properties:
+        business:
+          $ref: '#/components/schemas/Business'
+        store:
+          $ref: '#/components/schemas/Store'
+        owner_user:
+          $ref: '#/components/schemas/User'
+        owner_membership:
+          $ref: '#/components/schemas/Membership'
+        initial_hub:
+          $ref: '#/components/schemas/Device'
+        initial_writer_epoch:
+          type: integer
+          minimum: 1
+          default: 1
+        device_credential:
+          $ref: '#/components/schemas/DeviceCredential'
+      additionalProperties: false
+      required:
+      - business
+      - store
+      - owner_user
+      - owner_membership
+      - initial_hub
+      - initial_writer_epoch
+      - device_credential
+    StoreView:
+      type: object
+      properties:
+        store:
+          $ref: '#/components/schemas/Store'
+        active_writer_device_id: *id005
+        active_writer_epoch:
+          type: integer
+          minimum: 1
+        accepted_through_seq:
+          type: integer
+          minimum: 0
+        head_entry_hash:
+          type:
+          - string
+          - 'null'
+          pattern: ^[0-9a-f]{64}$
+          description: Lowercase SHA-256 hexadecimal digest.
+      additionalProperties: false
+      required:
+      - store
+      - active_writer_device_id
+      - active_writer_epoch
+      - accepted_through_seq
+      - head_entry_hash
+    PairingGrantRequest:
+      type: object
+      properties:
+        owner_user_id: *id005
+        pairing_id: *id004
+        hub_endpoint:
+          type: string
+          format: uri
+        nonce_sha256: *id012
+        issued_at: *id009
+        expires_at: *id009
+        qr_payload_sha256: *id012
+      additionalProperties: false
+      required:
+      - owner_user_id
+      - pairing_id
+      - hub_endpoint
+      - nonce_sha256
+      - issued_at
+      - expires_at
+      - qr_payload_sha256
+    PairingGrantResponse:
+      type: object
+      properties:
+        protocol_version:
+          const: '0'
+        pairing_id: *id004
+        store_id: *id005
+        hub_device_id: *id005
+        device_role:
+          const: COMPANION
+        hub_endpoint:
+          type: string
+          format: uri
+        nonce_sha256: *id012
+        issued_at: *id009
+        expires_at: *id009
+        single_use:
+          const: true
+        qr_payload_sha256: *id012
+      additionalProperties: false
+      required:
+      - protocol_version
+      - pairing_id
+      - store_id
+      - hub_device_id
+      - device_role
+      - hub_endpoint
+      - nonce_sha256
+      - issued_at
+      - expires_at
+      - single_use
+      - qr_payload_sha256
+    PairingConsumeRequest:
+      type: object
+      properties:
+        device:
+          $ref: '#/components/schemas/NewDevice'
+        pairing_entry:
+          $ref: '#/components/schemas/LogEntry'
+      additionalProperties: false
+      required:
+      - device
+      - pairing_entry
+    PairingConsumeResponse:
+      type: object
+      properties:
+        device:
+          $ref: '#/components/schemas/Device'
+        qr_consumed:
+          const: true
+        hub_role_granted:
+          const: false
+        device_credential:
+          $ref: '#/components/schemas/DeviceCredential'
+        ingest_ack:
+          $ref: '#/components/schemas/EntryIngestAck'
+      additionalProperties: false
+      required:
+      - device
+      - qr_consumed
+      - hub_role_granted
+      - device_credential
+      - ingest_ack
+    DevicePage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Device'
+        page:
+          $ref: '#/components/schemas/PageInfo'
+      additionalProperties: false
+      required:
+      - items
+      - page
+    DeviceRevokeRequest:
+      type: object
+      properties:
+        revocation_entry:
+          $ref: '#/components/schemas/LogEntry'
+      additionalProperties: false
+      required:
+      - revocation_entry
+    DeviceRevocationResponse:
+      type: object
+      properties:
+        device:
+          $ref: '#/components/schemas/Device'
+        released_locks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Lock'
+        device_credential_revoked:
+          const: true
+        ingest_ack:
+          $ref: '#/components/schemas/EntryIngestAck'
+      additionalProperties: false
+      required:
+      - device
+      - released_locks
+      - device_credential_revoked
+      - ingest_ack
+    DeviceTokenRotationResponse:
+      type: object
+      properties:
+        device_credential:
+          $ref: '#/components/schemas/DeviceCredential'
+        previous_token_id:
+          type: string
+          minLength: 1
+        previous_token_revoked_at: *id009
+        replay_grace_expires_at: *id009
+      additionalProperties: false
+      required:
+      - device_credential
+      - previous_token_id
+      - previous_token_revoked_at
+      - replay_grace_expires_at
+    OperationLogPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LogEntry'
+        page:
+          $ref: '#/components/schemas/PageInfo'
+        accepted_through_seq:
+          type: integer
+          minimum: 0
+        head_entry_hash:
+          type:
+          - string
+          - 'null'
+          pattern: ^[0-9a-f]{64}$
+          description: Lowercase SHA-256 hexadecimal digest.
+        active_writer_device_id: *id005
+        active_writer_epoch:
+          type: integer
+          minimum: 1
+      additionalProperties: false
+      required:
+      - items
+      - page
+      - accepted_through_seq
+      - head_entry_hash
+      - active_writer_device_id
+      - active_writer_epoch
+    LockQueryResponse:
+      type: object
+      properties:
+        store_id: *id005
+        customer_phone: *id010
+        lock:
+          anyOf:
+          - $ref: '#/components/schemas/Lock'
+          - type: 'null'
+        replica_through_operation_seq:
+          type: integer
+          minimum: 0
+        head_entry_hash:
+          type:
+          - string
+          - 'null'
+          pattern: ^[0-9a-f]{64}$
+          description: Lowercase SHA-256 hexadecimal digest.
+        active_writer_device_id: *id005
+        active_writer_epoch:
+          type: integer
+          minimum: 1
+        authority:
+          const: HUB_REPLICA
+      additionalProperties: false
+      required:
+      - store_id
+      - customer_phone
+      - lock
+      - replica_through_operation_seq
+      - head_entry_hash
+      - active_writer_device_id
+      - active_writer_epoch
+      - authority
+    LockReleaseRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          enum:
+          - TIMEOUT
+          - MANUAL
+          - HUB_OFF
+        release_entry:
+          $ref: '#/components/schemas/LogEntry'
+      additionalProperties: false
+      required:
+      - reason
+      - release_entry
+    LockReleaseResponse:
+      type: object
+      properties:
+        lock:
+          $ref: '#/components/schemas/Lock'
+        ingest_ack:
+          $ref: '#/components/schemas/EntryIngestAck'
+      additionalProperties: false
+      required:
+      - lock
+      - ingest_ack
+    RecoveryKeySecondFactor:
+      type: object
+      properties:
+        type:
+          const: RECOVERY_KEY
+        proof:
+          type: string
+          minLength: 1
+          writeOnly: true
+      additionalProperties: false
+      required:
+      - type
+      - proof
+    PairedDeviceApproval:
+      type: object
+      properties:
+        device_id: *id005
+        store_id: *id005
+        restore_request_id: *id004
+        new_hub_device_id: *id005
+        manifest_state_hash: *id012
+        expires_at: *id009
+        signature:
+          type: string
+          minLength: 1
+          writeOnly: true
+      additionalProperties: false
+      required:
+      - device_id
+      - store_id
+      - restore_request_id
+      - new_hub_device_id
+      - manifest_state_hash
+      - expires_at
+      - signature
+    PairedDeviceSecondFactor:
+      type: object
+      properties:
+        type:
+          const: PAIRED_DEVICE_APPROVAL
+        approval:
+          $ref: '#/components/schemas/PairedDeviceApproval'
+      additionalProperties: false
+      required:
+      - type
+      - approval
+    SecondFactor:
+      oneOf:
+      - $ref: '#/components/schemas/RecoveryKeySecondFactor'
+      - $ref: '#/components/schemas/PairedDeviceSecondFactor'
+    KeyEnvelope:
+      type: object
+      properties:
+        envelope_id:
+          type: string
+          minLength: 1
+        algorithm:
+          type: string
+          minLength: 1
+        wrapped_key:
+          type: string
+          minLength: 1
+          description: Wrapped key material under SEC-1; never a plaintext private key or recovery key.
+        created_at: *id009
+      additionalProperties: false
+      required:
+      - envelope_id
+      - algorithm
+      - wrapped_key
+      - created_at
+    RestoreManifest:
+      type: object
+      properties:
+        restore_request_id: *id004
+        store_id: *id005
+        current_writer_device_id: *id005
+        writer_epoch:
+          type: integer
+          minimum: 1
+        through_operation_seq:
+          type: integer
+          minimum: 0
+        head_entry_hash:
+          type:
+          - string
+          - 'null'
+          pattern: ^[0-9a-f]{64}$
+          description: Lowercase SHA-256 hexadecimal digest.
+        state_hash: *id012
+        key_envelope:
+          $ref: '#/components/schemas/KeyEnvelope'
+        expires_at: *id009
+      additionalProperties: false
+      x-protocol-ref: docs/sync-protocol.md#43-manifest-and-staged-download
+      required:
+      - restore_request_id
+      - store_id
+      - current_writer_device_id
+      - writer_epoch
+      - through_operation_seq
+      - head_entry_hash
+      - state_hash
+      - key_envelope
+      - expires_at
+    RestoreCreateRequest:
+      type: object
+      properties:
+        restore_request_id: *id004
+        replacement_device:
+          $ref: '#/components/schemas/NewDevice'
+        otp_verification_token:
+          type: string
+          minLength: 1
+          writeOnly: true
+        second_factor:
+          anyOf:
+          - $ref: '#/components/schemas/SecondFactor'
+          - type: 'null'
+      additionalProperties: false
+      description: Omitting second_factor returns SECOND_FACTOR_REQUIRED with manifest binding data and releases nothing.
+      required:
+      - restore_request_id
+      - replacement_device
+      - otp_verification_token
+    RestoreAuthorizationResponse:
+      type: object
+      properties:
+        restore_request_id: *id004
+        status:
+          const: RESTORE_AUTHORIZED
+        manifest:
+          $ref: '#/components/schemas/RestoreManifest'
+        restore_credential:
+          $ref: '#/components/schemas/DeviceCredential'
+        writer_activation_permitted:
+          const: false
+        next_step:
+          const: REPLAY_AND_VERIFY
+      additionalProperties: false
+      required:
+      - restore_request_id
+      - status
+      - manifest
+      - restore_credential
+      - writer_activation_permitted
+      - next_step
+    RestoreEntryPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LogEntry'
+        page:
+          $ref: '#/components/schemas/PageInfo'
+        restore_request_id: *id004
+        through_operation_seq:
+          type: integer
+          minimum: 0
+        head_entry_hash:
+          type:
+          - string
+          - 'null'
+          pattern: ^[0-9a-f]{64}$
+          description: Lowercase SHA-256 hexadecimal digest.
+        state_hash: *id012
+      additionalProperties: false
+      required:
+      - items
+      - page
+      - restore_request_id
+      - through_operation_seq
+      - head_entry_hash
+      - state_hash
+    RestoreVerificationRequest:
+      type: object
+      properties:
+        through_operation_seq:
+          type: integer
+          minimum: 0
+        head_entry_hash:
+          type:
+          - string
+          - 'null'
+          pattern: ^[0-9a-f]{64}$
+          description: Lowercase SHA-256 hexadecimal digest.
+        computed_state_hash: *id012
+      additionalProperties: false
+      required:
+      - through_operation_seq
+      - head_entry_hash
+      - computed_state_hash
+    RestoreVerificationResponse:
+      type: object
+      properties:
+        verification_id: *id004
+        restore_request_id: *id004
+        consistency_check:
+          const: MATCH
+        manifest_state_hash: *id012
+        computed_state_hash: *id012
+        verified_at: *id009
+      additionalProperties: false
+      required:
+      - verification_id
+      - restore_request_id
+      - consistency_check
+      - manifest_state_hash
+      - computed_state_hash
+      - verified_at
+    RestoreActivationRequest:
+      type: object
+      properties:
+        verification_id: *id004
+        unrecovered_operation_seqs:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+          uniqueItems: true
+          default: []
+        owner_loss_acknowledged:
+          type: boolean
+          default: false
+      additionalProperties: false
+      required:
+      - verification_id
+    RestoreActivationResponse:
+      type: object
+      properties:
+        restore_request_id: *id004
+        status:
+          type: string
+          enum:
+          - RESTORED
+          - RESTORED_WITH_UNSYNCED_LOSS
+        new_writer_device_id: *id005
+        new_writer_epoch:
+          type: integer
+          minimum: 1
+        restored_through_seq:
+          type: integer
+          minimum: 0
+        next_operation_seq:
+          type: integer
+          minimum: 1
+        previous_writer:
+          const: FENCED
+        sessions_restored:
+          const: false
+        unrecovered_operation_seqs:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+          uniqueItems: true
+        unsynced_data_recoverable:
+          const: false
+        recovery_completeness:
+          const: CLOUD_HIGH_WATERMARK_ONLY
+        replay_grace_expires_at: *id009
+        device_credential:
+          $ref: '#/components/schemas/DeviceCredential'
+      additionalProperties: false
+      required:
+      - restore_request_id
+      - status
+      - new_writer_device_id
+      - new_writer_epoch
+      - restored_through_seq
+      - next_operation_seq
+      - previous_writer
+      - sessions_restored
+      - unrecovered_operation_seqs
+      - unsynced_data_recoverable
+      - recovery_completeness
+      - replay_grace_expires_at
+      - device_credential
+    CanonicalInvoice:
+      type: object
+      properties:
+        schema_version:
+          const: '0'
+      additionalProperties: true
+      description: Canonical Invoice v0 payload; full structural validation is against the external frozen contract, not this
+        reference schema.
+      required:
+      - schema_version
+    DigitalInvoice:
+      type: object
+      properties:
+        digital_invoice_id: *id005
+        invoice_id: *id005
+        store_id: *id005
+        public_token:
+          type: string
+          minLength: 22
+          maxLength: 128
+          pattern: ^[A-Za-z0-9_-]{22,128}$
+        issued_payload:
+          $ref: '#/components/schemas/CanonicalInvoice'
+        issued_content_sha256: *id012
+        issued_at: *id009
+      additionalProperties: false
+      x-domain-entity: DigitalInvoice
+      x-domain-ref: docs/domain-model.md#213-digitalinvoice
+      required:
+      - digital_invoice_id
+      - invoice_id
+      - store_id
+      - public_token
+      - issued_payload
+      - issued_content_sha256
+      - issued_at
+    Invoice:
+      type: object
+      properties:
+        invoice_id: *id005
+        store_id: *id005
+        sale_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        customer_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        display_number:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+          enum:
+          - DRAFT
+          - EXTRACTED
+          - VALIDATED
+          - ISSUED
+          - REVOKED
+          - SUPERSEDED
+        retired_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+          description: RFC 3339 UTC instant.
+        retirement_reason:
+          type:
+          - string
+          - 'null'
+          enum:
+          - CANCEL
+          - TIMEOUT
+          - null
+        original_invoice_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        created_operation_id: *id004
+        created_by_device_id: *id005
+        created_at: *id009
+        issued_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+          description: RFC 3339 UTC instant.
+      additionalProperties: false
+      x-domain-entity: Invoice
+      x-domain-ref: docs/domain-model.md#211-invoice
+      required:
+      - invoice_id
+      - store_id
+      - display_number
+      - status
+      - created_operation_id
+      - created_by_device_id
+      - created_at
+    DeliveryRequest:
+      type: object
+      properties:
+        operation_entry:
+          $ref: '#/components/schemas/LogEntry'
+      additionalProperties: false
+      description: Hub-authored delivery operation. entry.payload binds the path invoice, channel, and SMS recipient/template
+        when applicable.
+      required:
+      - operation_entry
+    Delivery:
+      type: object
+      properties:
+        delivery_id: *id004
+        operation_id: *id004
+        invoice:
+          $ref: '#/components/schemas/Invoice'
+        digital_invoice:
+          $ref: '#/components/schemas/DigitalInvoice'
+        channel:
+          type: string
+          enum:
+          - SMS
+          - QR
+          - SHARE
+        status:
+          type: string
+          enum:
+          - STUB_RECORDED
+          - LINK_READY
+        provider:
+          type: string
+          enum:
+          - STUB
+          - NONE
+        external_delivery:
+          const: false
+        public_url:
+          type: string
+          format: uri
+        qr_payload:
+          type:
+          - string
+          - 'null'
+          format: uri
+        recorded_at: *id009
+      additionalProperties: false
+      required:
+      - delivery_id
+      - operation_id
+      - invoice
+      - digital_invoice
+      - channel
+      - status
+      - provider
+      - external_delivery
+      - public_url
+      - recorded_at
+    DeliveryResponse:
+      type: object
+      properties:
+        delivery:
+          $ref: '#/components/schemas/Delivery'
+        ingest_ack:
+          $ref: '#/components/schemas/EntryIngestAck'
+      additionalProperties: false
+      required:
+      - delivery
+      - ingest_ack
+    PublicDigitalInvoice:
+      type: object
+      properties:
+        invoice_id: *id005
+        store_id: *id005
+        issued_payload:
+          $ref: '#/components/schemas/CanonicalInvoice'
+        issued_content_sha256: *id012
+        issued_at: *id009
+      additionalProperties: false
+      x-domain-entity: DigitalInvoice public projection
+      required:
+      - invoice_id
+      - store_id
+      - issued_payload
+      - issued_content_sha256
+      - issued_at
+    LegalCopyResource:
+      type: object
+      properties:
+        resource_id:
+          type: string
+          minLength: 1
+        version:
+          type: string
+          minLength: 1
+        content:
+          type: string
+          minLength: 1
+          description: Server-configured lawyer-approved content; developers do not author it.
+        signature:
+          type: string
+          minLength: 1
+      additionalProperties: false
+      required:
+      - resource_id
+      - version
+      - content
+      - signature
+    PublicInvoiceView:
+      type: object
+      properties:
+        product_name:
+          const: Kandoo digital invoice
+        store_name:
+          type: string
+          minLength: 1
+        display_number:
+          type: integer
+          minimum: 1
+        lifecycle_status:
+          type: string
+          enum:
+          - ISSUED
+          - REVOKED
+          - SUPERSEDED
+        issued_at: *id009
+        digital_invoice:
+          $ref: '#/components/schemas/PublicDigitalInvoice'
+        legal_copy:
+          $ref: '#/components/schemas/LegalCopyResource'
+      additionalProperties: false
+      required:
+      - product_name
+      - store_name
+      - display_number
+      - lifecycle_status
+      - issued_at
+      - digital_invoice
+      - legal_copy
+x-contract:
+  documentation_only: true
+  operation_count: 22
+  mutating_operation_count: 15
+  error_code_count: 51
+  versioning: path
+  domain_sources:
+  - docs/domain-model.md
+  - docs/sync-protocol.md
+  - docs/sync-protocol-test-vectors.json

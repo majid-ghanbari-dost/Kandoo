@@ -43,7 +43,9 @@ majid-ghanbari-dost/Kandoo  (Parent Platform Repo — C# / ASP.NET Core / Window
     ├── DECISIONS.md        # Authoritative D1-D14 register, v4.1 + v4.2 amendments, Assumptions, Open items
     ├── domain-model.md     # P-01 logical entities, relationships, rules & concrete test scenarios
     ├── sync-protocol.md    # P-02 LAN, replication, restore, failures & vector index
-    └── sync-protocol-test-vectors.json # P-02 synthetic P-05/P-07 protocol vectors
+    ├── sync-protocol-test-vectors.json # P-02 synthetic P-05/P-07 protocol vectors
+    ├── openapi.yaml        # P-04 normative OpenAPI 3.1 Cloud contract
+    └── cloud-api-contract.md # P-04 endpoint/auth/error/idempotency/rate-limit narrative
     [Future P-01..P-17: C# solution, Store Hub, Windows/Android app, Cloud API, Docker kit]
             │
             │  STRICT BOUNDARY (No Python source copied into Kandoo)
@@ -131,10 +133,15 @@ Full details and executable test criteria are maintained in [`docs/DECISIONS.md`
   - Branch `arena/91ef8c4b-kandoo`, based on merged `main` HEAD `6409de18074f3ca71673d017ef671b51cc70c05c`.
   - Adds `docs/domain-model.md` with all 15 logical entities, an ASCII entity-relationship diagram, `D9`–`D13`/store-isolation rules, and 67 concrete acceptance-test scenarios.
   - Is explicitly **documentation-only**. The PM prompt superseded the provisional `P-01` C# bootstrap wording in the inherited `R-0` roadmap; implementation remains deferred to a later explicit PM task (`ASM-06`).
-- **`P-02` sync/replication protocol specification (current PM task):**
+- **`P-02` sync/replication protocol specification:**
   - Cumulative Arena branch starts at `e8a935105bdfad7ab323b4a83ec83b8a4c44ecc2` (`stable-p-01`); PR #2 remains open and unmerged.
   - Adds `docs/sync-protocol.md` and 34 synthetic JSON vectors for P-05/P-07 covering LAN pairing/sessions/operations/locks, ordered Cloud replication, two-factor restore with replayed-state hashing, and all seven required failure cases.
   - Is explicitly **documentation-only**. The current PM prompt supersedes the provisional `P-02` Store Hub implementation wording in the inherited `R-0` roadmap; implementation remains deferred to a later explicit PM task (`ASM-13`).
+- **`P-04` Cloud API contract (current PM task):**
+  - Cumulative Arena branch starts at `2b08caa16a794311c8f50cafb40c19a30919b69f` (`stable-p-02`); PR #2 remains open and unmerged.
+  - Adds `docs/openapi.yaml` (OpenAPI 3.1) and `docs/cloud-api-contract.md`: 22 operations in six groups, 15 idempotent mutations, 51 registered error codes, per-device/restore credentials, path versioning, cursor pagination, and default rate limits.
+  - Preserves Hub-only domain writes, P-02-compatible entries/batches/locks, two-factor restore with replay/hash checks, D4 SMS-stub/public-token behavior, and D14 onboarding/public-rendering gates. Covers the Cloud surfaces needed by P-05 through P-09 without implementing them.
+  - Is explicitly **documentation and YAML only**. The current PM prompt supersedes the provisional `P-04` implementation wording in the inherited `R-0` roadmap; implementation remains deferred to later explicit PM tasks (`ASM-18`).
 
 ---
 
@@ -154,7 +161,7 @@ To prevent false assumptions by future agents or contributors, the following art
 
 ## 6. Next Tasks (`P-01`, `P-02`, `P-03`, `P-04`)
 
-Platform work proceeds strictly in one-task / one-commit-group increments (`P-01` to `P-17`) after PM review of `R-0`. **Current PM clarifications (`2026-10-22`):** `P-01` is the documentation-only domain-model specification and `P-02` is the documentation-only sync/replication protocol specification below. The previously listed C# solution bootstrap, Canonical Invoice conformance, and Store Hub implementation work are deferred to later explicit PM tasks and are not delivered by these documentation tasks (`ASM-06`, `ASM-13`).
+Platform work proceeds strictly in one-task / one-commit-group increments (`P-01` to `P-17`) after PM review of `R-0`. **Current PM clarifications (`2026-10-22`):** `P-01` is the documentation-only domain-model specification, `P-02` is the documentation-only sync/replication protocol specification, and `P-04` is the documentation-plus-YAML Cloud API contract below. The previously listed C# solution bootstrap, Canonical Invoice conformance, Store Hub, and Cloud implementation work are deferred to later explicit PM tasks and are not delivered by these documentation tasks (`ASM-06`, `ASM-13`, `ASM-18`).
 
 ### `P-01` — Domain Model Specification (Documentation Only)
 - Define all 15 logical entities (`Business` through `Lock`), key fields, relationships, constraints, and an ASCII entity-relationship diagram in `docs/domain-model.md`.
@@ -174,10 +181,11 @@ Platform work proceeds strictly in one-task / one-commit-group increments (`P-01
 - Manage temporary producer-owned `--context` JSON lifecycle without leaking sensitive data or persisting invoice images inappropriately.
 - Map exit codes deterministically (`0` → `AUTO` candidate held pre-issuance, `10` → operator `REVIEW` queue preserving `attention_cells`, `20` → `REJECT`, `30` → operational failure), enforcing fail-closed behavior with zero auto-repair or silent issuance.
 
-### `P-04` — Cloud API, Outbox Replication & Second-Factor Restore Export
-- Implement `ASP.NET Core` Cloud API + `PostgreSQL` persistence with `Business → Store → Users / Devices` membership model (`D6`) and Global Revision sync cursor (`D7`, `D10`).
-- Implement offline-first `SQLite Outbox ↔ Cloud API` synchronization and store backup/restore export (`D8`).
-- Enforce `SEC-1` server-side encryption with restricted, audited access and require **Restore Second Factor** verification (recovery key or paired-device approval alongside OTP) before any store restore export is released (`v4.1` / `v4.2`).
+### `P-04` — Cloud API Contract (Documentation + YAML Only)
+- Define `docs/openapi.yaml` in OpenAPI 3.1 and `docs/cloud-api-contract.md` for P-05/P-07 implementers, covering Store Registration, Device Pairing, Operation Ingest, Locks, Restore, and Invoice Delivery (22 operations total).
+- Specify per-device bearer credentials and rotation, scoped restore credentials, uniform `{code, message, retry_hint}` errors (51 codes), `/v1` path versioning, idempotency on all 15 mutations, rate-limit headers/defaults, and cursor pagination.
+- Preserve P-01/P-02 domain and protocol shapes, Hub-only writes, 300-second configurable locks, OTP plus SEC-1 restore, explicit unsynced-loss reporting, SMS stub/public-token rules, and D14 legal gates. Cover the Cloud surfaces required by P-05 through P-09 without implementing them.
+- Validate with a real OpenAPI linter at zero errors; record the exact command/result and conservative choices under `ASM-18`–`ASM-21` and Open items 11–13. Write no C#, physical schema, extraction implementation, secrets, production credentials, or demos.
 
 ### Downstream Milestone Gate Note (`P-05`–`P-17`)
 - Later increments remain bound by v4.1/v4.2 amendments: `P-08` (SMS delivery — uses stub until `P-10`, requires owner provider decision before real SMS), `P-09` (customer web view — blocked on lawyer-approved `"Kandoo digital invoice"` wording per `D14`), `P-10` (local Docker Compose + portable VPS Docker kit per `D5`), `P-12` (device pairing & restore 2FA UX), and `P-16` (`SEC-1` encryption hardening). Each task executes only under its explicit PM task prompt.
