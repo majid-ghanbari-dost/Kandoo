@@ -120,6 +120,8 @@ Full details and executable test criteria are maintained in [`docs/DECISIONS.md`
 - **Pre-R-0 baseline (`main`):** `192fb470bcbebb34fcda220abb9e1a63c7f12d0b`
   - Contained **3 initial bootstrap documentation commits** (`80d967c` `Initial commit`, `729b10a` `docs: add mandatory parent project agent handoff`, `192fb470` `docs: point parent README to agent handoff`) with **only 2 markdown files** (`README.md` and `AGENT_HANDOFF.md`) and **zero application, server, client, schema, or test files**.
 - **R-0 baseline (this task):**
+  - **Branch:** `arena/456e429d-kandoo` *(Arena session branch for logical task branch `arena/r-0-parent-truth`)*
+  - **`R-0` primary commit:** `6e17959afb8033f3dae1a09a4db28e2cbc4059ce` *(followed by SHA-recording commit tagged `stable-r-0`)*
   - Establishes authoritative architecture handoff (`docs/MASTER_HANDOFF.md`), complete decision register (`docs/DECISIONS.md`), updated cross-repo SHA handoff (`AGENT_HANDOFF.md`), and annotated tag `stable-r-0`.
   - Contains **documentation foundation only** — zero C# code exists yet (implementation starts in `P-01`).
 

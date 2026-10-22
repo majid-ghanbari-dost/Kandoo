@@ -9,7 +9,7 @@ This repository is the parent Kandoo project.
 - **Parent repository (`majid-ghanbari-dost/Kandoo` — THIS REPO):**
   - **Active branch:** `arena/456e429d-kandoo` *(Arena session-bound branch corresponding to task branch `arena/r-0-parent-truth`)*
   - **Pre-`R-0` `main` baseline `HEAD`:** `192fb470bcbebb34fcda220abb9e1a63c7f12d0b`
-  - **Exact `R-0` content commit `HEAD`:** `<PENDING_R0_SHA>`
+  - **Exact `R-0` content commit `HEAD`:** `6e17959afb8033f3dae1a09a4db28e2cbc4059ce` *(immediate parent of this SHA-recording commit; branch tip tagged `stable-r-0`)*
   - **Stable tag:** `stable-r-0` *(points to tip of this `R-0` commit group)*
 - **Digital Invoice extraction repository (`majid-ghanbari-dost/Kandoo-Digital-Invoice`):**
   - **Branch:** `arena/9dc17500-kandoo-digital-invoice`
