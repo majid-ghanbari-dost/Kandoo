@@ -2,7 +2,21 @@
 
 This repository is the parent Kandoo project.
 
-## Current Repository State (`P-02` Snapshot)
+## Current Repository State (`P-04` Snapshot)
+
+- **Date:** `2026-10-22`
+- **Task:** `P-04 — Cloud API contract` (documentation and YAML only)
+- **Parent repository (`majid-ghanbari-dost/Kandoo` — THIS REPOSITORY):**
+  - **Active cumulative branch:** `arena/91ef8c4b-kandoo`; PR #2 remains open and unmerged.
+  - **Starting `P-04` `HEAD`:** `2b08caa16a794311c8f50cafb40c19a30919b69f` (`stable-p-02`).
+  - **Exact `P-04` content commit `HEAD`:** `8473cacbec8ce57e06e91c03da14444ece9d7ad7` *(immediate parent of this handoff-recording commit; final `P-04` commit-group tip is tagged `stable-p-04`)*.
+  - **Stable tag:** `stable-p-04`.
+  - **Delivered:** `docs/openapi.yaml` (OpenAPI 3.1) and `docs/cloud-api-contract.md` define 22 operations across Store Registration, Device Pairing, Operation Ingest, Locks, Restore, and Invoice Delivery; 15 mutations require `Idempotency-Key`; 51 error codes share the `{code, message, retry_hint}` envelope. The contract specifies per-device/restore credentials and rotation, `/v1` path versioning, cursor pagination, default rate limits, P-02-compatible operation/log/lock shapes, OTP plus SEC-1 restore, and D4/D14 gates.
+  - **Validation:** `npx --yes @redocly/cli@2.69.0 lint docs/openapi.yaml` exited 0 with zero errors and zero warnings. Structural checks validated 22 operations, the complete error matrix, all 11 wire-shaped P-02 batches and 18 contained entries; `CLOUD-006` harness metadata and intentional `CLOUD-007` corruption were handled explicitly.
+  - **Assumptions:** `docs/DECISIONS.md` records `ASM-18`–`ASM-21` and Open items 11–13.
+  - **Not delivered:** C#, physical schema, API implementation, extraction code, secrets, production credentials, demos, live SMS, or legal copy (`ASM-18`).
+
+## Repository State (`P-02` Snapshot)
 
 - **Date:** `2026-10-22`
 - **Task:** `P-02 — Sync/replication protocol specification` (documentation only)
@@ -46,7 +60,9 @@ This repository is the parent Kandoo project.
 2. [`docs/domain-model.md`](docs/domain-model.md) — `P-01` logical domain specification: 15 entities, relationships and constraints, ASCII diagram, numbered `D9`–`D13`/store-isolation rules, and 67 concrete acceptance-test scenarios.
 3. [`docs/sync-protocol.md`](docs/sync-protocol.md) — `P-02` LAN, replication, restore, writer-fencing, and failure protocol with D7/D11/SEC-1 traceability.
 4. [`docs/sync-protocol-test-vectors.json`](docs/sync-protocol-test-vectors.json) — 34 synthetic P-05/P-07 vectors with canonical SHA-256 fixtures.
-5. [`docs/DECISIONS.md`](docs/DECISIONS.md) — Authoritative decision register (`D1`–`D14`), Amendments `v4.1` and `v4.2` (`SEC-1`, Restore Second Factor, Agreement Truthfulness, `E-01b`, `ACC-0` parked), `Assumptions`, and `Open` owner items.
+5. [`docs/openapi.yaml`](docs/openapi.yaml) — `P-04` normative OpenAPI 3.1 Cloud API contract.
+6. [`docs/cloud-api-contract.md`](docs/cloud-api-contract.md) — `P-04` narrative for implementers: six endpoint groups, authentication, complete error matrix, versioning, idempotency, rate limits, P-01/P-02 mapping, and open technology questions.
+7. [`docs/DECISIONS.md`](docs/DECISIONS.md) — Authoritative decision register (`D1`–`D14`), Amendments `v4.1` and `v4.2` (`SEC-1`, Restore Second Factor, Agreement Truthfulness, `E-01b`, `ACC-0` parked), `Assumptions`, and `Open` owner items.
 
 ## Project Relationship
 
