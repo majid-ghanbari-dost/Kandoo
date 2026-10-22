@@ -41,7 +41,9 @@ majid-ghanbari-dost/Kandoo  (Parent Platform Repo — C# / ASP.NET Core / Window
 └── docs/
     ├── MASTER_HANDOFF.md   # Architecture, repo topology, D1-D14 summary, state & roadmap
     ├── DECISIONS.md        # Authoritative D1-D14 register, v4.1 + v4.2 amendments, Assumptions, Open items
-    └── domain-model.md     # P-01 logical entities, relationships, rules & concrete test scenarios
+    ├── domain-model.md     # P-01 logical entities, relationships, rules & concrete test scenarios
+    ├── sync-protocol.md    # P-02 LAN, replication, restore, failures & vector index
+    └── sync-protocol-test-vectors.json # P-02 synthetic P-05/P-07 protocol vectors
     [Future P-01..P-17: C# solution, Store Hub, Windows/Android app, Cloud API, Docker kit]
             │
             │  STRICT BOUNDARY (No Python source copied into Kandoo)
@@ -125,10 +127,14 @@ Full details and executable test criteria are maintained in [`docs/DECISIONS.md`
   - **`R-0` primary commit:** `6e17959afb8033f3dae1a09a4db28e2cbc4059ce` *(followed by SHA-recording commit tagged `stable-r-0`)*
   - Establishes authoritative architecture handoff (`docs/MASTER_HANDOFF.md`), complete decision register (`docs/DECISIONS.md`), updated cross-repo SHA handoff (`AGENT_HANDOFF.md`), and annotated tag `stable-r-0`.
   - Contains **documentation foundation only** — zero C# code exists yet.
-- **`P-01` domain-model specification (current PM task):**
+- **`P-01` domain-model specification:**
   - Branch `arena/91ef8c4b-kandoo`, based on merged `main` HEAD `6409de18074f3ca71673d017ef671b51cc70c05c`.
   - Adds `docs/domain-model.md` with all 15 logical entities, an ASCII entity-relationship diagram, `D9`–`D13`/store-isolation rules, and 67 concrete acceptance-test scenarios.
-  - Is explicitly **documentation-only**. The current PM prompt supersedes the provisional `P-01` C# bootstrap wording below; implementation remains deferred to a later explicit PM task (`ASM-06`).
+  - Is explicitly **documentation-only**. The PM prompt superseded the provisional `P-01` C# bootstrap wording in the inherited `R-0` roadmap; implementation remains deferred to a later explicit PM task (`ASM-06`).
+- **`P-02` sync/replication protocol specification (current PM task):**
+  - Cumulative Arena branch starts at `e8a935105bdfad7ab323b4a83ec83b8a4c44ecc2` (`stable-p-01`); PR #2 remains open and unmerged.
+  - Adds `docs/sync-protocol.md` and 34 synthetic JSON vectors for P-05/P-07 covering LAN pairing/sessions/operations/locks, ordered Cloud replication, two-factor restore with replayed-state hashing, and all seven required failure cases.
+  - Is explicitly **documentation-only**. The current PM prompt supersedes the provisional `P-02` Store Hub implementation wording in the inherited `R-0` roadmap; implementation remains deferred to a later explicit PM task (`ASM-13`).
 
 ---
 
@@ -148,7 +154,7 @@ To prevent false assumptions by future agents or contributors, the following art
 
 ## 6. Next Tasks (`P-01`, `P-02`, `P-03`, `P-04`)
 
-Platform work proceeds strictly in one-task / one-commit-group increments (`P-01` to `P-17`) after PM review of `R-0`. **Current PM clarification (`2026-10-22`):** `P-01` is the documentation-only domain-model specification below. The previously listed C# solution bootstrap and Canonical Invoice conformance implementation are deferred to a later explicit PM task and are not delivered by `P-01` (`ASM-06`).
+Platform work proceeds strictly in one-task / one-commit-group increments (`P-01` to `P-17`) after PM review of `R-0`. **Current PM clarifications (`2026-10-22`):** `P-01` is the documentation-only domain-model specification and `P-02` is the documentation-only sync/replication protocol specification below. The previously listed C# solution bootstrap, Canonical Invoice conformance, and Store Hub implementation work are deferred to later explicit PM tasks and are not delivered by these documentation tasks (`ASM-06`, `ASM-13`).
 
 ### `P-01` — Domain Model Specification (Documentation Only)
 - Define all 15 logical entities (`Business` through `Lock`), key fields, relationships, constraints, and an ASCII entity-relationship diagram in `docs/domain-model.md`.
@@ -156,11 +162,12 @@ Platform work proceeds strictly in one-task / one-commit-group increments (`P-01
 - Specify 67 scenarios in total without writing C#, creating a physical database schema, copying extraction code, or claiming unimplemented concurrency/security behavior.
 - Record conservative modeling choices and new open product questions in `docs/DECISIONS.md` under `ASM-06`–`ASM-12` and Open items 5–6.
 
-### `P-02` — Store Hub Core, SQLite Persistence, Concurrency, Numbering & Per-Phone Draft Lock
-- Implement single-store LAN Hub persistence (`SQLite` + durable Outbox) supporting multi-device requests (`device_id`) and idempotent replay (`operation_id`) per `D7`, `D10`, and `D13`.
-- Implement Store Hub sequential `display_number` allocator distinct from `invoice_id` and untrusted `header.invoice_number` (`D12`).
-- Implement event-ledger inventory, normalized product catalog with near-duplicate warnings (`D9`), and `base_version` OCC conflict detection without silent overwrite (`D10`).
-- Implement hub-owned **per-phone `DRAFT` lock** per device with hard error on competing device, automatic release on issue/cancel/disconnect/configurable timeout (**default 5 minutes** per `D11` v4.2), sequential same-phone support, and local backup/restore foundation enforcing **Restore Second Factor** + `SEC-1` (`v4.1`/`v4.2`).
+### `P-02` — Sync / Replication Protocol Specification (Documentation Only)
+- Specify owner-created QR pairing, device sessions/revocation, idempotent operation envelopes with `base_version`, D11 locks, and D7 Hub-off behavior over LAN.
+- Specify an append-only per-store operation log with writer fencing, ordered atomic ingest, idempotent duplicates, gap detection, durable retries, and backpressure.
+- Specify OTP plus second-factor restore, deterministic replay, canonical replayed-state hashing, new-writer activation, and explicit unsynced-disk-loss behavior.
+- Provide a seven-case failure table and 34 syntactically valid, hash-checked synthetic JSON vectors in `docs/sync-protocol-test-vectors.json` for P-05/P-07.
+- Record conservative choices under `ASM-13`–`ASM-17` and Open items 7–10; write no C#, physical schema, extraction implementation, secrets, or demos.
 
 ### `P-03` — Mode `B` Python CLI Adapter & Review Gate Integration
 - Implement C# process adapter invoking `python -m image_extraction_adapter.cli extract --image <path> --context <path>` via `ProcessStartInfo.ArgumentList` with explicit UTF-8 `stdout`/`stderr` capture (`D1`, `D2`, `E-09`).

@@ -1,0 +1,2331 @@
+{
+  "canonicalization": {
+    "array_order": "preserved; state entity collections are sorted before hashing as specified in sync-protocol.md",
+    "entry_hash": "lowercase SHA-256 of canonical JSON for the complete log entry excluding entry_hash",
+    "json_encoding": "UTF-8",
+    "number_format": "JSON integers only in hash-bearing vectors; no NaN or Infinity",
+    "object_keys": "sorted lexicographically by Unicode code point",
+    "request_hash": "lowercase SHA-256 of canonical JSON for store_id, device_id, operation_id, operation_type, base_version, and payload",
+    "state_hash": "lowercase SHA-256 of canonical JSON for the replayed_state object",
+    "whitespace": "no insignificant whitespace (JSON separators comma and colon)"
+  },
+  "description": "Synthetic P-02 protocol vectors for P-05 and P-07. No production credentials or customer data.",
+  "fixtures": {
+    "business_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    "companion_device_1": "33333333-3333-4333-8333-333333333333",
+    "companion_device_2": "44444444-4444-4444-8444-444444444444",
+    "default_lock_timeout_seconds": 300,
+    "entry_41_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+    "entry_42_hash": "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d",
+    "hub_device_id": "22222222-2222-4222-8222-222222222222",
+    "invoice_1": "77777777-7777-4777-8777-777777777777",
+    "invoice_2": "88888888-8888-4888-8888-888888888888",
+    "new_hub_device_id": "55555555-5555-4555-8555-555555555555",
+    "owner_user_id": "66666666-6666-4666-8666-666666666666",
+    "pairing_qr_timeout_seconds": 300,
+    "phone": "+989120000001",
+    "prior_entry_hash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "product_request_hash": "8b6fcb64f008a9d921bf44fe7a9346eb6a8898fa569904942be8a9f36b3eb8a6",
+    "restore_bad_state_hash": "3e69385958c1f369cd9124e94dc5a439ba75d1d71ae1ba147b458936fc0f3c82",
+    "restore_state_hash": "71c370ae4f33e6c20d880db1be1eb09d32008565f630ca70c5a7df48df8fc98d",
+    "session_1": "99999999-9999-4999-8999-999999999999",
+    "store_id": "11111111-1111-4111-8111-111111111111"
+  },
+  "harness_contract": {
+    "act": "Execute input.steps in array order. Fields named action select the protocol operation; commit and response_delivered control fault injection where present.",
+    "arrange": "Load input.given exactly with the supplied fixed IDs and clocks.",
+    "assert": "Compare expected_output as the exact logical result projection. Transport headers and timing outside the supplied clocks are not compared.",
+    "hash_verification": "Recompute request_hash, entry_hash, and state_hash using canonicalization; never replace a supplied expected hash with an implementation-generated value before comparison.",
+    "security": "All proofs, signatures, nonces, keys, and phone values are synthetic fixtures and must never be accepted by production configuration."
+  },
+  "protocol": "kandoo.sync.v0",
+  "schema_version": "0",
+  "target_tasks": [
+    "P-05",
+    "P-07"
+  ],
+  "test_only": true,
+  "vector_count": 34,
+  "vectors": [
+    {
+      "expected_output": {
+        "qr": {
+          "device_role": "COMPANION",
+          "expires_at": "2026-10-22T08:05:00Z",
+          "hub_device_id": "22222222-2222-4222-8222-222222222222",
+          "issued_at": "2026-10-22T08:00:00Z",
+          "nonce": "AAECAwQFBgcICQoLDA0ODw",
+          "pairing_id": "pair-0001",
+          "protocol_version": "0",
+          "single_use": true,
+          "store_id": "11111111-1111-4111-8111-111111111111"
+        },
+        "status": "PAIRING_QR_ISSUED"
+      },
+      "id": "LAN-PAIR-001",
+      "input": {
+        "given": {
+          "hub_device_id": "22222222-2222-4222-8222-222222222222",
+          "now": "2026-10-22T08:00:00Z",
+          "owner_role": "OWNER",
+          "owner_user_id": "66666666-6666-4666-8666-666666666666",
+          "store_id": "11111111-1111-4111-8111-111111111111"
+        },
+        "steps": [
+          {
+            "action": "pairing_qr_issue",
+            "requested_device_role": "COMPANION"
+          }
+        ]
+      },
+      "scenario": "Owner creates a single-use companion pairing QR with the conservative five-minute expiry."
+    },
+    {
+      "expected_output": {
+        "device": {
+          "device_id": "33333333-3333-4333-8333-333333333333",
+          "device_role": "COMPANION",
+          "pairing_status": "ACTIVE",
+          "store_id": "11111111-1111-4111-8111-111111111111"
+        },
+        "hub_role_granted": false,
+        "qr_consumed": true,
+        "session": {
+          "device_id": "33333333-3333-4333-8333-333333333333",
+          "expires_at": "2026-10-22T09:00:00Z",
+          "issued_at": "2026-10-22T08:01:00Z",
+          "session_id": "99999999-9999-4999-8999-999999999999",
+          "status": "ACTIVE"
+        },
+        "status": "DEVICE_PAIRED"
+      },
+      "id": "LAN-PAIR-002",
+      "input": {
+        "given": {
+          "now": "2026-10-22T08:01:00Z",
+          "qr": {
+            "consumed": false,
+            "expires_at": "2026-10-22T08:05:00Z",
+            "hub_device_id": "22222222-2222-4222-8222-222222222222",
+            "pairing_id": "pair-0001",
+            "store_id": "11111111-1111-4111-8111-111111111111"
+          }
+        },
+        "steps": [
+          {
+            "action": "pairing_qr_consume",
+            "device_id": "33333333-3333-4333-8333-333333333333",
+            "device_public_key": "test-only-public-key-1",
+            "label": "Counter 1",
+            "nonce": "AAECAwQFBgcICQoLDA0ODw",
+            "platform": "WINDOWS"
+          }
+        ]
+      },
+      "scenario": "Companion consumes a valid owner-created QR and receives an active device pairing and session."
+    },
+    {
+      "expected_output": {
+        "device_count": 0,
+        "device_created": false,
+        "session_created": false,
+        "status": "PAIRING_EXPIRED"
+      },
+      "id": "LAN-PAIR-003",
+      "input": {
+        "given": {
+          "device_count": 0,
+          "now": "2026-10-22T08:05:00Z",
+          "qr": {
+            "consumed": false,
+            "expires_at": "2026-10-22T08:05:00Z",
+            "pairing_id": "pair-expired",
+            "store_id": "11111111-1111-4111-8111-111111111111"
+          }
+        },
+        "steps": [
+          {
+            "action": "pairing_qr_consume",
+            "device_id": "33333333-3333-4333-8333-333333333333",
+            "nonce": "AAECAwQFBgcICQoLDA0ODw"
+          }
+        ]
+      },
+      "scenario": "Expired pairing QR fails closed without creating a device or session."
+    },
+    {
+      "expected_output": {
+        "device_count": 1,
+        "device_created": false,
+        "session_created": false,
+        "status": "PAIRING_REPLAY_REJECTED"
+      },
+      "id": "LAN-PAIR-004",
+      "input": {
+        "given": {
+          "device_count": 1,
+          "now": "2026-10-22T08:02:00Z",
+          "qr": {
+            "consumed": true,
+            "expires_at": "2026-10-22T08:05:00Z",
+            "pairing_id": "pair-0001",
+            "store_id": "11111111-1111-4111-8111-111111111111"
+          }
+        },
+        "steps": [
+          {
+            "action": "pairing_qr_consume",
+            "device_id": "44444444-4444-4444-8444-444444444444",
+            "nonce": "AAECAwQFBgcICQoLDA0ODw"
+          }
+        ]
+      },
+      "scenario": "Single-use QR replay cannot pair another device."
+    },
+    {
+      "expected_output": {
+        "operation_id_namespace_unchanged": true,
+        "session": {
+          "device_id": "33333333-3333-4333-8333-333333333333",
+          "expires_at": "2026-10-22T09:30:00Z",
+          "issued_at": "2026-10-22T08:30:00Z",
+          "session_id": "session-resumed-0002",
+          "store_id": "11111111-1111-4111-8111-111111111111"
+        },
+        "status": "SESSION_ACTIVE",
+        "stored_request_hash_unchanged": true
+      },
+      "id": "LAN-SESSION-001",
+      "input": {
+        "given": {
+          "device": {
+            "device_id": "33333333-3333-4333-8333-333333333333",
+            "pairing_status": "ACTIVE",
+            "store_id": "11111111-1111-4111-8111-111111111111"
+          },
+          "now": "2026-10-22T08:30:00Z",
+          "old_session": {
+            "session_id": "99999999-9999-4999-8999-999999999999",
+            "status": "EXPIRED"
+          },
+          "stored_request_hash": "8b6fcb64f008a9d921bf44fe7a9346eb6a8898fa569904942be8a9f36b3eb8a6"
+        },
+        "steps": [
+          {
+            "action": "session_resume",
+            "device_credential_proof": "valid-test-device-proof",
+            "device_id": "33333333-3333-4333-8333-333333333333"
+          }
+        ]
+      },
+      "scenario": "An active paired device resumes with a new session without changing operation identity."
+    },
+    {
+      "expected_output": {
+        "device_pairing_status": "REVOKED",
+        "lock_release_reason": "DISCONNECT",
+        "lock_state": "RELEASED",
+        "operation_effects": 0,
+        "outbox_entries_added": 0,
+        "session_status": "REVOKED",
+        "status": "DEVICE_REVOKED"
+      },
+      "id": "LAN-SESSION-002",
+      "input": {
+        "given": {
+          "device": {
+            "device_id": "33333333-3333-4333-8333-333333333333",
+            "pairing_status": "ACTIVE",
+            "store_id": "11111111-1111-4111-8111-111111111111"
+          },
+          "lock": {
+            "device_id": "33333333-3333-4333-8333-333333333333",
+            "lock_id": "lock-0001",
+            "state": "ACTIVE"
+          },
+          "now": "2026-10-22T08:10:00Z",
+          "session": {
+            "session_id": "99999999-9999-4999-8999-999999999999",
+            "status": "ACTIVE"
+          }
+        },
+        "steps": [
+          {
+            "action": "device_revoke",
+            "device_id": "33333333-3333-4333-8333-333333333333",
+            "owner_user_id": "66666666-6666-4666-8666-666666666666"
+          },
+          {
+            "action": "submit_operation",
+            "request": {
+              "base_version": null,
+              "device_id": "33333333-3333-4333-8333-333333333333",
+              "operation_id": "op-late-0001",
+              "operation_type": "invoice.item_add",
+              "payload": {
+                "description": "late item",
+                "invoice_id": "77777777-7777-4777-8777-777777777777",
+                "quantity": 1
+              },
+              "request_hash": "f3e9ab540e53a7e698d276194336ae270f7c064e7e0e72efcb6c9a893ab88609",
+              "store_id": "11111111-1111-4111-8111-111111111111"
+            },
+            "session_id": "99999999-9999-4999-8999-999999999999"
+          }
+        ]
+      },
+      "scenario": "Device revocation invalidates its session, releases its lock as a disconnect, and blocks later mutations."
+    },
+    {
+      "expected_output": {
+        "atomic_commit": true,
+        "operation_records_added": 1,
+        "operation_seq": 41,
+        "outbox_entries_added": 1,
+        "product": {
+          "product_id": "prod-0001",
+          "unit_price_rials": 11000,
+          "version": 8
+        },
+        "request_hash": "8b6fcb64f008a9d921bf44fe7a9346eb6a8898fa569904942be8a9f36b3eb8a6",
+        "status": "SUCCEEDED"
+      },
+      "id": "LAN-OP-001",
+      "input": {
+        "given": {
+          "next_operation_seq": 41,
+          "now": "2026-10-22T08:01:00Z",
+          "product": {
+            "product_id": "prod-0001",
+            "unit_price_rials": 10000,
+            "version": 7
+          },
+          "session": {
+            "device_id": "33333333-3333-4333-8333-333333333333",
+            "session_id": "99999999-9999-4999-8999-999999999999",
+            "status": "ACTIVE",
+            "store_id": "11111111-1111-4111-8111-111111111111"
+          }
+        },
+        "steps": [
+          {
+            "action": "submit_operation",
+            "request": {
+              "base_version": 7,
+              "device_id": "33333333-3333-4333-8333-333333333333",
+              "operation_id": "op-product-0001",
+              "operation_type": "product.update",
+              "payload": {
+                "product_id": "prod-0001",
+                "unit_price_rials": 11000
+              },
+              "request_hash": "8b6fcb64f008a9d921bf44fe7a9346eb6a8898fa569904942be8a9f36b3eb8a6",
+              "store_id": "11111111-1111-4111-8111-111111111111"
+            },
+            "session_id": "99999999-9999-4999-8999-999999999999"
+          }
+        ]
+      },
+      "scenario": "Valid mutation is durably accepted once with OCC, response, domain effect, and outbox entry in one Hub transaction."
+    },
+    {
+      "expected_output": {
+        "idempotent_replay": true,
+        "operation_records_added": 0,
+        "operation_seq": 41,
+        "outbox_depth": 1,
+        "outbox_entries_added": 0,
+        "product_version": 8,
+        "status": "SUCCEEDED",
+        "version": 8
+      },
+      "id": "LAN-OP-002",
+      "input": {
+        "given": {
+          "now": "2026-10-22T08:01:10Z",
+          "outbox_depth": 1,
+          "product": {
+            "product_id": "prod-0001",
+            "unit_price_rials": 11000,
+            "version": 8
+          },
+          "session": {
+            "device_id": "33333333-3333-4333-8333-333333333333",
+            "session_id": "99999999-9999-4999-8999-999999999999",
+            "status": "ACTIVE",
+            "store_id": "11111111-1111-4111-8111-111111111111"
+          },
+          "stored_operation": {
+            "device_id": "33333333-3333-4333-8333-333333333333",
+            "operation_id": "op-product-0001",
+            "request_hash": "8b6fcb64f008a9d921bf44fe7a9346eb6a8898fa569904942be8a9f36b3eb8a6",
+            "response": {
+              "operation_seq": 41,
+              "status": "SUCCEEDED",
+              "version": 8
+            }
+          }
+        },
+        "steps": [
+          {
+            "action": "submit_operation",
+            "request": {
+              "base_version": 7,
+              "device_id": "33333333-3333-4333-8333-333333333333",
+              "operation_id": "op-product-0001",
+              "operation_type": "product.update",
+              "payload": {
+                "product_id": "prod-0001",
+                "unit_price_rials": 11000
+              },
+              "request_hash": "8b6fcb64f008a9d921bf44fe7a9346eb6a8898fa569904942be8a9f36b3eb8a6",
+              "store_id": "11111111-1111-4111-8111-111111111111"
+            },
+            "session_id": "99999999-9999-4999-8999-999999999999"
+          }
+        ]
+      },
+      "scenario": "Exact operation replay returns the original response without a new version or outbox entry."
+    },
+    {
+      "expected_output": {
+        "current_version": 8,
+        "domain_effects": 0,
+        "operation_records_added": 1,
+        "operation_seq": 42,
+        "outbox_entries_added": 1,
+        "product": {
+          "product_id": "prod-0001",
+          "specification": null,
+          "unit_price_rials": 11000,
+          "version": 8
+        },
+        "result_status": "REJECTED",
+        "status": "VERSION_CONFLICT"
+      },
+      "id": "LAN-OP-003",
+      "input": {
+        "given": {
+          "next_operation_seq": 42,
+          "now": "2026-10-22T08:03:00Z",
+          "product": {
+            "product_id": "prod-0001",
+            "specification": null,
+            "unit_price_rials": 11000,
+            "version": 8
+          },
+          "session": {
+            "device_id": "44444444-4444-4444-8444-444444444444",
+            "session_id": "99999999-9999-4999-8999-999999999999",
+            "status": "ACTIVE",
+            "store_id": "11111111-1111-4111-8111-111111111111"
+          }
+        },
+        "steps": [
+          {
+            "action": "submit_operation",
+            "request": {
+              "base_version": 7,
+              "device_id": "44444444-4444-4444-8444-444444444444",
+              "operation_id": "op-stale-0003",
+              "operation_type": "product.update",
+              "payload": {
+                "product_id": "prod-0001",
+                "specification": "stale edit"
+              },
+              "request_hash": "3f6dc2986fa086b5d958fd007618001ba04498cd0bb0536559dc8f12129127bc",
+              "store_id": "11111111-1111-4111-8111-111111111111"
+            },
+            "session_id": "99999999-9999-4999-8999-999999999999"
+          }
+        ]
+      },
+      "scenario": "Stale base_version returns an explicit conflict and no product effect while preserving the rejected operation result."
+    },
+    {
+      "expected_output": {
+        "operation_records_added": 0,
+        "original_response_unchanged": true,
+        "outbox_entries_added": 0,
+        "product_version": 8,
+        "status": "OPERATION_ID_CONFLICT",
+        "unit_price_rials": 11000
+      },
+      "id": "LAN-OP-004",
+      "input": {
+        "given": {
+          "now": "2026-10-22T08:04:00Z",
+          "product": {
+            "product_id": "prod-0001",
+            "unit_price_rials": 11000,
+            "version": 8
+          },
+          "session": {
+            "device_id": "33333333-3333-4333-8333-333333333333",
+            "session_id": "99999999-9999-4999-8999-999999999999",
+            "status": "ACTIVE",
+            "store_id": "11111111-1111-4111-8111-111111111111"
+          },
+          "stored_operation": {
+            "device_id": "33333333-3333-4333-8333-333333333333",
+            "operation_id": "op-product-0001",
+            "request_hash": "8b6fcb64f008a9d921bf44fe7a9346eb6a8898fa569904942be8a9f36b3eb8a6",
+            "response": {
+              "operation_seq": 41,
+              "status": "SUCCEEDED",
+              "version": 8
+            }
+          }
+        },
+        "steps": [
+          {
+            "action": "submit_operation",
+            "request": {
+              "base_version": 7,
+              "device_id": "33333333-3333-4333-8333-333333333333",
+              "operation_id": "op-product-0001",
+              "operation_type": "product.update",
+              "payload": {
+                "product_id": "prod-0001",
+                "unit_price_rials": 12000
+              },
+              "request_hash": "5c12f56947f85c30947961fa28c0dff3e54f554b8e90750f1a8b0aec399ed3ae",
+              "store_id": "11111111-1111-4111-8111-111111111111"
+            },
+            "session_id": "99999999-9999-4999-8999-999999999999"
+          }
+        ]
+      },
+      "scenario": "Reusing operation_id with changed payload is a hard conflict and does not replace the original result."
+    },
+    {
+      "expected_output": {
+        "atomic_commit": true,
+        "invoice": {
+          "display_number": 42,
+          "invoice_id": "77777777-7777-4777-8777-777777777777",
+          "retired": false,
+          "status": "DRAFT"
+        },
+        "lock": {
+          "acquired_at": "2026-10-22T08:00:00Z",
+          "customer_phone": "+989120000001",
+          "device_id": "33333333-3333-4333-8333-333333333333",
+          "expires_at": "2026-10-22T08:05:00Z",
+          "invoice_id": "77777777-7777-4777-8777-777777777777",
+          "last_activity_at": "2026-10-22T08:00:00Z",
+          "lock_id": "lock-0001",
+          "state": "ACTIVE",
+          "store_id": "11111111-1111-4111-8111-111111111111",
+          "timeout_seconds": 300
+        },
+        "status": "SUCCEEDED"
+      },
+      "id": "LAN-LOCK-001",
+      "input": {
+        "given": {
+          "active_lock": null,
+          "next_display_number": 42,
+          "next_invoice_id": "77777777-7777-4777-8777-777777777777",
+          "now": "2026-10-22T08:00:00Z",
+          "session": {
+            "device_id": "33333333-3333-4333-8333-333333333333",
+            "session_id": "99999999-9999-4999-8999-999999999999",
+            "status": "ACTIVE",
+            "store_id": "11111111-1111-4111-8111-111111111111"
+          }
+        },
+        "steps": [
+          {
+            "action": "submit_operation",
+            "request": {
+              "base_version": null,
+              "device_id": "33333333-3333-4333-8333-333333333333",
+              "operation_id": "op-draft-0001",
+              "operation_type": "invoice.draft_create",
+              "payload": {
+                "customer_phone": "+989120000001"
+              },
+              "request_hash": "200c7a5ba9a17993d328fe9f2390a3f5070c7f359c9c797b769732aa914b6b3e",
+              "store_id": "11111111-1111-4111-8111-111111111111"
+            },
+            "session_id": "99999999-9999-4999-8999-999999999999"
+          }
+        ]
+      },
+      "scenario": "Draft creation atomically acquires a normalized-phone lock with the 300-second default."
+    },
+    {
+      "expected_output": {
+        "active_lock_count": 1,
+        "display_number_consumed": false,
+        "invoice_created": false,
+        "next_display_number": 43,
+        "second_lock_created": false,
+        "status": "DRAFT_LOCK_CONFLICT"
+      },
+      "id": "LAN-LOCK-002",
+      "input": {
+        "given": {
+          "active_lock": {
+            "customer_phone": "+989120000001",
+            "device_id": "33333333-3333-4333-8333-333333333333",
+            "expires_at": "2026-10-22T08:05:00Z",
+            "invoice_id": "77777777-7777-4777-8777-777777777777",
+            "lock_id": "lock-0001",
+            "state": "ACTIVE",
+            "store_id": "11111111-1111-4111-8111-111111111111"
+          },
+          "next_display_number": 43,
+          "now": "2026-10-22T08:01:00Z"
+        },
+        "steps": [
+          {
+            "action": "submit_operation",
+            "request": {
+              "base_version": null,
+              "device_id": "44444444-4444-4444-8444-444444444444",
+              "operation_id": "op-draft-0002",
+              "operation_type": "invoice.draft_create",
+              "payload": {
+                "customer_phone": "+989120000001"
+              },
+              "request_hash": "13c40fd27eaa531c5140c13a25fea71a8ee89ab2a5da5bf5468ccbf402a2a773",
+              "store_id": "11111111-1111-4111-8111-111111111111"
+            },
+            "session_id": "session-device-2"
+          }
+        ]
+      },
+      "scenario": "A second device receives a hard conflict for the same normalized phone and consumes no invoice number."
+    },
+    {
+      "expected_output": {
+        "active_lock_count": 1,
+        "display_number": 42,
+        "idempotent_replay": true,
+        "invoice_id": "77777777-7777-4777-8777-777777777777",
+        "lock_id": "lock-0001",
+        "outbox_entries_added": 0,
+        "status": "SUCCEEDED"
+      },
+      "id": "LAN-LOCK-003",
+      "input": {
+        "given": {
+          "active_lock": {
+            "device_id": "33333333-3333-4333-8333-333333333333",
+            "invoice_id": "77777777-7777-4777-8777-777777777777",
+            "lock_id": "lock-0001",
+            "state": "ACTIVE"
+          },
+          "now": "2026-10-22T08:01:30Z",
+          "outbox_depth": 1,
+          "stored_operation": {
+            "device_id": "33333333-3333-4333-8333-333333333333",
+            "operation_id": "op-draft-0001",
+            "request_hash": "200c7a5ba9a17993d328fe9f2390a3f5070c7f359c9c797b769732aa914b6b3e",
+            "response": {
+              "display_number": 42,
+              "invoice_id": "77777777-7777-4777-8777-777777777777",
+              "status": "SUCCEEDED"
+            }
+          }
+        },
+        "steps": [
+          {
+            "action": "submit_operation",
+            "request": {
+              "base_version": null,
+              "device_id": "33333333-3333-4333-8333-333333333333",
+              "operation_id": "op-draft-0001",
+              "operation_type": "invoice.draft_create",
+              "payload": {
+                "customer_phone": "+989120000001"
+              },
+              "request_hash": "200c7a5ba9a17993d328fe9f2390a3f5070c7f359c9c797b769732aa914b6b3e",
+              "store_id": "11111111-1111-4111-8111-111111111111"
+            },
+            "session_id": "99999999-9999-4999-8999-999999999999"
+          }
+        ]
+      },
+      "scenario": "The lock-owning device exact replay follows idempotency rather than producing a lock conflict."
+    },
+    {
+      "expected_output": {
+        "first_invoice_status": "ISSUED",
+        "first_lock_release_reason": "ISSUE",
+        "second_display_number": 43,
+        "second_draft_acquired": true,
+        "second_invoice_id": "88888888-8888-4888-8888-888888888888",
+        "second_lock_device_id": "44444444-4444-4444-8444-444444444444",
+        "sequential_purchase_allowed": true,
+        "status": "SUCCEEDED"
+      },
+      "id": "LAN-LOCK-004",
+      "input": {
+        "given": {
+          "active_lock": {
+            "customer_phone": "+989120000001",
+            "device_id": "33333333-3333-4333-8333-333333333333",
+            "invoice_id": "77777777-7777-4777-8777-777777777777",
+            "lock_id": "lock-0001",
+            "state": "ACTIVE"
+          },
+          "invoice": {
+            "display_number": 42,
+            "invoice_id": "77777777-7777-4777-8777-777777777777",
+            "status": "VALIDATED"
+          },
+          "next_display_number": 43,
+          "next_invoice_id": "88888888-8888-4888-8888-888888888888",
+          "now": "2026-10-22T08:02:00Z"
+        },
+        "steps": [
+          {
+            "action": "submit_operation",
+            "request": {
+              "base_version": null,
+              "device_id": "33333333-3333-4333-8333-333333333333",
+              "operation_id": "op-issue-0001",
+              "operation_type": "invoice.issue",
+              "payload": {
+                "invoice_id": "77777777-7777-4777-8777-777777777777"
+              },
+              "request_hash": "b832cb046171148601dbea199900b634dd5850cb9a3ea5baeedc92db06ff735f",
+              "store_id": "11111111-1111-4111-8111-111111111111"
+            },
+            "session_id": "99999999-9999-4999-8999-999999999999"
+          },
+          {
+            "action": "submit_operation",
+            "at": "2026-10-22T08:02:01Z",
+            "request": {
+              "base_version": null,
+              "device_id": "44444444-4444-4444-8444-444444444444",
+              "operation_id": "op-draft-0002",
+              "operation_type": "invoice.draft_create",
+              "payload": {
+                "customer_phone": "+989120000001"
+              },
+              "request_hash": "13c40fd27eaa531c5140c13a25fea71a8ee89ab2a5da5bf5468ccbf402a2a773",
+              "store_id": "11111111-1111-4111-8111-111111111111"
+            },
+            "session_id": "session-device-2"
+          }
+        ]
+      },
+      "scenario": "Issue releases the phone lock and a second device can make a sequential purchase immediately."
+    },
+    {
+      "expected_output": {
+        "draft_retired": true,
+        "new_device_may_acquire": true,
+        "old_device_write_allowed": false,
+        "release_reason": "TIMEOUT",
+        "retirement_reason": "TIMEOUT",
+        "state_at_299_seconds": "ACTIVE",
+        "state_at_300_seconds": "RELEASED",
+        "status": "LOCK_TIMEOUT"
+      },
+      "id": "LAN-LOCK-005",
+      "input": {
+        "given": {
+          "invoice": {
+            "invoice_id": "77777777-7777-4777-8777-777777777777",
+            "retired": false,
+            "status": "DRAFT"
+          },
+          "lock": {
+            "customer_phone": "+989120000001",
+            "device_id": "33333333-3333-4333-8333-333333333333",
+            "expires_at": "2026-10-22T08:05:00Z",
+            "invoice_id": "77777777-7777-4777-8777-777777777777",
+            "last_activity_at": "2026-10-22T08:00:00Z",
+            "lock_id": "lock-0001",
+            "state": "ACTIVE",
+            "timeout_seconds": 300
+          },
+          "now": "2026-10-22T08:04:59Z"
+        },
+        "steps": [
+          {
+            "action": "lock_evaluate",
+            "at": "2026-10-22T08:04:59Z"
+          },
+          {
+            "action": "lock_evaluate",
+            "at": "2026-10-22T08:05:00Z"
+          }
+        ]
+      },
+      "scenario": "Hub-time inactivity expires the default lock at exactly 300 seconds and retires the abandoned draft."
+    },
+    {
+      "expected_output": {
+        "another_device_may_acquire": true,
+        "late_write_effects": 0,
+        "lock_reactivated": false,
+        "lock_release_reason": "DISCONNECT",
+        "lock_state": "RELEASED",
+        "status": "LOCK_NOT_OWNED"
+      },
+      "id": "LAN-LOCK-006",
+      "input": {
+        "given": {
+          "lock": {
+            "customer_phone": "+989120000001",
+            "device_id": "33333333-3333-4333-8333-333333333333",
+            "invoice_id": "77777777-7777-4777-8777-777777777777",
+            "lock_id": "lock-0001",
+            "state": "ACTIVE"
+          },
+          "now": "2026-10-22T08:03:00Z",
+          "session": {
+            "device_id": "33333333-3333-4333-8333-333333333333",
+            "session_id": "99999999-9999-4999-8999-999999999999",
+            "status": "ACTIVE"
+          }
+        },
+        "steps": [
+          {
+            "action": "client_disconnect",
+            "device_id": "33333333-3333-4333-8333-333333333333",
+            "session_id": "99999999-9999-4999-8999-999999999999"
+          },
+          {
+            "action": "submit_operation",
+            "request": {
+              "base_version": null,
+              "device_id": "33333333-3333-4333-8333-333333333333",
+              "operation_id": "op-late-0001",
+              "operation_type": "invoice.item_add",
+              "payload": {
+                "description": "late item",
+                "invoice_id": "77777777-7777-4777-8777-777777777777",
+                "quantity": 1
+              },
+              "request_hash": "f3e9ab540e53a7e698d276194336ae270f7c064e7e0e72efcb6c9a893ab88609",
+              "store_id": "11111111-1111-4111-8111-111111111111"
+            },
+            "session_id": "99999999-9999-4999-8999-999999999999"
+          }
+        ]
+      },
+      "scenario": "Hub-observed disconnect releases the lock and a late owner write cannot regain ownership."
+    },
+    {
+      "expected_output": {
+        "authoritative_draft_created": false,
+        "display_number_consumed": false,
+        "local_outbox_created": false,
+        "next_display_number": 43,
+        "operation_seq_consumed": false,
+        "retry_same_operation_id_allowed": true,
+        "status": "HUB_UNAVAILABLE"
+      },
+      "id": "LAN-HUB-001",
+      "input": {
+        "given": {
+          "companion_device_id": "33333333-3333-4333-8333-333333333333",
+          "hub_lan_reachable": false,
+          "next_display_number": 43,
+          "now": "2026-10-22T08:10:00Z"
+        },
+        "steps": [
+          {
+            "action": "companion_submit_when_hub_unavailable",
+            "request": {
+              "base_version": null,
+              "device_id": "33333333-3333-4333-8333-333333333333",
+              "operation_id": "op-draft-0001",
+              "operation_type": "invoice.draft_create",
+              "payload": {
+                "customer_phone": "+989120000001"
+              },
+              "request_hash": "200c7a5ba9a17993d328fe9f2390a3f5070c7f359c9c797b769732aa914b6b3e",
+              "store_id": "11111111-1111-4111-8111-111111111111"
+            }
+          }
+        ]
+      },
+      "scenario": "Hub-off behavior blocks new companion work without creating authoritative local state."
+    },
+    {
+      "expected_output": {
+        "accepted_through_seq": 42,
+        "atomic_commit": true,
+        "duplicate_count": 0,
+        "entry_count": 42,
+        "entry_hashes": [
+          "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+          "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d"
+        ],
+        "head_entry_hash": "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d",
+        "ingested_count": 2,
+        "status": "ACCEPTED"
+      },
+      "id": "CLOUD-001",
+      "input": {
+        "given": {
+          "cloud": {
+            "accepted_through_seq": 40,
+            "active_writer_device_id": "22222222-2222-4222-8222-222222222222",
+            "active_writer_epoch": 3,
+            "entry_count": 40,
+            "head_entry_hash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+          }
+        },
+        "steps": [
+          {
+            "action": "cloud_ingest",
+            "batch": {
+              "batch_id": "batch-0001",
+              "entries": [
+                {
+                  "base_version": 7,
+                  "device_id": "33333333-3333-4333-8333-333333333333",
+                  "entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+                  "hub_recorded_at": "2026-10-22T08:01:00Z",
+                  "operation_id": "op-product-0001",
+                  "operation_seq": 41,
+                  "operation_type": "product.update",
+                  "outcome": {
+                    "result_status": "SUCCEEDED",
+                    "version": 8
+                  },
+                  "payload": {
+                    "product_id": "prod-0001",
+                    "unit_price_rials": 11000
+                  },
+                  "previous_entry_hash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+                  "protocol_version": "0",
+                  "request_hash": "8b6fcb64f008a9d921bf44fe7a9346eb6a8898fa569904942be8a9f36b3eb8a6",
+                  "response_snapshot": {
+                    "operation_seq": 41,
+                    "status": "SUCCEEDED",
+                    "version": 8
+                  },
+                  "store_id": "11111111-1111-4111-8111-111111111111",
+                  "writer_device_id": "22222222-2222-4222-8222-222222222222",
+                  "writer_epoch": 3
+                },
+                {
+                  "base_version": null,
+                  "device_id": "44444444-4444-4444-8444-444444444444",
+                  "entry_hash": "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d",
+                  "hub_recorded_at": "2026-10-22T08:02:00Z",
+                  "operation_id": "op-inventory-0002",
+                  "operation_seq": 42,
+                  "operation_type": "inventory.append",
+                  "outcome": {
+                    "result_status": "SUCCEEDED",
+                    "stock": 8
+                  },
+                  "payload": {
+                    "product_id": "prod-0001",
+                    "quantity_delta": -2,
+                    "reason": "SALE"
+                  },
+                  "previous_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+                  "protocol_version": "0",
+                  "request_hash": "6786ca9246a0e00a696eea8569c3b6867c8e94e45bc83e0dddff2e13797b6e21",
+                  "response_snapshot": {
+                    "operation_seq": 42,
+                    "status": "SUCCEEDED",
+                    "stock": 8
+                  },
+                  "store_id": "11111111-1111-4111-8111-111111111111",
+                  "writer_device_id": "22222222-2222-4222-8222-222222222222",
+                  "writer_epoch": 3
+                }
+              ],
+              "store_id": "11111111-1111-4111-8111-111111111111",
+              "writer_device_id": "22222222-2222-4222-8222-222222222222",
+              "writer_epoch": 3
+            }
+          }
+        ]
+      },
+      "scenario": "Contiguous ascending log batch is ingested atomically and advances the store high watermark."
+    },
+    {
+      "expected_output": {
+        "accepted_through_seq": 42,
+        "duplicate_count": 2,
+        "entry_count": 42,
+        "ingested_count": 0,
+        "projection_version": 42,
+        "side_effects": 0,
+        "status": "DUPLICATE"
+      },
+      "id": "CLOUD-002",
+      "input": {
+        "given": {
+          "cloud": {
+            "accepted_through_seq": 42,
+            "active_writer_device_id": "22222222-2222-4222-8222-222222222222",
+            "active_writer_epoch": 3,
+            "entries": [
+              {
+                "base_version": 7,
+                "device_id": "33333333-3333-4333-8333-333333333333",
+                "entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+                "hub_recorded_at": "2026-10-22T08:01:00Z",
+                "operation_id": "op-product-0001",
+                "operation_seq": 41,
+                "operation_type": "product.update",
+                "outcome": {
+                  "result_status": "SUCCEEDED",
+                  "version": 8
+                },
+                "payload": {
+                  "product_id": "prod-0001",
+                  "unit_price_rials": 11000
+                },
+                "previous_entry_hash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+                "protocol_version": "0",
+                "request_hash": "8b6fcb64f008a9d921bf44fe7a9346eb6a8898fa569904942be8a9f36b3eb8a6",
+                "response_snapshot": {
+                  "operation_seq": 41,
+                  "status": "SUCCEEDED",
+                  "version": 8
+                },
+                "store_id": "11111111-1111-4111-8111-111111111111",
+                "writer_device_id": "22222222-2222-4222-8222-222222222222",
+                "writer_epoch": 3
+              },
+              {
+                "base_version": null,
+                "device_id": "44444444-4444-4444-8444-444444444444",
+                "entry_hash": "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d",
+                "hub_recorded_at": "2026-10-22T08:02:00Z",
+                "operation_id": "op-inventory-0002",
+                "operation_seq": 42,
+                "operation_type": "inventory.append",
+                "outcome": {
+                  "result_status": "SUCCEEDED",
+                  "stock": 8
+                },
+                "payload": {
+                  "product_id": "prod-0001",
+                  "quantity_delta": -2,
+                  "reason": "SALE"
+                },
+                "previous_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+                "protocol_version": "0",
+                "request_hash": "6786ca9246a0e00a696eea8569c3b6867c8e94e45bc83e0dddff2e13797b6e21",
+                "response_snapshot": {
+                  "operation_seq": 42,
+                  "status": "SUCCEEDED",
+                  "stock": 8
+                },
+                "store_id": "11111111-1111-4111-8111-111111111111",
+                "writer_device_id": "22222222-2222-4222-8222-222222222222",
+                "writer_epoch": 3
+              }
+            ],
+            "entry_count": 42,
+            "head_entry_hash": "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d"
+          },
+          "projection_version": 42
+        },
+        "steps": [
+          {
+            "action": "cloud_ingest",
+            "batch": {
+              "batch_id": "batch-0001",
+              "entries": [
+                {
+                  "base_version": 7,
+                  "device_id": "33333333-3333-4333-8333-333333333333",
+                  "entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+                  "hub_recorded_at": "2026-10-22T08:01:00Z",
+                  "operation_id": "op-product-0001",
+                  "operation_seq": 41,
+                  "operation_type": "product.update",
+                  "outcome": {
+                    "result_status": "SUCCEEDED",
+                    "version": 8
+                  },
+                  "payload": {
+                    "product_id": "prod-0001",
+                    "unit_price_rials": 11000
+                  },
+                  "previous_entry_hash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+                  "protocol_version": "0",
+                  "request_hash": "8b6fcb64f008a9d921bf44fe7a9346eb6a8898fa569904942be8a9f36b3eb8a6",
+                  "response_snapshot": {
+                    "operation_seq": 41,
+                    "status": "SUCCEEDED",
+                    "version": 8
+                  },
+                  "store_id": "11111111-1111-4111-8111-111111111111",
+                  "writer_device_id": "22222222-2222-4222-8222-222222222222",
+                  "writer_epoch": 3
+                },
+                {
+                  "base_version": null,
+                  "device_id": "44444444-4444-4444-8444-444444444444",
+                  "entry_hash": "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d",
+                  "hub_recorded_at": "2026-10-22T08:02:00Z",
+                  "operation_id": "op-inventory-0002",
+                  "operation_seq": 42,
+                  "operation_type": "inventory.append",
+                  "outcome": {
+                    "result_status": "SUCCEEDED",
+                    "stock": 8
+                  },
+                  "payload": {
+                    "product_id": "prod-0001",
+                    "quantity_delta": -2,
+                    "reason": "SALE"
+                  },
+                  "previous_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+                  "protocol_version": "0",
+                  "request_hash": "6786ca9246a0e00a696eea8569c3b6867c8e94e45bc83e0dddff2e13797b6e21",
+                  "response_snapshot": {
+                    "operation_seq": 42,
+                    "status": "SUCCEEDED",
+                    "stock": 8
+                  },
+                  "store_id": "11111111-1111-4111-8111-111111111111",
+                  "writer_device_id": "22222222-2222-4222-8222-222222222222",
+                  "writer_epoch": 3
+                }
+              ],
+              "store_id": "11111111-1111-4111-8111-111111111111",
+              "writer_device_id": "22222222-2222-4222-8222-222222222222",
+              "writer_epoch": 3
+            }
+          }
+        ]
+      },
+      "scenario": "Duplicate delivery of an already ingested batch is acknowledged without new entries or projections."
+    },
+    {
+      "expected_output": {
+        "accepted_through_seq": 40,
+        "entry_count": 40,
+        "expected_seq": 41,
+        "ingested_count": 0,
+        "received_seq": 42,
+        "retry_from_seq": 41,
+        "status": "GAP_DETECTED"
+      },
+      "id": "CLOUD-003",
+      "input": {
+        "given": {
+          "cloud": {
+            "accepted_through_seq": 40,
+            "active_writer_device_id": "22222222-2222-4222-8222-222222222222",
+            "active_writer_epoch": 3,
+            "entry_count": 40,
+            "head_entry_hash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+          }
+        },
+        "steps": [
+          {
+            "action": "cloud_ingest",
+            "batch": {
+              "batch_id": "batch-gap",
+              "entries": [
+                {
+                  "base_version": null,
+                  "device_id": "44444444-4444-4444-8444-444444444444",
+                  "entry_hash": "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d",
+                  "hub_recorded_at": "2026-10-22T08:02:00Z",
+                  "operation_id": "op-inventory-0002",
+                  "operation_seq": 42,
+                  "operation_type": "inventory.append",
+                  "outcome": {
+                    "result_status": "SUCCEEDED",
+                    "stock": 8
+                  },
+                  "payload": {
+                    "product_id": "prod-0001",
+                    "quantity_delta": -2,
+                    "reason": "SALE"
+                  },
+                  "previous_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+                  "protocol_version": "0",
+                  "request_hash": "6786ca9246a0e00a696eea8569c3b6867c8e94e45bc83e0dddff2e13797b6e21",
+                  "response_snapshot": {
+                    "operation_seq": 42,
+                    "status": "SUCCEEDED",
+                    "stock": 8
+                  },
+                  "store_id": "11111111-1111-4111-8111-111111111111",
+                  "writer_device_id": "22222222-2222-4222-8222-222222222222",
+                  "writer_epoch": 3
+                }
+              ],
+              "store_id": "11111111-1111-4111-8111-111111111111",
+              "writer_device_id": "22222222-2222-4222-8222-222222222222",
+              "writer_epoch": 3
+            }
+          }
+        ]
+      },
+      "scenario": "A gap fails closed and reports the first missing operation sequence."
+    },
+    {
+      "expected_output": {
+        "accepted_through_seq": 40,
+        "entry_count": 40,
+        "ingested_count": 0,
+        "partial_projection_applied": false,
+        "status": "SEQUENCE_ORDER_VIOLATION"
+      },
+      "id": "CLOUD-004",
+      "input": {
+        "given": {
+          "cloud": {
+            "accepted_through_seq": 40,
+            "active_writer_device_id": "22222222-2222-4222-8222-222222222222",
+            "active_writer_epoch": 3,
+            "entry_count": 40
+          }
+        },
+        "steps": [
+          {
+            "action": "cloud_ingest",
+            "batch": {
+              "batch_id": "batch-order",
+              "entries": [
+                {
+                  "base_version": null,
+                  "device_id": "44444444-4444-4444-8444-444444444444",
+                  "entry_hash": "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d",
+                  "hub_recorded_at": "2026-10-22T08:02:00Z",
+                  "operation_id": "op-inventory-0002",
+                  "operation_seq": 42,
+                  "operation_type": "inventory.append",
+                  "outcome": {
+                    "result_status": "SUCCEEDED",
+                    "stock": 8
+                  },
+                  "payload": {
+                    "product_id": "prod-0001",
+                    "quantity_delta": -2,
+                    "reason": "SALE"
+                  },
+                  "previous_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+                  "protocol_version": "0",
+                  "request_hash": "6786ca9246a0e00a696eea8569c3b6867c8e94e45bc83e0dddff2e13797b6e21",
+                  "response_snapshot": {
+                    "operation_seq": 42,
+                    "status": "SUCCEEDED",
+                    "stock": 8
+                  },
+                  "store_id": "11111111-1111-4111-8111-111111111111",
+                  "writer_device_id": "22222222-2222-4222-8222-222222222222",
+                  "writer_epoch": 3
+                },
+                {
+                  "base_version": 7,
+                  "device_id": "33333333-3333-4333-8333-333333333333",
+                  "entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+                  "hub_recorded_at": "2026-10-22T08:01:00Z",
+                  "operation_id": "op-product-0001",
+                  "operation_seq": 41,
+                  "operation_type": "product.update",
+                  "outcome": {
+                    "result_status": "SUCCEEDED",
+                    "version": 8
+                  },
+                  "payload": {
+                    "product_id": "prod-0001",
+                    "unit_price_rials": 11000
+                  },
+                  "previous_entry_hash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+                  "protocol_version": "0",
+                  "request_hash": "8b6fcb64f008a9d921bf44fe7a9346eb6a8898fa569904942be8a9f36b3eb8a6",
+                  "response_snapshot": {
+                    "operation_seq": 41,
+                    "status": "SUCCEEDED",
+                    "version": 8
+                  },
+                  "store_id": "11111111-1111-4111-8111-111111111111",
+                  "writer_device_id": "22222222-2222-4222-8222-222222222222",
+                  "writer_epoch": 3
+                }
+              ],
+              "store_id": "11111111-1111-4111-8111-111111111111",
+              "writer_device_id": "22222222-2222-4222-8222-222222222222",
+              "writer_epoch": 3
+            }
+          }
+        ]
+      },
+      "scenario": "Out-of-order entries inside a batch are rejected without partial ingest."
+    },
+    {
+      "expected_output": {
+        "accepted_through_seq": 42,
+        "entry_count": 42,
+        "first_attempt_committed": true,
+        "operation_id_count": 2,
+        "second_attempt_ingested_count": 0,
+        "side_effects_replayed": 0,
+        "status": "DUPLICATE"
+      },
+      "id": "CLOUD-005",
+      "input": {
+        "given": {
+          "cloud": {
+            "accepted_through_seq": 40,
+            "active_writer_device_id": "22222222-2222-4222-8222-222222222222",
+            "active_writer_epoch": 3,
+            "entry_count": 40
+          }
+        },
+        "steps": [
+          {
+            "action": "cloud_ingest",
+            "batch": {
+              "batch_id": "batch-0001",
+              "entries": [
+                {
+                  "base_version": 7,
+                  "device_id": "33333333-3333-4333-8333-333333333333",
+                  "entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+                  "hub_recorded_at": "2026-10-22T08:01:00Z",
+                  "operation_id": "op-product-0001",
+                  "operation_seq": 41,
+                  "operation_type": "product.update",
+                  "outcome": {
+                    "result_status": "SUCCEEDED",
+                    "version": 8
+                  },
+                  "payload": {
+                    "product_id": "prod-0001",
+                    "unit_price_rials": 11000
+                  },
+                  "previous_entry_hash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+                  "protocol_version": "0",
+                  "request_hash": "8b6fcb64f008a9d921bf44fe7a9346eb6a8898fa569904942be8a9f36b3eb8a6",
+                  "response_snapshot": {
+                    "operation_seq": 41,
+                    "status": "SUCCEEDED",
+                    "version": 8
+                  },
+                  "store_id": "11111111-1111-4111-8111-111111111111",
+                  "writer_device_id": "22222222-2222-4222-8222-222222222222",
+                  "writer_epoch": 3
+                },
+                {
+                  "base_version": null,
+                  "device_id": "44444444-4444-4444-8444-444444444444",
+                  "entry_hash": "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d",
+                  "hub_recorded_at": "2026-10-22T08:02:00Z",
+                  "operation_id": "op-inventory-0002",
+                  "operation_seq": 42,
+                  "operation_type": "inventory.append",
+                  "outcome": {
+                    "result_status": "SUCCEEDED",
+                    "stock": 8
+                  },
+                  "payload": {
+                    "product_id": "prod-0001",
+                    "quantity_delta": -2,
+                    "reason": "SALE"
+                  },
+                  "previous_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+                  "protocol_version": "0",
+                  "request_hash": "6786ca9246a0e00a696eea8569c3b6867c8e94e45bc83e0dddff2e13797b6e21",
+                  "response_snapshot": {
+                    "operation_seq": 42,
+                    "status": "SUCCEEDED",
+                    "stock": 8
+                  },
+                  "store_id": "11111111-1111-4111-8111-111111111111",
+                  "writer_device_id": "22222222-2222-4222-8222-222222222222",
+                  "writer_epoch": 3
+                }
+              ],
+              "store_id": "11111111-1111-4111-8111-111111111111",
+              "writer_device_id": "22222222-2222-4222-8222-222222222222",
+              "writer_epoch": 3
+            },
+            "commit": true,
+            "response_delivered": false
+          },
+          {
+            "action": "cloud_ingest",
+            "batch": {
+              "batch_id": "batch-0001",
+              "entries": [
+                {
+                  "base_version": 7,
+                  "device_id": "33333333-3333-4333-8333-333333333333",
+                  "entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+                  "hub_recorded_at": "2026-10-22T08:01:00Z",
+                  "operation_id": "op-product-0001",
+                  "operation_seq": 41,
+                  "operation_type": "product.update",
+                  "outcome": {
+                    "result_status": "SUCCEEDED",
+                    "version": 8
+                  },
+                  "payload": {
+                    "product_id": "prod-0001",
+                    "unit_price_rials": 11000
+                  },
+                  "previous_entry_hash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+                  "protocol_version": "0",
+                  "request_hash": "8b6fcb64f008a9d921bf44fe7a9346eb6a8898fa569904942be8a9f36b3eb8a6",
+                  "response_snapshot": {
+                    "operation_seq": 41,
+                    "status": "SUCCEEDED",
+                    "version": 8
+                  },
+                  "store_id": "11111111-1111-4111-8111-111111111111",
+                  "writer_device_id": "22222222-2222-4222-8222-222222222222",
+                  "writer_epoch": 3
+                },
+                {
+                  "base_version": null,
+                  "device_id": "44444444-4444-4444-8444-444444444444",
+                  "entry_hash": "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d",
+                  "hub_recorded_at": "2026-10-22T08:02:00Z",
+                  "operation_id": "op-inventory-0002",
+                  "operation_seq": 42,
+                  "operation_type": "inventory.append",
+                  "outcome": {
+                    "result_status": "SUCCEEDED",
+                    "stock": 8
+                  },
+                  "payload": {
+                    "product_id": "prod-0001",
+                    "quantity_delta": -2,
+                    "reason": "SALE"
+                  },
+                  "previous_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+                  "protocol_version": "0",
+                  "request_hash": "6786ca9246a0e00a696eea8569c3b6867c8e94e45bc83e0dddff2e13797b6e21",
+                  "response_snapshot": {
+                    "operation_seq": 42,
+                    "status": "SUCCEEDED",
+                    "stock": 8
+                  },
+                  "store_id": "11111111-1111-4111-8111-111111111111",
+                  "writer_device_id": "22222222-2222-4222-8222-222222222222",
+                  "writer_epoch": 3
+                }
+              ],
+              "store_id": "11111111-1111-4111-8111-111111111111",
+              "writer_device_id": "22222222-2222-4222-8222-222222222222",
+              "writer_epoch": 3
+            }
+          }
+        ]
+      },
+      "scenario": "Retry after a lost commit response is idempotent and does not duplicate the log."
+    },
+    {
+      "expected_output": {
+        "accepted_through_seq": 40,
+        "hub_outbox_depth": 5,
+        "ingested_count": 0,
+        "max_batch_bytes": 65536,
+        "max_batch_entries": 2,
+        "outbox_entries_discarded": 0,
+        "parallel_uploads_per_store_allowed": false,
+        "retry_after_ms": 2000,
+        "status": "THROTTLED"
+      },
+      "id": "CLOUD-006",
+      "input": {
+        "given": {
+          "cloud": {
+            "accepted_through_seq": 40,
+            "active_writer_device_id": "22222222-2222-4222-8222-222222222222",
+            "active_writer_epoch": 3,
+            "capacity": "THROTTLED"
+          },
+          "hub": {
+            "next_operation_seq": 46,
+            "outbox_depth": 5
+          }
+        },
+        "steps": [
+          {
+            "action": "cloud_ingest",
+            "batch": {
+              "batch_id": "batch-large",
+              "entry_count": 5,
+              "store_id": "11111111-1111-4111-8111-111111111111",
+              "writer_device_id": "22222222-2222-4222-8222-222222222222",
+              "writer_epoch": 3
+            }
+          }
+        ]
+      },
+      "scenario": "Cloud backpressure retains the durable outbox and returns retry and batch limits."
+    },
+    {
+      "expected_output": {
+        "accepted_through_seq": 40,
+        "automatic_overwrite": false,
+        "entry_count": 40,
+        "supplied_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+        "recomputed_entry_hash": "387ca0f3d13d21a4b4373898e1c0c58dd44f6d7adca1ec01556027e5ae0a97b8",
+        "ingested_count": 0,
+        "quarantine": "REVIEW",
+        "status": "ENTRY_HASH_MISMATCH"
+      },
+      "id": "CLOUD-007",
+      "input": {
+        "given": {
+          "cloud": {
+            "accepted_through_seq": 40,
+            "active_writer_device_id": "22222222-2222-4222-8222-222222222222",
+            "active_writer_epoch": 3,
+            "entry_count": 40
+          }
+        },
+        "steps": [
+          {
+            "action": "cloud_ingest",
+            "batch": {
+              "batch_id": "batch-bad-hash",
+              "entries": [
+                {
+                  "base_version": 7,
+                  "device_id": "33333333-3333-4333-8333-333333333333",
+                  "entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+                  "hub_recorded_at": "2026-10-22T08:01:00Z",
+                  "operation_id": "op-product-0001",
+                  "operation_seq": 41,
+                  "operation_type": "product.update",
+                  "outcome": {
+                    "result_status": "SUCCEEDED",
+                    "version": 9
+                  },
+                  "payload": {
+                    "product_id": "prod-0001",
+                    "unit_price_rials": 11000
+                  },
+                  "previous_entry_hash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+                  "protocol_version": "0",
+                  "request_hash": "8b6fcb64f008a9d921bf44fe7a9346eb6a8898fa569904942be8a9f36b3eb8a6",
+                  "response_snapshot": {
+                    "operation_seq": 41,
+                    "status": "SUCCEEDED",
+                    "version": 8
+                  },
+                  "store_id": "11111111-1111-4111-8111-111111111111",
+                  "writer_device_id": "22222222-2222-4222-8222-222222222222",
+                  "writer_epoch": 3
+                }
+              ],
+              "store_id": "11111111-1111-4111-8111-111111111111",
+              "writer_device_id": "22222222-2222-4222-8222-222222222222",
+              "writer_epoch": 3
+            }
+          }
+        ]
+      },
+      "scenario": "Entry content whose hash does not match is rejected and quarantined for review."
+    },
+    {
+      "expected_output": {
+        "accepted_through_seq": 42,
+        "active_writer_epoch": 4,
+        "automatic_merge": false,
+        "ingested_count": 0,
+        "old_hub_mode": "FENCED_READ_ONLY",
+        "old_hub_new_mutations_allowed": false,
+        "status": "WRITER_FENCED",
+        "unsynced_entries": "QUARANTINED_FOR_REVIEW"
+      },
+      "id": "CLOUD-008",
+      "input": {
+        "given": {
+          "cloud": {
+            "accepted_through_seq": 42,
+            "active_writer_device_id": "55555555-5555-4555-8555-555555555555",
+            "active_writer_epoch": 4
+          },
+          "old_hub": {
+            "unsynced_entries": 2,
+            "writer_device_id": "22222222-2222-4222-8222-222222222222",
+            "writer_epoch": 3
+          }
+        },
+        "steps": [
+          {
+            "action": "cloud_ingest",
+            "batch": {
+              "batch_id": "batch-old-writer",
+              "entries": [],
+              "store_id": "11111111-1111-4111-8111-111111111111",
+              "writer_device_id": "22222222-2222-4222-8222-222222222222",
+              "writer_epoch": 3
+            }
+          }
+        ]
+      },
+      "scenario": "A previous writer epoch is fenced and its divergent unsynced entries are not merged automatically."
+    },
+    {
+      "expected_output": {
+        "audit_event": "RESTORE_DENIED",
+        "export_permitted": false,
+        "new_writer_epoch": null,
+        "status": "SECOND_FACTOR_REQUIRED",
+        "writer_activation_permitted": false,
+        "writer_epoch": 3
+      },
+      "id": "RESTORE-001",
+      "input": {
+        "given": {
+          "cloud_manifest": {
+            "head_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+            "state_hash": "71c370ae4f33e6c20d880db1be1eb09d32008565f630ca70c5a7df48df8fc98d",
+            "store_id": "11111111-1111-4111-8111-111111111111",
+            "through_operation_seq": 41,
+            "writer_epoch": 3
+          },
+          "new_hub_device_id": "55555555-5555-4555-8555-555555555555",
+          "now": "2026-10-22T09:00:00Z",
+          "owner_phone_status": "VERIFIED"
+        },
+        "steps": [
+          {
+            "action": "restore_authorize",
+            "otp_proof": "valid-test-otp-proof",
+            "second_factor": null
+          }
+        ]
+      },
+      "scenario": "SMS OTP alone cannot export or activate a restored store."
+    },
+    {
+      "expected_output": {
+        "computed_state_hash": "71c370ae4f33e6c20d880db1be1eb09d32008565f630ca70c5a7df48df8fc98d",
+        "consistency_check": "MATCH",
+        "manifest_state_hash": "71c370ae4f33e6c20d880db1be1eb09d32008565f630ca70c5a7df48df8fc98d",
+        "new_writer_device_id": "55555555-5555-4555-8555-555555555555",
+        "new_writer_epoch": 4,
+        "next_operation_seq": 42,
+        "previous_writer": "FENCED",
+        "restored_through_seq": 41,
+        "second_factor": "RECOVERY_KEY",
+        "second_factor_verified": true,
+        "sessions_restored": false,
+        "status": "RESTORED",
+        "restored_state_promoted": true,
+        "temporary_state_retained": false
+      },
+      "id": "RESTORE-002",
+      "input": {
+        "given": {
+          "cloud_manifest": {
+            "head_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+            "state_hash": "71c370ae4f33e6c20d880db1be1eb09d32008565f630ca70c5a7df48df8fc98d",
+            "store_id": "11111111-1111-4111-8111-111111111111",
+            "through_operation_seq": 41,
+            "writer_epoch": 3
+          },
+          "new_hub_device_id": "55555555-5555-4555-8555-555555555555",
+          "now": "2026-10-22T09:00:00Z",
+          "owner_phone_status": "VERIFIED"
+        },
+        "steps": [
+          {
+            "action": "restore_authorize",
+            "otp_proof": "valid-test-otp-proof",
+            "second_factor": {
+              "proof": "valid-test-recovery-key-proof",
+              "type": "RECOVERY_KEY"
+            }
+          },
+          {
+            "action": "restore_verify_replayed_state",
+            "replayed_state": {
+              "customers": [],
+              "devices": [
+                {
+                  "device_id": "22222222-2222-4222-8222-222222222222",
+                  "device_role": "HUB",
+                  "label": "Hub",
+                  "last_seen_at": "2026-10-22T08:01:00Z",
+                  "paired_at": "2026-10-22T07:00:00Z",
+                  "pairing_status": "ACTIVE",
+                  "platform": "WINDOWS",
+                  "store_id": "11111111-1111-4111-8111-111111111111"
+                },
+                {
+                  "device_id": "33333333-3333-4333-8333-333333333333",
+                  "device_role": "COMPANION",
+                  "label": "Counter 1",
+                  "last_seen_at": "2026-10-22T08:01:00Z",
+                  "paired_at": "2026-10-22T07:05:00Z",
+                  "pairing_status": "ACTIVE",
+                  "platform": "WINDOWS",
+                  "store_id": "11111111-1111-4111-8111-111111111111"
+                }
+              ],
+              "digital_invoices": [],
+              "display_number_high_watermark": 42,
+              "inventory_events": [],
+              "invoice_items": [],
+              "invoices": [],
+              "locks": [],
+              "memberships": [],
+              "operations": [
+                {
+                  "completed_at": "2026-10-22T08:01:00Z",
+                  "created_at": "2026-10-22T08:01:00Z",
+                  "device_id": "33333333-3333-4333-8333-333333333333",
+                  "operation_id": "op-product-0001",
+                  "operation_type": "product.update",
+                  "request_hash": "8b6fcb64f008a9d921bf44fe7a9346eb6a8898fa569904942be8a9f36b3eb8a6",
+                  "response_snapshot": {
+                    "operation_seq": 41,
+                    "status": "SUCCEEDED",
+                    "version": 8
+                  },
+                  "result_reference": "prod-0001",
+                  "result_status": "SUCCEEDED",
+                  "store_id": "11111111-1111-4111-8111-111111111111"
+                }
+              ],
+              "products": [
+                {
+                  "created_at": "2026-10-22T07:10:00Z",
+                  "is_active": true,
+                  "name": "Milk",
+                  "normalized_name": "milk",
+                  "product_id": "prod-0001",
+                  "similarity_key": "milk",
+                  "specification": null,
+                  "store_id": "11111111-1111-4111-8111-111111111111",
+                  "unit": "item",
+                  "unit_price_rials": 11000,
+                  "updated_at": "2026-10-22T08:01:00Z",
+                  "version": 8
+                }
+              ],
+              "sales": [],
+              "store": {
+                "business_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                "created_at": "2026-10-22T07:00:00Z",
+                "draft_lock_timeout_seconds": 300,
+                "name": "Synthetic Store",
+                "operating_mode": "A",
+                "status": "ACTIVE",
+                "store_id": "11111111-1111-4111-8111-111111111111"
+              },
+              "through_operation_seq": 41,
+              "writer_epoch": 3
+            }
+          }
+        ]
+      },
+      "scenario": "OTP plus recovery-key proof permits restore, and a matching replayed-state hash activates the new writer."
+    },
+    {
+      "expected_output": {
+        "export_permitted": true,
+        "manifest_state_hash": "71c370ae4f33e6c20d880db1be1eb09d32008565f630ca70c5a7df48df8fc98d",
+        "next_step": "REPLAY_AND_VERIFY",
+        "second_factor": "PAIRED_DEVICE_APPROVAL",
+        "second_factor_verified": true,
+        "status": "RESTORE_AUTHORIZED",
+        "writer_activation_permitted_before_replay": false,
+        "writer_epoch": 3
+      },
+      "id": "RESTORE-003",
+      "input": {
+        "given": {
+          "approval_device": {
+            "device_id": "33333333-3333-4333-8333-333333333333",
+            "pairing_status": "ACTIVE",
+            "previously_paired": true,
+            "store_id": "11111111-1111-4111-8111-111111111111"
+          },
+          "cloud_manifest": {
+            "head_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+            "state_hash": "71c370ae4f33e6c20d880db1be1eb09d32008565f630ca70c5a7df48df8fc98d",
+            "store_id": "11111111-1111-4111-8111-111111111111",
+            "through_operation_seq": 41,
+            "writer_epoch": 3
+          },
+          "new_hub_device_id": "55555555-5555-4555-8555-555555555555",
+          "now": "2026-10-22T09:00:00Z"
+        },
+        "steps": [
+          {
+            "action": "restore_authorize",
+            "otp_proof": "valid-test-otp-proof",
+            "second_factor": {
+              "approval": {
+                "device_id": "33333333-3333-4333-8333-333333333333",
+                "expires_at": "2026-10-22T09:05:00Z",
+                "manifest_state_hash": "71c370ae4f33e6c20d880db1be1eb09d32008565f630ca70c5a7df48df8fc98d",
+                "new_hub_device_id": "55555555-5555-4555-8555-555555555555",
+                "restore_request_id": "restore-0001",
+                "signature": "test-only-approval-signature"
+              },
+              "type": "PAIRED_DEVICE_APPROVAL"
+            }
+          }
+        ]
+      },
+      "scenario": "OTP plus approval from a previously paired device authorizes the restore manifest before replay."
+    },
+    {
+      "expected_output": {
+        "cloud_log_unchanged": true,
+        "computed_state_hash": "3e69385958c1f369cd9124e94dc5a439ba75d1d71ae1ba147b458936fc0f3c82",
+        "consistency_check": "MISMATCH",
+        "manifest_state_hash": "71c370ae4f33e6c20d880db1be1eb09d32008565f630ca70c5a7df48df8fc98d",
+        "new_writer_epoch": null,
+        "quarantine": "REVIEW",
+        "status": "CONSISTENCY_MISMATCH",
+        "temporary_state_destroyed": true,
+        "writer_activation_permitted": false,
+        "writer_epoch": 3
+      },
+      "id": "RESTORE-004",
+      "input": {
+        "given": {
+          "authorization": {
+            "otp_verified": true,
+            "second_factor_verified": true
+          },
+          "cloud_manifest": {
+            "head_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+            "state_hash": "71c370ae4f33e6c20d880db1be1eb09d32008565f630ca70c5a7df48df8fc98d",
+            "store_id": "11111111-1111-4111-8111-111111111111",
+            "through_operation_seq": 41,
+            "writer_epoch": 3
+          },
+          "new_hub_device_id": "55555555-5555-4555-8555-555555555555",
+          "now": "2026-10-22T09:00:00Z"
+        },
+        "steps": [
+          {
+            "action": "restore_verify_replayed_state",
+            "replayed_state": {
+              "customers": [],
+              "devices": [
+                {
+                  "device_id": "22222222-2222-4222-8222-222222222222",
+                  "device_role": "HUB",
+                  "label": "Hub",
+                  "last_seen_at": "2026-10-22T08:01:00Z",
+                  "paired_at": "2026-10-22T07:00:00Z",
+                  "pairing_status": "ACTIVE",
+                  "platform": "WINDOWS",
+                  "store_id": "11111111-1111-4111-8111-111111111111"
+                },
+                {
+                  "device_id": "33333333-3333-4333-8333-333333333333",
+                  "device_role": "COMPANION",
+                  "label": "Counter 1",
+                  "last_seen_at": "2026-10-22T08:01:00Z",
+                  "paired_at": "2026-10-22T07:05:00Z",
+                  "pairing_status": "ACTIVE",
+                  "platform": "WINDOWS",
+                  "store_id": "11111111-1111-4111-8111-111111111111"
+                }
+              ],
+              "digital_invoices": [],
+              "display_number_high_watermark": 42,
+              "inventory_events": [],
+              "invoice_items": [],
+              "invoices": [],
+              "locks": [],
+              "memberships": [],
+              "operations": [
+                {
+                  "completed_at": "2026-10-22T08:01:00Z",
+                  "created_at": "2026-10-22T08:01:00Z",
+                  "device_id": "33333333-3333-4333-8333-333333333333",
+                  "operation_id": "op-product-0001",
+                  "operation_type": "product.update",
+                  "request_hash": "8b6fcb64f008a9d921bf44fe7a9346eb6a8898fa569904942be8a9f36b3eb8a6",
+                  "response_snapshot": {
+                    "operation_seq": 41,
+                    "status": "SUCCEEDED",
+                    "version": 8
+                  },
+                  "result_reference": "prod-0001",
+                  "result_status": "SUCCEEDED",
+                  "store_id": "11111111-1111-4111-8111-111111111111"
+                }
+              ],
+              "products": [
+                {
+                  "created_at": "2026-10-22T07:10:00Z",
+                  "is_active": true,
+                  "name": "Milk",
+                  "normalized_name": "milk",
+                  "product_id": "prod-0001",
+                  "similarity_key": "milk",
+                  "specification": null,
+                  "store_id": "11111111-1111-4111-8111-111111111111",
+                  "unit": "item",
+                  "unit_price_rials": 12000,
+                  "updated_at": "2026-10-22T08:01:00Z",
+                  "version": 8
+                }
+              ],
+              "sales": [],
+              "store": {
+                "business_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                "created_at": "2026-10-22T07:00:00Z",
+                "draft_lock_timeout_seconds": 300,
+                "name": "Synthetic Store",
+                "operating_mode": "A",
+                "status": "ACTIVE",
+                "store_id": "11111111-1111-4111-8111-111111111111"
+              },
+              "through_operation_seq": 41,
+              "writer_epoch": 3
+            }
+          }
+        ]
+      },
+      "scenario": "A replayed-state hash mismatch aborts restore before writer activation."
+    },
+    {
+      "expected_output": {
+        "consistency_check": "MATCH",
+        "new_writer_epoch": 4,
+        "next_operation_seq": 42,
+        "owner_loss_acknowledgement_required": true,
+        "restored_through_seq": 41,
+        "silent_full_recovery_claim": false,
+        "status": "RESTORED_WITH_UNSYNCED_LOSS",
+        "unrecovered_operation_seqs": [
+          42,
+          43,
+          44,
+          45
+        ],
+        "unsynced_data_recoverable": false
+      },
+      "id": "FAIL-001",
+      "input": {
+        "given": {
+          "authorization": {
+            "otp_verified": true,
+            "second_factor_verified": true
+          },
+          "cloud_manifest": {
+            "head_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+            "state_hash": "71c370ae4f33e6c20d880db1be1eb09d32008565f630ca70c5a7df48df8fc98d",
+            "store_id": "11111111-1111-4111-8111-111111111111",
+            "through_operation_seq": 41,
+            "writer_epoch": 3
+          },
+          "failed_hub": {
+            "cloud_accepted_through_seq": 41,
+            "local_through_seq": 45,
+            "unsynced_operation_seqs": [
+              42,
+              43,
+              44,
+              45
+            ]
+          },
+          "now": "2026-10-22T09:10:00Z",
+          "replayed_state_hash": "71c370ae4f33e6c20d880db1be1eb09d32008565f630ca70c5a7df48df8fc98d"
+        },
+        "steps": [
+          {
+            "action": "restore_after_disk_loss",
+            "new_hub_device_id": "55555555-5555-4555-8555-555555555555"
+          }
+        ]
+      },
+      "scenario": "Disk loss restores only the cloud high watermark and explicitly reports unrecoverable unsynced operations."
+    },
+    {
+      "expected_output": {
+        "active_writer_count": 1,
+        "active_writer_device_id": "22222222-2222-4222-8222-222222222222",
+        "candidate_write_allowed": false,
+        "split_brain_allowed": false,
+        "status": "HUB_ALREADY_ACTIVE",
+        "writer_epoch": 3
+      },
+      "id": "FAIL-002",
+      "input": {
+        "given": {
+          "active_hub": {
+            "status": "ACTIVE",
+            "writer_device_id": "22222222-2222-4222-8222-222222222222",
+            "writer_epoch": 3
+          },
+          "candidate_hub_device_id": "55555555-5555-4555-8555-555555555555",
+          "now": "2026-10-22T09:00:00Z",
+          "store_id": "11111111-1111-4111-8111-111111111111"
+        },
+        "steps": [
+          {
+            "action": "hub_activate",
+            "device_id": "55555555-5555-4555-8555-555555555555",
+            "restore_authorization": null
+          }
+        ]
+      },
+      "scenario": "Normal activation of a second Hub for one store is rejected before it can accept writes."
+    },
+    {
+      "expected_output": {
+        "client_timestamp_used_for_expiry": false,
+        "client_timestamp_used_for_ordering": false,
+        "hub_recorded_at": "2026-10-22T08:01:00Z",
+        "hub_time_authoritative": true,
+        "lock_expires_at": "2026-10-22T08:05:00Z",
+        "operation_seq": 43,
+        "status": "SUCCEEDED"
+      },
+      "id": "FAIL-003",
+      "input": {
+        "given": {
+          "hub_now": "2026-10-22T08:01:00Z",
+          "lock": {
+            "expires_at": "2026-10-22T08:05:00Z",
+            "last_activity_at": "2026-10-22T08:00:00Z",
+            "lock_id": "lock-0001",
+            "state": "ACTIVE",
+            "timeout_seconds": 300
+          },
+          "next_operation_seq": 43
+        },
+        "steps": [
+          {
+            "action": "submit_operation",
+            "client_sent_at": "2026-10-22T08:15:00Z",
+            "request": {
+              "base_version": null,
+              "device_id": "33333333-3333-4333-8333-333333333333",
+              "operation_id": "op-late-0001",
+              "operation_type": "invoice.item_add",
+              "payload": {
+                "description": "late item",
+                "invoice_id": "77777777-7777-4777-8777-777777777777",
+                "quantity": 1
+              },
+              "request_hash": "f3e9ab540e53a7e698d276194336ae270f7c064e7e0e72efcb6c9a893ab88609",
+              "store_id": "11111111-1111-4111-8111-111111111111"
+            }
+          }
+        ]
+      },
+      "scenario": "Companion clock skew cannot change Hub lock expiry or operation ordering."
+    },
+    {
+      "expected_output": {
+        "accepted_through_seq": 42,
+        "cloud_entry_count_after_repeated_sync": 42,
+        "duplicate_effects": 0,
+        "entries_discarded": 0,
+        "lan_work_blocked_during_wan_partition": false,
+        "local_operations_during_partition": 2,
+        "outbox_depth_during_partition": 2,
+        "status": "DUPLICATE"
+      },
+      "id": "FAIL-004",
+      "input": {
+        "given": {
+          "cloud": {
+            "accepted_through_seq": 40
+          },
+          "hub": {
+            "next_operation_seq": 41,
+            "outbox_depth": 0
+          },
+          "hub_lan_reachable": true,
+          "wan_reachable": false
+        },
+        "steps": [
+          {
+            "action": "hub_accept_local_operation",
+            "operation_seq": 41
+          },
+          {
+            "action": "hub_accept_local_operation",
+            "operation_seq": 42
+          },
+          {
+            "action": "network_heal"
+          },
+          {
+            "action": "cloud_ingest",
+            "batch": {
+              "batch_id": "batch-0001",
+              "entries": [
+                {
+                  "base_version": 7,
+                  "device_id": "33333333-3333-4333-8333-333333333333",
+                  "entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+                  "hub_recorded_at": "2026-10-22T08:01:00Z",
+                  "operation_id": "op-product-0001",
+                  "operation_seq": 41,
+                  "operation_type": "product.update",
+                  "outcome": {
+                    "result_status": "SUCCEEDED",
+                    "version": 8
+                  },
+                  "payload": {
+                    "product_id": "prod-0001",
+                    "unit_price_rials": 11000
+                  },
+                  "previous_entry_hash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+                  "protocol_version": "0",
+                  "request_hash": "8b6fcb64f008a9d921bf44fe7a9346eb6a8898fa569904942be8a9f36b3eb8a6",
+                  "response_snapshot": {
+                    "operation_seq": 41,
+                    "status": "SUCCEEDED",
+                    "version": 8
+                  },
+                  "store_id": "11111111-1111-4111-8111-111111111111",
+                  "writer_device_id": "22222222-2222-4222-8222-222222222222",
+                  "writer_epoch": 3
+                },
+                {
+                  "base_version": null,
+                  "device_id": "44444444-4444-4444-8444-444444444444",
+                  "entry_hash": "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d",
+                  "hub_recorded_at": "2026-10-22T08:02:00Z",
+                  "operation_id": "op-inventory-0002",
+                  "operation_seq": 42,
+                  "operation_type": "inventory.append",
+                  "outcome": {
+                    "result_status": "SUCCEEDED",
+                    "stock": 8
+                  },
+                  "payload": {
+                    "product_id": "prod-0001",
+                    "quantity_delta": -2,
+                    "reason": "SALE"
+                  },
+                  "previous_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+                  "protocol_version": "0",
+                  "request_hash": "6786ca9246a0e00a696eea8569c3b6867c8e94e45bc83e0dddff2e13797b6e21",
+                  "response_snapshot": {
+                    "operation_seq": 42,
+                    "status": "SUCCEEDED",
+                    "stock": 8
+                  },
+                  "store_id": "11111111-1111-4111-8111-111111111111",
+                  "writer_device_id": "22222222-2222-4222-8222-222222222222",
+                  "writer_epoch": 3
+                }
+              ],
+              "store_id": "11111111-1111-4111-8111-111111111111",
+              "writer_device_id": "22222222-2222-4222-8222-222222222222",
+              "writer_epoch": 3
+            }
+          },
+          {
+            "action": "cloud_ingest",
+            "batch": {
+              "batch_id": "batch-0001",
+              "entries": [
+                {
+                  "base_version": 7,
+                  "device_id": "33333333-3333-4333-8333-333333333333",
+                  "entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+                  "hub_recorded_at": "2026-10-22T08:01:00Z",
+                  "operation_id": "op-product-0001",
+                  "operation_seq": 41,
+                  "operation_type": "product.update",
+                  "outcome": {
+                    "result_status": "SUCCEEDED",
+                    "version": 8
+                  },
+                  "payload": {
+                    "product_id": "prod-0001",
+                    "unit_price_rials": 11000
+                  },
+                  "previous_entry_hash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+                  "protocol_version": "0",
+                  "request_hash": "8b6fcb64f008a9d921bf44fe7a9346eb6a8898fa569904942be8a9f36b3eb8a6",
+                  "response_snapshot": {
+                    "operation_seq": 41,
+                    "status": "SUCCEEDED",
+                    "version": 8
+                  },
+                  "store_id": "11111111-1111-4111-8111-111111111111",
+                  "writer_device_id": "22222222-2222-4222-8222-222222222222",
+                  "writer_epoch": 3
+                },
+                {
+                  "base_version": null,
+                  "device_id": "44444444-4444-4444-8444-444444444444",
+                  "entry_hash": "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d",
+                  "hub_recorded_at": "2026-10-22T08:02:00Z",
+                  "operation_id": "op-inventory-0002",
+                  "operation_seq": 42,
+                  "operation_type": "inventory.append",
+                  "outcome": {
+                    "result_status": "SUCCEEDED",
+                    "stock": 8
+                  },
+                  "payload": {
+                    "product_id": "prod-0001",
+                    "quantity_delta": -2,
+                    "reason": "SALE"
+                  },
+                  "previous_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+                  "protocol_version": "0",
+                  "request_hash": "6786ca9246a0e00a696eea8569c3b6867c8e94e45bc83e0dddff2e13797b6e21",
+                  "response_snapshot": {
+                    "operation_seq": 42,
+                    "status": "SUCCEEDED",
+                    "stock": 8
+                  },
+                  "store_id": "11111111-1111-4111-8111-111111111111",
+                  "writer_device_id": "22222222-2222-4222-8222-222222222222",
+                  "writer_epoch": 3
+                }
+              ],
+              "store_id": "11111111-1111-4111-8111-111111111111",
+              "writer_device_id": "22222222-2222-4222-8222-222222222222",
+              "writer_epoch": 3
+            }
+          }
+        ]
+      },
+      "scenario": "WAN partition does not stop Hub-mediated LAN work; durable entries synchronize once after healing."
+    },
+    {
+      "expected_output": {
+        "accepted_through_before_retry": 40,
+        "accepted_through_seq": 42,
+        "entry_count": 42,
+        "ingested_count_after_retry": 2,
+        "partial_attempt_ingested_count": 0,
+        "partial_attempt_status": "INCOMPLETE_BATCH",
+        "partial_projection_applied": false,
+        "status": "ACCEPTED"
+      },
+      "id": "FAIL-005",
+      "input": {
+        "given": {
+          "cloud": {
+            "accepted_through_seq": 40,
+            "active_writer_device_id": "22222222-2222-4222-8222-222222222222",
+            "active_writer_epoch": 3,
+            "entry_count": 40
+          }
+        },
+        "steps": [
+          {
+            "action": "cloud_ingest_partial",
+            "batch_id": "batch-partial",
+            "declared_entry_count": 2,
+            "delivered_entries": [
+              {
+                "base_version": 7,
+                "device_id": "33333333-3333-4333-8333-333333333333",
+                "entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+                "hub_recorded_at": "2026-10-22T08:01:00Z",
+                "operation_id": "op-product-0001",
+                "operation_seq": 41,
+                "operation_type": "product.update",
+                "outcome": {
+                  "result_status": "SUCCEEDED",
+                  "version": 8
+                },
+                "payload": {
+                  "product_id": "prod-0001",
+                  "unit_price_rials": 11000
+                },
+                "previous_entry_hash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+                "protocol_version": "0",
+                "request_hash": "8b6fcb64f008a9d921bf44fe7a9346eb6a8898fa569904942be8a9f36b3eb8a6",
+                "response_snapshot": {
+                  "operation_seq": 41,
+                  "status": "SUCCEEDED",
+                  "version": 8
+                },
+                "store_id": "11111111-1111-4111-8111-111111111111",
+                "writer_device_id": "22222222-2222-4222-8222-222222222222",
+                "writer_epoch": 3
+              }
+            ]
+          },
+          {
+            "action": "cloud_ingest",
+            "batch": {
+              "batch_id": "batch-0001",
+              "entries": [
+                {
+                  "base_version": 7,
+                  "device_id": "33333333-3333-4333-8333-333333333333",
+                  "entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+                  "hub_recorded_at": "2026-10-22T08:01:00Z",
+                  "operation_id": "op-product-0001",
+                  "operation_seq": 41,
+                  "operation_type": "product.update",
+                  "outcome": {
+                    "result_status": "SUCCEEDED",
+                    "version": 8
+                  },
+                  "payload": {
+                    "product_id": "prod-0001",
+                    "unit_price_rials": 11000
+                  },
+                  "previous_entry_hash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+                  "protocol_version": "0",
+                  "request_hash": "8b6fcb64f008a9d921bf44fe7a9346eb6a8898fa569904942be8a9f36b3eb8a6",
+                  "response_snapshot": {
+                    "operation_seq": 41,
+                    "status": "SUCCEEDED",
+                    "version": 8
+                  },
+                  "store_id": "11111111-1111-4111-8111-111111111111",
+                  "writer_device_id": "22222222-2222-4222-8222-222222222222",
+                  "writer_epoch": 3
+                },
+                {
+                  "base_version": null,
+                  "device_id": "44444444-4444-4444-8444-444444444444",
+                  "entry_hash": "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d",
+                  "hub_recorded_at": "2026-10-22T08:02:00Z",
+                  "operation_id": "op-inventory-0002",
+                  "operation_seq": 42,
+                  "operation_type": "inventory.append",
+                  "outcome": {
+                    "result_status": "SUCCEEDED",
+                    "stock": 8
+                  },
+                  "payload": {
+                    "product_id": "prod-0001",
+                    "quantity_delta": -2,
+                    "reason": "SALE"
+                  },
+                  "previous_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
+                  "protocol_version": "0",
+                  "request_hash": "6786ca9246a0e00a696eea8569c3b6867c8e94e45bc83e0dddff2e13797b6e21",
+                  "response_snapshot": {
+                    "operation_seq": 42,
+                    "status": "SUCCEEDED",
+                    "stock": 8
+                  },
+                  "store_id": "11111111-1111-4111-8111-111111111111",
+                  "writer_device_id": "22222222-2222-4222-8222-222222222222",
+                  "writer_epoch": 3
+                }
+              ],
+              "store_id": "11111111-1111-4111-8111-111111111111",
+              "writer_device_id": "22222222-2222-4222-8222-222222222222",
+              "writer_epoch": 3
+            }
+          }
+        ]
+      },
+      "scenario": "Partial batch delivery does not apply a partial projection and a complete retry succeeds once."
+    }
+  ]
+}
