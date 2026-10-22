@@ -40,7 +40,8 @@ majid-ghanbari-dost/Kandoo  (Parent Platform Repo — C# / ASP.NET Core / Window
 ├── README.md               # Repository entrypoint pointing to AGENT_HANDOFF.md
 └── docs/
     ├── MASTER_HANDOFF.md   # Architecture, repo topology, D1-D14 summary, state & roadmap
-    └── DECISIONS.md        # Authoritative D1-D14 register, v4.1 + v4.2 amendments, Assumptions, Open items
+    ├── DECISIONS.md        # Authoritative D1-D14 register, v4.1 + v4.2 amendments, Assumptions, Open items
+    └── domain-model.md     # P-01 logical entities, relationships, rules & concrete test scenarios
     [Future P-01..P-17: C# solution, Store Hub, Windows/Android app, Cloud API, Docker kit]
             │
             │  STRICT BOUNDARY (No Python source copied into Kandoo)
@@ -123,7 +124,11 @@ Full details and executable test criteria are maintained in [`docs/DECISIONS.md`
   - **Branch:** `arena/456e429d-kandoo` *(Arena session branch for logical task branch `arena/r-0-parent-truth`)*
   - **`R-0` primary commit:** `6e17959afb8033f3dae1a09a4db28e2cbc4059ce` *(followed by SHA-recording commit tagged `stable-r-0`)*
   - Establishes authoritative architecture handoff (`docs/MASTER_HANDOFF.md`), complete decision register (`docs/DECISIONS.md`), updated cross-repo SHA handoff (`AGENT_HANDOFF.md`), and annotated tag `stable-r-0`.
-  - Contains **documentation foundation only** — zero C# code exists yet (implementation starts in `P-01`).
+  - Contains **documentation foundation only** — zero C# code exists yet.
+- **`P-01` domain-model specification (current PM task):**
+  - Branch `arena/91ef8c4b-kandoo`, based on merged `main` HEAD `6409de18074f3ca71673d017ef671b51cc70c05c`.
+  - Adds `docs/domain-model.md` with all 15 logical entities, an ASCII entity-relationship diagram, `D9`–`D13`/store-isolation rules, and 67 concrete acceptance-test scenarios.
+  - Is explicitly **documentation-only**. The current PM prompt supersedes the provisional `P-01` C# bootstrap wording below; implementation remains deferred to a later explicit PM task (`ASM-06`).
 
 ---
 
@@ -143,12 +148,13 @@ To prevent false assumptions by future agents or contributors, the following art
 
 ## 6. Next Tasks (`P-01`, `P-02`, `P-03`, `P-04`)
 
-Implementation of the C# platform proceeds strictly in one-task / one-commit-group increments (`P-01` to `P-17`) after PM review of `R-0`:
+Platform work proceeds strictly in one-task / one-commit-group increments (`P-01` to `P-17`) after PM review of `R-0`. **Current PM clarification (`2026-10-22`):** `P-01` is the documentation-only domain-model specification below. The previously listed C# solution bootstrap and Canonical Invoice conformance implementation are deferred to a later explicit PM task and are not delivered by `P-01` (`ASM-06`).
 
-### `P-01` — C# Solution Bootstrap & Canonical Invoice v0 Contract / Conformance
-- Create clean `.NET` / `ASP.NET Core` solution structure in `Kandoo` (domain contracts, core library, test project; zero secrets).
-- Implement strongly typed C# **Canonical Invoice v0** domain models, JSON serializer, structural + semantic validator (`DRAFT → EXTRACTED → VALIDATED → ISSUED → REVOKED | SUPERSEDED`, provenance completeness, integer-only Rials, `attention_cells` issue gate, optional E-01b `tax_lines` / `discount_lines` / `rounding`).
-- Implement exact canonical SHA-256 `issued_content_sha256` computation matching Python's UTF-8 / UTF-16 key-sorted compact JSON profile, verified by Golden Vector unit tests against `Kandoo-Digital-Invoice`.
+### `P-01` — Domain Model Specification (Documentation Only)
+- Define all 15 logical entities (`Business` through `Lock`), key fields, relationships, constraints, and an ASCII entity-relationship diagram in `docs/domain-model.md`.
+- Express `D9`–`D12`, store isolation, and multi-device `D13` as numbered testable statements, each linked to a concrete Given/When/Then acceptance scenario.
+- Specify 67 scenarios in total without writing C#, creating a physical database schema, copying extraction code, or claiming unimplemented concurrency/security behavior.
+- Record conservative modeling choices and new open product questions in `docs/DECISIONS.md` under `ASM-06`–`ASM-12` and Open items 5–6.
 
 ### `P-02` — Store Hub Core, SQLite Persistence, Concurrency, Numbering & Per-Phone Draft Lock
 - Implement single-store LAN Hub persistence (`SQLite` + durable Outbox) supporting multi-device requests (`device_id`) and idempotent replay (`operation_id`) per `D7`, `D10`, and `D13`.
