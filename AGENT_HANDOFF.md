@@ -2,7 +2,19 @@
 
 This repository is the parent Kandoo project.
 
-## Current Repository State (`P-01` Snapshot)
+## Current Repository State (`P-02` Snapshot)
+
+- **Date:** `2026-10-22`
+- **Task:** `P-02 — Sync/replication protocol specification` (documentation only)
+- **Parent repository (`majid-ghanbari-dost/Kandoo` — THIS REPOSITORY):**
+  - **Active cumulative branch:** `arena/91ef8c4b-kandoo`; PR #2 remains open and unmerged.
+  - **Starting `P-02` `HEAD`:** `e8a935105bdfad7ab323b4a83ec83b8a4c44ecc2` (`stable-p-01`).
+  - **Exact `P-02` content commit `HEAD`:** `fc4df52ad5617ebd837a07022cc2d847436a8f58` *(immediate parent of this handoff-recording commit; final `P-02` commit-group tip is tagged `stable-p-02`)*.
+  - **Stable tag:** `stable-p-02`.
+  - **Delivered:** `docs/sync-protocol.md` specifies LAN pairing/sessions/operations/D11 locks, ordered idempotent Cloud replication, OTP+second-factor restore with replayed-state hashing, and a seven-case failure table. `docs/sync-protocol-test-vectors.json` contains 34 unique synthetic vectors for P-05/P-07 with independently checked request, entry, and state hashes. `docs/DECISIONS.md` records `ASM-13`–`ASM-17` and Open items 7–10.
+  - **Not delivered:** C#, physical schema, extraction implementation, production credentials, secrets, demos, or implementation claims (`ASM-13`).
+
+## Repository State (`P-01` Snapshot)
 
 - **Date:** `2026-10-22`
 - **Task:** `P-01 — Domain model specification` (documentation only)
@@ -32,7 +44,9 @@ This repository is the parent Kandoo project.
 
 1. [`docs/MASTER_HANDOFF.md`](docs/MASTER_HANDOFF.md) — Project overview, two-repository topology, `D1`–`D14` summary, verified repository state, non-existence baseline, and next platform tasks (`P-01`–`P-04`).
 2. [`docs/domain-model.md`](docs/domain-model.md) — `P-01` logical domain specification: 15 entities, relationships and constraints, ASCII diagram, numbered `D9`–`D13`/store-isolation rules, and 67 concrete acceptance-test scenarios.
-3. [`docs/DECISIONS.md`](docs/DECISIONS.md) — Authoritative decision register (`D1`–`D14`), Amendments `v4.1` and `v4.2` (`SEC-1`, Restore Second Factor, Agreement Truthfulness, `E-01b`, `ACC-0` parked), `Assumptions`, and `Open` owner items.
+3. [`docs/sync-protocol.md`](docs/sync-protocol.md) — `P-02` LAN, replication, restore, writer-fencing, and failure protocol with D7/D11/SEC-1 traceability.
+4. [`docs/sync-protocol-test-vectors.json`](docs/sync-protocol-test-vectors.json) — 34 synthetic P-05/P-07 vectors with canonical SHA-256 fixtures.
+5. [`docs/DECISIONS.md`](docs/DECISIONS.md) — Authoritative decision register (`D1`–`D14`), Amendments `v4.1` and `v4.2` (`SEC-1`, Restore Second Factor, Agreement Truthfulness, `E-01b`, `ACC-0` parked), `Assumptions`, and `Open` owner items.
 
 ## Project Relationship
 
