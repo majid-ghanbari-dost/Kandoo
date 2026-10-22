@@ -2,7 +2,20 @@
 
 This repository is the parent Kandoo project.
 
-## Repository & Cross-Repo State (`R-0` Snapshot)
+## Current Repository State (`P-01` Snapshot)
+
+- **Date:** `2026-10-22`
+- **Task:** `P-01 — Domain model specification` (documentation only)
+- **Parent repository (`majid-ghanbari-dost/Kandoo` — THIS REPOSITORY):**
+  - **Active branch:** `arena/91ef8c4b-kandoo`.
+  - **Merged `main` baseline `HEAD`:** `6409de18074f3ca71673d017ef671b51cc70c05c`.
+  - **Exact `P-01` content commit `HEAD`:** `9d6d6fa1d935ded429eaa2698706daae099d70b0` *(immediate parent of this handoff-recording commit; final `P-01` branch tip is tagged `stable-p-01`)*.
+  - **Stable tag:** `stable-p-01`.
+  - **Delivered:** `docs/domain-model.md` defines 15 entities, an ASCII relationship diagram, 52 numbered `D9`–`D13`/isolation rules, and 67 concrete test scenarios; `docs/DECISIONS.md` records `ASM-06`–`ASM-12` and Open items 5–6; `docs/MASTER_HANDOFF.md` records the PM's documentation-only `P-01` clarification.
+  - **Not delivered:** C#, database schema, extraction code, secrets, demos, or implementation claims. The previously provisional `P-01` bootstrap work is deferred to a later explicit PM task (`ASM-06`).
+- **Digital Invoice extraction repository:** unchanged and not accessed for implementation; its last verified `R-0` snapshot remains `27d6d14ef02302423a903e09adb60bfe0164c8f7`.
+
+## Repository & Cross-Repo State (`R-0` Historical Snapshot)
 
 - **Date:** `2026-10-22`
 - **Task:** `R-0 — Parent repo truth`
@@ -18,7 +31,8 @@ This repository is the parent Kandoo project.
 ## Authoritative Documentation Index
 
 1. [`docs/MASTER_HANDOFF.md`](docs/MASTER_HANDOFF.md) — Project overview, two-repository topology, `D1`–`D14` summary, verified repository state, non-existence baseline, and next platform tasks (`P-01`–`P-04`).
-2. [`docs/DECISIONS.md`](docs/DECISIONS.md) — Authoritative decision register (`D1`–`D14`), Amendments `v4.1` and `v4.2` (`SEC-1`, Restore Second Factor, Agreement Truthfulness, `E-01b`, `ACC-0` parked), `Assumptions`, and `Open` owner items.
+2. [`docs/domain-model.md`](docs/domain-model.md) — `P-01` logical domain specification: 15 entities, relationships and constraints, ASCII diagram, numbered `D9`–`D13`/store-isolation rules, and 67 concrete acceptance-test scenarios.
+3. [`docs/DECISIONS.md`](docs/DECISIONS.md) — Authoritative decision register (`D1`–`D14`), Amendments `v4.1` and `v4.2` (`SEC-1`, Restore Second Factor, Agreement Truthfulness, `E-01b`, `ACC-0` parked), `Assumptions`, and `Open` owner items.
 
 ## Project Relationship
 
@@ -61,6 +75,6 @@ Core architecture includes:
 ## Repository Truth at `R-0`
 
 - Prior to `R-0`, this repository contained only 3 bootstrap documentation commits (`80d967c`, `729b10a`, `192fb470`) with `README.md` and `AGENT_HANDOFF.md`.
-- **Zero C#, Windows, or Android source code** exists yet in this repository or any owner repository (platform build starts in `P-01`).
+- **Zero C#, Windows, or Android source code** exists yet in this repository or any owner repository. The current `P-01` task is documentation-only; implementation requires a later explicit PM task (`ASM-06`).
 - Unrelated external demo artifacts (`auth.py` with fixed password, demo inspection scripts, tool-state JSON files, legacy bootstrap scripts) and secrets are **strictly excluded** from this repository.
 - Do not invent missing files or history.
