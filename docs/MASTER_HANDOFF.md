@@ -40,7 +40,12 @@ majid-ghanbari-dost/Kandoo  (Parent Platform Repo — C# / ASP.NET Core / Window
 ├── README.md               # Repository entrypoint pointing to AGENT_HANDOFF.md
 └── docs/
     ├── MASTER_HANDOFF.md   # Architecture, repo topology, D1-D14 summary, state & roadmap
-    └── DECISIONS.md        # Authoritative D1-D14 register, v4.1 + v4.2 amendments, Assumptions, Open items
+    ├── DECISIONS.md        # Authoritative D1-D14 register, v4.1 + v4.2 amendments, Assumptions, Open items
+    ├── domain-model.md     # P-01 logical entities, relationships, rules & concrete test scenarios
+    ├── sync-protocol.md    # P-02 LAN, replication, restore, failures & vector index
+    ├── sync-protocol-test-vectors.json # P-02 synthetic P-05/P-07 protocol vectors
+    ├── openapi.yaml        # P-04 normative OpenAPI 3.1 Cloud contract
+    └── cloud-api-contract.md # P-04 endpoint/auth/error/idempotency/rate-limit narrative
     [Future P-01..P-17: C# solution, Store Hub, Windows/Android app, Cloud API, Docker kit]
             │
             │  STRICT BOUNDARY (No Python source copied into Kandoo)
@@ -87,8 +92,8 @@ Full details and executable test criteria are maintained in [`docs/DECISIONS.md`
 | **D8** | **Backup & restore:** Full cloud replica + local store backup; Store Hub disk is a documented single point of failure for unsynced local-only window. | Product Owner | Balances hardware failure recovery against realistic single-PC store hardware constraints. | Hub maintains cloud replication plus scheduled/exportable local backups; restore flows must also enforce `SEC-1` and **Restore Second Factor** rules (`v4.1`). | **ACTIVE** (Board v4 + v4.1 2FA rule) |
 | **D9** | **Product identity & deduplication:** Unique store-scoped product ID + normalized product name; near-duplicate names trigger an operator warning. | Product Owner | Prevents catalog fragmentation and accidental duplicate SKUs without blocking legitimate similar items. | Product catalog stores normalized name index per store and surfaces non-silent similarity warnings before creation/confirmation. | **ACTIVE** (Board v4) |
 | **D10** | **Concurrency & immutability:** Event-ledger inventory; `base_version` OCC on price/spec edits; conflicts surfaced to operator (never silent overwrite); `ISSUED` invoices immutable; every mutation carries idempotent `operation_id` + `device_id`. | Product Owner / Architect | Multi-device retail counters experience retries, race conditions, and offline queues where silent last-write-wins corrupts financial/stock records. | All commands require `operation_id` + `device_id`; stock changes append ledger events; metadata updates check `base_version`; post-`ISSUED` edits are rejected (`REVOKED`/`SUPERSEDED` only). | **ACTIVE** (Board v4) |
-| **D11** | **Per-phone `DRAFT` lock:** Active `DRAFT` invoice locked per customer phone on one device; second device receives a hard error; released on issue, cancel, disconnect, or configurable timeout (**default `5 minutes`** in `v4.2`, replacing `15 minutes` in `v4.1`); same `operation_id` uses idempotency; sequential purchases allowed. | Product Owner | Prevents two cashiers/devices from simultaneously building conflicting drafts for the same customer phone without blocking repeat shopping trips. | Store Hub maintains an active per-phone `DRAFT` lease tied to `device_id` with configurable TTL defaulting to 5 minutes; replay of identical `operation_id` succeeds idempotently. | **AMENDED (v4.2) — OPEN** (5-min timeout confirmation pending owner) |
-| **D12** | **Dual invoice numbering:** Internal globally unique `invoice_id` plus sequential human-readable `display_number` allocated by the Store Hub (distinct from external POS printed number). | Product Owner | Internal keys need collision-free opacity across stores/offline nodes, while staff and customers need contiguous store-level numbers. | Store Hub transactionally allocates monotonic `display_number` per store; external printed POS numbers stay in untrusted `header.invoice_number`. | **ACTIVE** (Board v4) |
+| **D11** | **Per-phone `DRAFT` lock:** Active `DRAFT` invoice locked per customer phone on one device; second device receives a hard error; released on issue, cancel, disconnect, or configurable timeout (**default `5 minutes` / 300 seconds** in `v4.2`, replacing `15 minutes` in `v4.1`); same `operation_id` uses idempotency; sequential purchases allowed. **P-0104r:** only newly Hub-accepted draft item/quantity/customer changes restart inactivity; passive screens/heartbeats do not, and no API endpoint extends a lock. | Product Owner | Prevents two cashiers/devices from simultaneously building conflicting drafts for the same customer phone without blocking repeat shopping trips. | Store Hub maintains an active per-phone `DRAFT` lease tied to `device_id` with configurable TTL defaulting to 300 seconds; only accepted draft changes renew it, and replay of identical `operation_id` succeeds idempotently without renewal. | **AMENDED (v4.2) — OWNER-CONFIRMED (`P-0104r`)** |
+| **D12** | **Dual invoice numbering:** Internal globally unique `invoice_id` plus sequential human-readable `display_number` allocated by the Store Hub only at successful `ISSUE` (distinct from external POS printed number). Pre-issuance and retired drafts have `display_number=null`; issued numbers are gapless and never reused. | Product Owner | Internal keys need collision-free opacity across stores/offline nodes, while staff and customers need contiguous store-level numbers without draft-time gaps. | Store Hub transactionally allocates the next monotonic `display_number` per store only with successful issue and preserves the issued-only high watermark across restart/restore; external printed POS numbers stay in untrusted `header.invoice_number`. | **AMENDED — OWNER-APPROVED (`P-0104r`)** |
 | **D13** | **Staged delivery, multi-device from day one:** Deliver features incrementally, but multi-device hub/LAN architecture and concurrency primitives exist from the first platform increment. | Product Owner | Retrofitting multi-device concurrency, `device_id`, locks, and hub routing onto a single-user local app requires a destructive rewrite. | `P-01`–`P-04` include `device_id`, `operation_id`, hub coordination, and multi-client boundaries from inception rather than deferring multi-device support. | **ACTIVE** (Board v4) |
 | **D14** | **Positioning & lawyer-owned legal copy:** *v4.1 replacement:* Product wording is **"Kandoo digital invoice"** (never described as a "receipt"); install-time signed store agreement covers custody & encryption; **all legal wording is drafted/approved by a lawyer**; developers write zero legal claims. | Product Owner + Lawyer | Legal/tax classification carries regulatory liability; informal developer disclaimers or calling invoices "receipts" misstates the product and creates legal risk. | UI/templates use placeholder gating until exact lawyer-approved text is supplied; release gate blocks public customer pages (`P-09`) until approved wording is verified by test. | **AMENDED (v4.1/v4.2) — OPEN** (lawyer text pending owner) |
 
@@ -123,7 +128,27 @@ Full details and executable test criteria are maintained in [`docs/DECISIONS.md`
   - **Branch:** `arena/456e429d-kandoo` *(Arena session branch for logical task branch `arena/r-0-parent-truth`)*
   - **`R-0` primary commit:** `6e17959afb8033f3dae1a09a4db28e2cbc4059ce` *(followed by SHA-recording commit tagged `stable-r-0`)*
   - Establishes authoritative architecture handoff (`docs/MASTER_HANDOFF.md`), complete decision register (`docs/DECISIONS.md`), updated cross-repo SHA handoff (`AGENT_HANDOFF.md`), and annotated tag `stable-r-0`.
-  - Contains **documentation foundation only** — zero C# code exists yet (implementation starts in `P-01`).
+  - Contains **documentation foundation only** — zero C# code exists yet.
+- **`P-01` domain-model specification:**
+  - Branch `arena/91ef8c4b-kandoo`, based on merged `main` HEAD `6409de18074f3ca71673d017ef671b51cc70c05c`.
+  - Adds `docs/domain-model.md` with all 15 logical entities, an ASCII entity-relationship diagram, `D9`–`D13`/store-isolation rules, and 67 concrete acceptance-test scenarios.
+  - Is explicitly **documentation-only**. The PM prompt superseded the provisional `P-01` C# bootstrap wording in the inherited `R-0` roadmap; implementation remains deferred to a later explicit PM task (`ASM-06`).
+- **`P-02` sync/replication protocol specification:**
+  - Cumulative Arena branch starts at `e8a935105bdfad7ab323b4a83ec83b8a4c44ecc2` (`stable-p-01`); PR #2 remains open and unmerged.
+  - Adds `docs/sync-protocol.md` and 34 synthetic JSON vectors for P-05/P-07 covering LAN pairing/sessions/operations/locks, ordered Cloud replication, two-factor restore with replayed-state hashing, and all seven required failure cases.
+  - Is explicitly **documentation-only**. The current PM prompt supersedes the provisional `P-02` Store Hub implementation wording in the inherited `R-0` roadmap; implementation remains deferred to a later explicit PM task (`ASM-13`).
+- **`P-0104r` unified documentation revision (current PM task):**
+  - Cumulative Arena branch starts at `ee1e17165924798339075e705a2aa45ecc60f899` (`stable-p-04` tip); PR #2 remains open and unmerged.
+  - Exact six-document content commit is `1f9da7c1b6227c7a1332d581266f52fdce856614`; the follow-up handoff-recording commit completes the commit group tagged `stable-p-0104r`.
+  - Revises `docs/domain-model.md`, `docs/sync-protocol.md`, `docs/sync-protocol-test-vectors.json`, `docs/openapi.yaml`, `docs/cloud-api-contract.md`, and `docs/DECISIONS.md`: display numbers are allocated only at successful `ISSUE`; cancelled/timed-out drafts consume none; only newly Hub-accepted draft item/quantity/customer changes restart the 300-second inactivity window; `ASM-22` standardizes signed integer thousandths (`quantity_millis`, `quantity_delta_millis`, `stock_millis`).
+  - Changes 15 domain rule rows, 21 domain test rows, and 21 vectors (`LAN-SESSION-002`, `LAN-LOCK-001`–`006`, `LAN-HUB-001`, `CLOUD-001`–`005`, `RESTORE-001`–`004`, `FAIL-001`, `FAIL-003`–`005`); all 34 vectors, 11 wire batches/18 entries, 22 operations, 15 POST mutations, 51 error codes, and 15/52/67 domain counts are preserved.
+  - Independent canonical SHA-256 validation passed 34 request occurrences, 21 entry occurrences, and two replayed-state projections in both Python and Node.js. Required Redocly command `npx --yes @redocly/cli lint docs/openapi.yaml` passed with CLI `2.69.0`, exit 0, zero errors/warnings. Intentional `CLOUD-007` corruption remains a negative fixture.
+  - `ASM-09`/`ASM-10` record the owner-approved D11/D12 revisions and new `ASM-22` records quantity encoding/rationale; former Open items 3 and 6 are closed. No P-03 or implementation work was started.
+- **`P-04` Cloud API contract:**
+  - Cumulative Arena branch starts at `2b08caa16a794311c8f50cafb40c19a30919b69f` (`stable-p-02`); PR #2 remains open and unmerged.
+  - Adds `docs/openapi.yaml` (OpenAPI 3.1) and `docs/cloud-api-contract.md`: 22 operations in six groups, 15 idempotent mutations, 51 registered error codes, per-device/restore credentials, path versioning, cursor pagination, and default rate limits.
+  - Preserves Hub-only domain writes, P-02-compatible entries/batches/locks, two-factor restore with replay/hash checks, D4 SMS-stub/public-token behavior, and D14 onboarding/public-rendering gates. Covers the Cloud surfaces needed by P-05 through P-09 without implementing them.
+  - Is explicitly **documentation and YAML only**. The current PM prompt supersedes the provisional `P-04` implementation wording in the inherited `R-0` roadmap; implementation remains deferred to later explicit PM tasks (`ASM-18`).
 
 ---
 
@@ -143,28 +168,31 @@ To prevent false assumptions by future agents or contributors, the following art
 
 ## 6. Next Tasks (`P-01`, `P-02`, `P-03`, `P-04`)
 
-Implementation of the C# platform proceeds strictly in one-task / one-commit-group increments (`P-01` to `P-17`) after PM review of `R-0`:
+Platform work proceeds strictly in one-task / one-commit-group increments (`P-01` to `P-17`) after PM review of `R-0`. **Current PM clarifications (`2026-10-23`):** `P-01` is the documentation-only domain-model specification, `P-02` is the documentation-only sync/replication protocol specification, `P-04` is the documentation-plus-YAML Cloud API contract below, and owner-approved `P-0104r` is the completed unified revision recorded above. The previously listed C# solution bootstrap, Canonical Invoice conformance, Store Hub, and Cloud implementation work are deferred to later explicit PM tasks and are not delivered by these documentation tasks (`ASM-06`, `ASM-13`, `ASM-18`).
 
-### `P-01` — C# Solution Bootstrap & Canonical Invoice v0 Contract / Conformance
-- Create clean `.NET` / `ASP.NET Core` solution structure in `Kandoo` (domain contracts, core library, test project; zero secrets).
-- Implement strongly typed C# **Canonical Invoice v0** domain models, JSON serializer, structural + semantic validator (`DRAFT → EXTRACTED → VALIDATED → ISSUED → REVOKED | SUPERSEDED`, provenance completeness, integer-only Rials, `attention_cells` issue gate, optional E-01b `tax_lines` / `discount_lines` / `rounding`).
-- Implement exact canonical SHA-256 `issued_content_sha256` computation matching Python's UTF-8 / UTF-16 key-sorted compact JSON profile, verified by Golden Vector unit tests against `Kandoo-Digital-Invoice`.
+### `P-01` — Domain Model Specification (Documentation Only)
+- Define all 15 logical entities (`Business` through `Lock`), key fields, relationships, constraints, and an ASCII entity-relationship diagram in `docs/domain-model.md`.
+- Express `D9`–`D12`, store isolation, and multi-device `D13` as numbered testable statements, each linked to a concrete Given/When/Then acceptance scenario.
+- Specify 67 scenarios in total without writing C#, creating a physical database schema, copying extraction code, or claiming unimplemented concurrency/security behavior.
+- Record conservative modeling choices and new open product questions in `docs/DECISIONS.md` under `ASM-06`–`ASM-12` and Open items 5–6.
 
-### `P-02` — Store Hub Core, SQLite Persistence, Concurrency, Numbering & Per-Phone Draft Lock
-- Implement single-store LAN Hub persistence (`SQLite` + durable Outbox) supporting multi-device requests (`device_id`) and idempotent replay (`operation_id`) per `D7`, `D10`, and `D13`.
-- Implement Store Hub sequential `display_number` allocator distinct from `invoice_id` and untrusted `header.invoice_number` (`D12`).
-- Implement event-ledger inventory, normalized product catalog with near-duplicate warnings (`D9`), and `base_version` OCC conflict detection without silent overwrite (`D10`).
-- Implement hub-owned **per-phone `DRAFT` lock** per device with hard error on competing device, automatic release on issue/cancel/disconnect/configurable timeout (**default 5 minutes** per `D11` v4.2), sequential same-phone support, and local backup/restore foundation enforcing **Restore Second Factor** + `SEC-1` (`v4.1`/`v4.2`).
+### `P-02` — Sync / Replication Protocol Specification (Documentation Only)
+- Specify owner-created QR pairing, device sessions/revocation, idempotent operation envelopes with `base_version`, D11 locks, and D7 Hub-off behavior over LAN.
+- Specify an append-only per-store operation log with writer fencing, ordered atomic ingest, idempotent duplicates, gap detection, durable retries, and backpressure.
+- Specify OTP plus second-factor restore, deterministic replay, canonical replayed-state hashing, new-writer activation, and explicit unsynced-disk-loss behavior.
+- Provide a seven-case failure table and 34 syntactically valid, hash-checked synthetic JSON vectors in `docs/sync-protocol-test-vectors.json` for P-05/P-07.
+- Record conservative choices under `ASM-13`–`ASM-17` and Open items 7–10; write no C#, physical schema, extraction implementation, secrets, or demos.
 
 ### `P-03` — Mode `B` Python CLI Adapter & Review Gate Integration
 - Implement C# process adapter invoking `python -m image_extraction_adapter.cli extract --image <path> --context <path>` via `ProcessStartInfo.ArgumentList` with explicit UTF-8 `stdout`/`stderr` capture (`D1`, `D2`, `E-09`).
 - Manage temporary producer-owned `--context` JSON lifecycle without leaking sensitive data or persisting invoice images inappropriately.
 - Map exit codes deterministically (`0` → `AUTO` candidate held pre-issuance, `10` → operator `REVIEW` queue preserving `attention_cells`, `20` → `REJECT`, `30` → operational failure), enforcing fail-closed behavior with zero auto-repair or silent issuance.
 
-### `P-04` — Cloud API, Outbox Replication & Second-Factor Restore Export
-- Implement `ASP.NET Core` Cloud API + `PostgreSQL` persistence with `Business → Store → Users / Devices` membership model (`D6`) and Global Revision sync cursor (`D7`, `D10`).
-- Implement offline-first `SQLite Outbox ↔ Cloud API` synchronization and store backup/restore export (`D8`).
-- Enforce `SEC-1` server-side encryption with restricted, audited access and require **Restore Second Factor** verification (recovery key or paired-device approval alongside OTP) before any store restore export is released (`v4.1` / `v4.2`).
+### `P-04` — Cloud API Contract (Documentation + YAML Only)
+- Define `docs/openapi.yaml` in OpenAPI 3.1 and `docs/cloud-api-contract.md` for P-05/P-07 implementers, covering Store Registration, Device Pairing, Operation Ingest, Locks, Restore, and Invoice Delivery (22 operations total).
+- Specify per-device bearer credentials and rotation, scoped restore credentials, uniform `{code, message, retry_hint}` errors (51 codes), `/v1` path versioning, idempotency on all 15 mutations, rate-limit headers/defaults, and cursor pagination.
+- Preserve P-01/P-02 domain and protocol shapes, Hub-only writes, 300-second configurable locks, OTP plus SEC-1 restore, explicit unsynced-loss reporting, SMS stub/public-token rules, and D14 legal gates. Cover the Cloud surfaces required by P-05 through P-09 without implementing them.
+- Validate with a real OpenAPI linter at zero errors; record the exact command/result and conservative choices under `ASM-18`–`ASM-21` and Open items 11–13. Write no C#, physical schema, extraction implementation, secrets, production credentials, or demos.
 
 ### Downstream Milestone Gate Note (`P-05`–`P-17`)
 - Later increments remain bound by v4.1/v4.2 amendments: `P-08` (SMS delivery — uses stub until `P-10`, requires owner provider decision before real SMS), `P-09` (customer web view — blocked on lawyer-approved `"Kandoo digital invoice"` wording per `D14`), `P-10` (local Docker Compose + portable VPS Docker kit per `D5`), `P-12` (device pairing & restore 2FA UX), and `P-16` (`SEC-1` encryption hardening). Each task executes only under its explicit PM task prompt.
