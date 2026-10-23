@@ -3,20 +3,20 @@
     "array_order": "preserved; state entity collections are sorted before hashing as specified in sync-protocol.md",
     "entry_hash": "lowercase SHA-256 of canonical JSON for the complete log entry excluding entry_hash",
     "json_encoding": "UTF-8",
-    "number_format": "JSON integers only in hash-bearing vectors; no NaN or Infinity",
+    "number_format": "JSON integers only in hash-bearing vectors; quantities use signed integer thousandths (quantity_millis, quantity_delta_millis, stock_millis); Rial amounts remain unscaled; no NaN or Infinity",
     "object_keys": "sorted lexicographically by Unicode code point",
     "request_hash": "lowercase SHA-256 of canonical JSON for store_id, device_id, operation_id, operation_type, base_version, and payload",
     "state_hash": "lowercase SHA-256 of canonical JSON for the replayed_state object",
     "whitespace": "no insignificant whitespace (JSON separators comma and colon)"
   },
-  "description": "Synthetic P-02 protocol vectors for P-05 and P-07. No production credentials or customer data.",
+  "description": "Synthetic P-02 protocol vectors for P-05 and P-07, revised by P-0104r. No production credentials or customer data.",
   "fixtures": {
     "business_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
     "companion_device_1": "33333333-3333-4333-8333-333333333333",
     "companion_device_2": "44444444-4444-4444-8444-444444444444",
     "default_lock_timeout_seconds": 300,
     "entry_41_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
-    "entry_42_hash": "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d",
+    "entry_42_hash": "fa0daab5586810444f1ecfb1ebf8f3f7e061a42630d77806a4e8d9aa3a98e502",
     "hub_device_id": "22222222-2222-4222-8222-222222222222",
     "invoice_1": "77777777-7777-4777-8777-777777777777",
     "invoice_2": "88888888-8888-4888-8888-888888888888",
@@ -26,8 +26,8 @@
     "phone": "+989120000001",
     "prior_entry_hash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
     "product_request_hash": "8b6fcb64f008a9d921bf44fe7a9346eb6a8898fa569904942be8a9f36b3eb8a6",
-    "restore_bad_state_hash": "3e69385958c1f369cd9124e94dc5a439ba75d1d71ae1ba147b458936fc0f3c82",
-    "restore_state_hash": "71c370ae4f33e6c20d880db1be1eb09d32008565f630ca70c5a7df48df8fc98d",
+    "restore_bad_state_hash": "5843af951860e9dee80fa72cf7065750fd2fcf8c3a1d8025cfb5e9d3b3fca224",
+    "restore_state_hash": "1074aa979b97ce6e02a71a4a2783b46f260ecdf12bd1e1f03e043751b156d5e4",
     "session_1": "99999999-9999-4999-8999-999999999999",
     "store_id": "11111111-1111-4111-8111-111111111111"
   },
@@ -265,9 +265,9 @@
               "payload": {
                 "description": "late item",
                 "invoice_id": "77777777-7777-4777-8777-777777777777",
-                "quantity": 1
+                "quantity_millis": 1000
               },
-              "request_hash": "f3e9ab540e53a7e698d276194336ae270f7c064e7e0e72efcb6c9a893ab88609",
+              "request_hash": "a7f911671952898b24dd93cacc8d816652b216571903afc53a380ac7b389e6e8",
               "store_id": "11111111-1111-4111-8111-111111111111"
             },
             "session_id": "99999999-9999-4999-8999-999999999999"
@@ -502,7 +502,7 @@
       "expected_output": {
         "atomic_commit": true,
         "invoice": {
-          "display_number": 42,
+          "display_number": null,
           "invoice_id": "77777777-7777-4777-8777-777777777777",
           "retired": false,
           "status": "DRAFT"
@@ -519,7 +519,9 @@
           "store_id": "11111111-1111-4111-8111-111111111111",
           "timeout_seconds": 300
         },
-        "status": "SUCCEEDED"
+        "status": "SUCCEEDED",
+        "display_number_consumed": false,
+        "next_display_number": 42
       },
       "id": "LAN-LOCK-001",
       "input": {
@@ -560,7 +562,7 @@
         "active_lock_count": 1,
         "display_number_consumed": false,
         "invoice_created": false,
-        "next_display_number": 43,
+        "next_display_number": 42,
         "second_lock_created": false,
         "status": "DRAFT_LOCK_CONFLICT"
       },
@@ -576,7 +578,7 @@
             "state": "ACTIVE",
             "store_id": "11111111-1111-4111-8111-111111111111"
           },
-          "next_display_number": 43,
+          "next_display_number": 42,
           "now": "2026-10-22T08:01:00Z"
         },
         "steps": [
@@ -602,7 +604,7 @@
     {
       "expected_output": {
         "active_lock_count": 1,
-        "display_number": 42,
+        "display_number": null,
         "idempotent_replay": true,
         "invoice_id": "77777777-7777-4777-8777-777777777777",
         "lock_id": "lock-0001",
@@ -625,7 +627,7 @@
             "operation_id": "op-draft-0001",
             "request_hash": "200c7a5ba9a17993d328fe9f2390a3f5070c7f359c9c797b769732aa914b6b3e",
             "response": {
-              "display_number": 42,
+              "display_number": null,
               "invoice_id": "77777777-7777-4777-8777-777777777777",
               "status": "SUCCEEDED"
             }
@@ -655,12 +657,14 @@
       "expected_output": {
         "first_invoice_status": "ISSUED",
         "first_lock_release_reason": "ISSUE",
-        "second_display_number": 43,
+        "second_display_number": null,
         "second_draft_acquired": true,
         "second_invoice_id": "88888888-8888-4888-8888-888888888888",
         "second_lock_device_id": "44444444-4444-4444-8444-444444444444",
         "sequential_purchase_allowed": true,
-        "status": "SUCCEEDED"
+        "status": "SUCCEEDED",
+        "first_display_number": 42,
+        "next_display_number": 43
       },
       "id": "LAN-LOCK-004",
       "input": {
@@ -673,11 +677,11 @@
             "state": "ACTIVE"
           },
           "invoice": {
-            "display_number": 42,
+            "display_number": null,
             "invoice_id": "77777777-7777-4777-8777-777777777777",
             "status": "VALIDATED"
           },
-          "next_display_number": 43,
+          "next_display_number": 42,
           "next_invoice_id": "88888888-8888-4888-8888-888888888888",
           "now": "2026-10-22T08:02:00Z"
         },
@@ -726,7 +730,9 @@
         "retirement_reason": "TIMEOUT",
         "state_at_299_seconds": "ACTIVE",
         "state_at_300_seconds": "RELEASED",
-        "status": "LOCK_TIMEOUT"
+        "status": "LOCK_TIMEOUT",
+        "display_number_consumed": false,
+        "next_display_number": 42
       },
       "id": "LAN-LOCK-005",
       "input": {
@@ -734,7 +740,8 @@
           "invoice": {
             "invoice_id": "77777777-7777-4777-8777-777777777777",
             "retired": false,
-            "status": "DRAFT"
+            "status": "DRAFT",
+            "display_number": null
           },
           "lock": {
             "customer_phone": "+989120000001",
@@ -746,7 +753,8 @@
             "state": "ACTIVE",
             "timeout_seconds": 300
           },
-          "now": "2026-10-22T08:04:59Z"
+          "now": "2026-10-22T08:04:59Z",
+          "next_display_number": 42
         },
         "steps": [
           {
@@ -803,9 +811,9 @@
               "payload": {
                 "description": "late item",
                 "invoice_id": "77777777-7777-4777-8777-777777777777",
-                "quantity": 1
+                "quantity_millis": 1000
               },
-              "request_hash": "f3e9ab540e53a7e698d276194336ae270f7c064e7e0e72efcb6c9a893ab88609",
+              "request_hash": "a7f911671952898b24dd93cacc8d816652b216571903afc53a380ac7b389e6e8",
               "store_id": "11111111-1111-4111-8111-111111111111"
             },
             "session_id": "99999999-9999-4999-8999-999999999999"
@@ -849,7 +857,7 @@
           }
         ]
       },
-      "scenario": "Hub-off behavior blocks new companion work without creating authoritative local state."
+      "scenario": "Hub-off behavior blocks new companion work without creating authoritative local state or consuming a display number; the next issued-only candidate remains unchanged."
     },
     {
       "expected_output": {
@@ -859,9 +867,9 @@
         "entry_count": 42,
         "entry_hashes": [
           "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
-          "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d"
+          "fa0daab5586810444f1ecfb1ebf8f3f7e061a42630d77806a4e8d9aa3a98e502"
         ],
-        "head_entry_hash": "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d",
+        "head_entry_hash": "fa0daab5586810444f1ecfb1ebf8f3f7e061a42630d77806a4e8d9aa3a98e502",
         "ingested_count": 2,
         "status": "ACCEPTED"
       },
@@ -913,27 +921,27 @@
                 {
                   "base_version": null,
                   "device_id": "44444444-4444-4444-8444-444444444444",
-                  "entry_hash": "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d",
+                  "entry_hash": "fa0daab5586810444f1ecfb1ebf8f3f7e061a42630d77806a4e8d9aa3a98e502",
                   "hub_recorded_at": "2026-10-22T08:02:00Z",
                   "operation_id": "op-inventory-0002",
                   "operation_seq": 42,
                   "operation_type": "inventory.append",
                   "outcome": {
                     "result_status": "SUCCEEDED",
-                    "stock": 8
+                    "stock_millis": 8000
                   },
                   "payload": {
                     "product_id": "prod-0001",
-                    "quantity_delta": -2,
+                    "quantity_delta_millis": -2000,
                     "reason": "SALE"
                   },
                   "previous_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
                   "protocol_version": "0",
-                  "request_hash": "6786ca9246a0e00a696eea8569c3b6867c8e94e45bc83e0dddff2e13797b6e21",
+                  "request_hash": "73f3ba984ec8ef70fc56be8e4067f3f00d57c41e6d93d07d39786013ff00a795",
                   "response_snapshot": {
                     "operation_seq": 42,
                     "status": "SUCCEEDED",
-                    "stock": 8
+                    "stock_millis": 8000
                   },
                   "store_id": "11111111-1111-4111-8111-111111111111",
                   "writer_device_id": "22222222-2222-4222-8222-222222222222",
@@ -998,27 +1006,27 @@
               {
                 "base_version": null,
                 "device_id": "44444444-4444-4444-8444-444444444444",
-                "entry_hash": "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d",
+                "entry_hash": "fa0daab5586810444f1ecfb1ebf8f3f7e061a42630d77806a4e8d9aa3a98e502",
                 "hub_recorded_at": "2026-10-22T08:02:00Z",
                 "operation_id": "op-inventory-0002",
                 "operation_seq": 42,
                 "operation_type": "inventory.append",
                 "outcome": {
                   "result_status": "SUCCEEDED",
-                  "stock": 8
+                  "stock_millis": 8000
                 },
                 "payload": {
                   "product_id": "prod-0001",
-                  "quantity_delta": -2,
+                  "quantity_delta_millis": -2000,
                   "reason": "SALE"
                 },
                 "previous_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
                 "protocol_version": "0",
-                "request_hash": "6786ca9246a0e00a696eea8569c3b6867c8e94e45bc83e0dddff2e13797b6e21",
+                "request_hash": "73f3ba984ec8ef70fc56be8e4067f3f00d57c41e6d93d07d39786013ff00a795",
                 "response_snapshot": {
                   "operation_seq": 42,
                   "status": "SUCCEEDED",
-                  "stock": 8
+                  "stock_millis": 8000
                 },
                 "store_id": "11111111-1111-4111-8111-111111111111",
                 "writer_device_id": "22222222-2222-4222-8222-222222222222",
@@ -1026,7 +1034,7 @@
               }
             ],
             "entry_count": 42,
-            "head_entry_hash": "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d"
+            "head_entry_hash": "fa0daab5586810444f1ecfb1ebf8f3f7e061a42630d77806a4e8d9aa3a98e502"
           },
           "projection_version": 42
         },
@@ -1067,27 +1075,27 @@
                 {
                   "base_version": null,
                   "device_id": "44444444-4444-4444-8444-444444444444",
-                  "entry_hash": "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d",
+                  "entry_hash": "fa0daab5586810444f1ecfb1ebf8f3f7e061a42630d77806a4e8d9aa3a98e502",
                   "hub_recorded_at": "2026-10-22T08:02:00Z",
                   "operation_id": "op-inventory-0002",
                   "operation_seq": 42,
                   "operation_type": "inventory.append",
                   "outcome": {
                     "result_status": "SUCCEEDED",
-                    "stock": 8
+                    "stock_millis": 8000
                   },
                   "payload": {
                     "product_id": "prod-0001",
-                    "quantity_delta": -2,
+                    "quantity_delta_millis": -2000,
                     "reason": "SALE"
                   },
                   "previous_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
                   "protocol_version": "0",
-                  "request_hash": "6786ca9246a0e00a696eea8569c3b6867c8e94e45bc83e0dddff2e13797b6e21",
+                  "request_hash": "73f3ba984ec8ef70fc56be8e4067f3f00d57c41e6d93d07d39786013ff00a795",
                   "response_snapshot": {
                     "operation_seq": 42,
                     "status": "SUCCEEDED",
-                    "stock": 8
+                    "stock_millis": 8000
                   },
                   "store_id": "11111111-1111-4111-8111-111111111111",
                   "writer_device_id": "22222222-2222-4222-8222-222222222222",
@@ -1133,27 +1141,27 @@
                 {
                   "base_version": null,
                   "device_id": "44444444-4444-4444-8444-444444444444",
-                  "entry_hash": "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d",
+                  "entry_hash": "fa0daab5586810444f1ecfb1ebf8f3f7e061a42630d77806a4e8d9aa3a98e502",
                   "hub_recorded_at": "2026-10-22T08:02:00Z",
                   "operation_id": "op-inventory-0002",
                   "operation_seq": 42,
                   "operation_type": "inventory.append",
                   "outcome": {
                     "result_status": "SUCCEEDED",
-                    "stock": 8
+                    "stock_millis": 8000
                   },
                   "payload": {
                     "product_id": "prod-0001",
-                    "quantity_delta": -2,
+                    "quantity_delta_millis": -2000,
                     "reason": "SALE"
                   },
                   "previous_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
                   "protocol_version": "0",
-                  "request_hash": "6786ca9246a0e00a696eea8569c3b6867c8e94e45bc83e0dddff2e13797b6e21",
+                  "request_hash": "73f3ba984ec8ef70fc56be8e4067f3f00d57c41e6d93d07d39786013ff00a795",
                   "response_snapshot": {
                     "operation_seq": 42,
                     "status": "SUCCEEDED",
-                    "stock": 8
+                    "stock_millis": 8000
                   },
                   "store_id": "11111111-1111-4111-8111-111111111111",
                   "writer_device_id": "22222222-2222-4222-8222-222222222222",
@@ -1196,27 +1204,27 @@
                 {
                   "base_version": null,
                   "device_id": "44444444-4444-4444-8444-444444444444",
-                  "entry_hash": "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d",
+                  "entry_hash": "fa0daab5586810444f1ecfb1ebf8f3f7e061a42630d77806a4e8d9aa3a98e502",
                   "hub_recorded_at": "2026-10-22T08:02:00Z",
                   "operation_id": "op-inventory-0002",
                   "operation_seq": 42,
                   "operation_type": "inventory.append",
                   "outcome": {
                     "result_status": "SUCCEEDED",
-                    "stock": 8
+                    "stock_millis": 8000
                   },
                   "payload": {
                     "product_id": "prod-0001",
-                    "quantity_delta": -2,
+                    "quantity_delta_millis": -2000,
                     "reason": "SALE"
                   },
                   "previous_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
                   "protocol_version": "0",
-                  "request_hash": "6786ca9246a0e00a696eea8569c3b6867c8e94e45bc83e0dddff2e13797b6e21",
+                  "request_hash": "73f3ba984ec8ef70fc56be8e4067f3f00d57c41e6d93d07d39786013ff00a795",
                   "response_snapshot": {
                     "operation_seq": 42,
                     "status": "SUCCEEDED",
-                    "stock": 8
+                    "stock_millis": 8000
                   },
                   "store_id": "11111111-1111-4111-8111-111111111111",
                   "writer_device_id": "22222222-2222-4222-8222-222222222222",
@@ -1317,27 +1325,27 @@
                 {
                   "base_version": null,
                   "device_id": "44444444-4444-4444-8444-444444444444",
-                  "entry_hash": "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d",
+                  "entry_hash": "fa0daab5586810444f1ecfb1ebf8f3f7e061a42630d77806a4e8d9aa3a98e502",
                   "hub_recorded_at": "2026-10-22T08:02:00Z",
                   "operation_id": "op-inventory-0002",
                   "operation_seq": 42,
                   "operation_type": "inventory.append",
                   "outcome": {
                     "result_status": "SUCCEEDED",
-                    "stock": 8
+                    "stock_millis": 8000
                   },
                   "payload": {
                     "product_id": "prod-0001",
-                    "quantity_delta": -2,
+                    "quantity_delta_millis": -2000,
                     "reason": "SALE"
                   },
                   "previous_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
                   "protocol_version": "0",
-                  "request_hash": "6786ca9246a0e00a696eea8569c3b6867c8e94e45bc83e0dddff2e13797b6e21",
+                  "request_hash": "73f3ba984ec8ef70fc56be8e4067f3f00d57c41e6d93d07d39786013ff00a795",
                   "response_snapshot": {
                     "operation_seq": 42,
                     "status": "SUCCEEDED",
-                    "stock": 8
+                    "stock_millis": 8000
                   },
                   "store_id": "11111111-1111-4111-8111-111111111111",
                   "writer_device_id": "22222222-2222-4222-8222-222222222222",
@@ -1387,27 +1395,27 @@
                 {
                   "base_version": null,
                   "device_id": "44444444-4444-4444-8444-444444444444",
-                  "entry_hash": "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d",
+                  "entry_hash": "fa0daab5586810444f1ecfb1ebf8f3f7e061a42630d77806a4e8d9aa3a98e502",
                   "hub_recorded_at": "2026-10-22T08:02:00Z",
                   "operation_id": "op-inventory-0002",
                   "operation_seq": 42,
                   "operation_type": "inventory.append",
                   "outcome": {
                     "result_status": "SUCCEEDED",
-                    "stock": 8
+                    "stock_millis": 8000
                   },
                   "payload": {
                     "product_id": "prod-0001",
-                    "quantity_delta": -2,
+                    "quantity_delta_millis": -2000,
                     "reason": "SALE"
                   },
                   "previous_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
                   "protocol_version": "0",
-                  "request_hash": "6786ca9246a0e00a696eea8569c3b6867c8e94e45bc83e0dddff2e13797b6e21",
+                  "request_hash": "73f3ba984ec8ef70fc56be8e4067f3f00d57c41e6d93d07d39786013ff00a795",
                   "response_snapshot": {
                     "operation_seq": 42,
                     "status": "SUCCEEDED",
-                    "stock": 8
+                    "stock_millis": 8000
                   },
                   "store_id": "11111111-1111-4111-8111-111111111111",
                   "writer_device_id": "22222222-2222-4222-8222-222222222222",
@@ -1583,7 +1591,7 @@
         "given": {
           "cloud_manifest": {
             "head_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
-            "state_hash": "71c370ae4f33e6c20d880db1be1eb09d32008565f630ca70c5a7df48df8fc98d",
+            "state_hash": "1074aa979b97ce6e02a71a4a2783b46f260ecdf12bd1e1f03e043751b156d5e4",
             "store_id": "11111111-1111-4111-8111-111111111111",
             "through_operation_seq": 41,
             "writer_epoch": 3
@@ -1604,9 +1612,9 @@
     },
     {
       "expected_output": {
-        "computed_state_hash": "71c370ae4f33e6c20d880db1be1eb09d32008565f630ca70c5a7df48df8fc98d",
+        "computed_state_hash": "1074aa979b97ce6e02a71a4a2783b46f260ecdf12bd1e1f03e043751b156d5e4",
         "consistency_check": "MATCH",
-        "manifest_state_hash": "71c370ae4f33e6c20d880db1be1eb09d32008565f630ca70c5a7df48df8fc98d",
+        "manifest_state_hash": "1074aa979b97ce6e02a71a4a2783b46f260ecdf12bd1e1f03e043751b156d5e4",
         "new_writer_device_id": "55555555-5555-4555-8555-555555555555",
         "new_writer_epoch": 4,
         "next_operation_seq": 42,
@@ -1624,7 +1632,7 @@
         "given": {
           "cloud_manifest": {
             "head_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
-            "state_hash": "71c370ae4f33e6c20d880db1be1eb09d32008565f630ca70c5a7df48df8fc98d",
+            "state_hash": "1074aa979b97ce6e02a71a4a2783b46f260ecdf12bd1e1f03e043751b156d5e4",
             "store_id": "11111111-1111-4111-8111-111111111111",
             "through_operation_seq": 41,
             "writer_epoch": 3
@@ -1669,7 +1677,7 @@
                 }
               ],
               "digital_invoices": [],
-              "display_number_high_watermark": 42,
+              "display_number_high_watermark": 0,
               "inventory_events": [],
               "invoice_items": [],
               "invoices": [],
@@ -1730,7 +1738,7 @@
     {
       "expected_output": {
         "export_permitted": true,
-        "manifest_state_hash": "71c370ae4f33e6c20d880db1be1eb09d32008565f630ca70c5a7df48df8fc98d",
+        "manifest_state_hash": "1074aa979b97ce6e02a71a4a2783b46f260ecdf12bd1e1f03e043751b156d5e4",
         "next_step": "REPLAY_AND_VERIFY",
         "second_factor": "PAIRED_DEVICE_APPROVAL",
         "second_factor_verified": true,
@@ -1749,7 +1757,7 @@
           },
           "cloud_manifest": {
             "head_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
-            "state_hash": "71c370ae4f33e6c20d880db1be1eb09d32008565f630ca70c5a7df48df8fc98d",
+            "state_hash": "1074aa979b97ce6e02a71a4a2783b46f260ecdf12bd1e1f03e043751b156d5e4",
             "store_id": "11111111-1111-4111-8111-111111111111",
             "through_operation_seq": 41,
             "writer_epoch": 3
@@ -1765,7 +1773,7 @@
               "approval": {
                 "device_id": "33333333-3333-4333-8333-333333333333",
                 "expires_at": "2026-10-22T09:05:00Z",
-                "manifest_state_hash": "71c370ae4f33e6c20d880db1be1eb09d32008565f630ca70c5a7df48df8fc98d",
+                "manifest_state_hash": "1074aa979b97ce6e02a71a4a2783b46f260ecdf12bd1e1f03e043751b156d5e4",
                 "new_hub_device_id": "55555555-5555-4555-8555-555555555555",
                 "restore_request_id": "restore-0001",
                 "signature": "test-only-approval-signature"
@@ -1780,9 +1788,9 @@
     {
       "expected_output": {
         "cloud_log_unchanged": true,
-        "computed_state_hash": "3e69385958c1f369cd9124e94dc5a439ba75d1d71ae1ba147b458936fc0f3c82",
+        "computed_state_hash": "5843af951860e9dee80fa72cf7065750fd2fcf8c3a1d8025cfb5e9d3b3fca224",
         "consistency_check": "MISMATCH",
-        "manifest_state_hash": "71c370ae4f33e6c20d880db1be1eb09d32008565f630ca70c5a7df48df8fc98d",
+        "manifest_state_hash": "1074aa979b97ce6e02a71a4a2783b46f260ecdf12bd1e1f03e043751b156d5e4",
         "new_writer_epoch": null,
         "quarantine": "REVIEW",
         "status": "CONSISTENCY_MISMATCH",
@@ -1799,7 +1807,7 @@
           },
           "cloud_manifest": {
             "head_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
-            "state_hash": "71c370ae4f33e6c20d880db1be1eb09d32008565f630ca70c5a7df48df8fc98d",
+            "state_hash": "1074aa979b97ce6e02a71a4a2783b46f260ecdf12bd1e1f03e043751b156d5e4",
             "store_id": "11111111-1111-4111-8111-111111111111",
             "through_operation_seq": 41,
             "writer_epoch": 3
@@ -1835,7 +1843,7 @@
                 }
               ],
               "digital_invoices": [],
-              "display_number_high_watermark": 42,
+              "display_number_high_watermark": 0,
               "inventory_events": [],
               "invoice_items": [],
               "invoices": [],
@@ -1919,7 +1927,7 @@
           },
           "cloud_manifest": {
             "head_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
-            "state_hash": "71c370ae4f33e6c20d880db1be1eb09d32008565f630ca70c5a7df48df8fc98d",
+            "state_hash": "1074aa979b97ce6e02a71a4a2783b46f260ecdf12bd1e1f03e043751b156d5e4",
             "store_id": "11111111-1111-4111-8111-111111111111",
             "through_operation_seq": 41,
             "writer_epoch": 3
@@ -1935,7 +1943,7 @@
             ]
           },
           "now": "2026-10-22T09:10:00Z",
-          "replayed_state_hash": "71c370ae4f33e6c20d880db1be1eb09d32008565f630ca70c5a7df48df8fc98d"
+          "replayed_state_hash": "1074aa979b97ce6e02a71a4a2783b46f260ecdf12bd1e1f03e043751b156d5e4"
         },
         "steps": [
           {
@@ -2012,9 +2020,9 @@
               "payload": {
                 "description": "late item",
                 "invoice_id": "77777777-7777-4777-8777-777777777777",
-                "quantity": 1
+                "quantity_millis": 1000
               },
-              "request_hash": "f3e9ab540e53a7e698d276194336ae270f7c064e7e0e72efcb6c9a893ab88609",
+              "request_hash": "a7f911671952898b24dd93cacc8d816652b216571903afc53a380ac7b389e6e8",
               "store_id": "11111111-1111-4111-8111-111111111111"
             }
           }
@@ -2094,27 +2102,27 @@
                 {
                   "base_version": null,
                   "device_id": "44444444-4444-4444-8444-444444444444",
-                  "entry_hash": "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d",
+                  "entry_hash": "fa0daab5586810444f1ecfb1ebf8f3f7e061a42630d77806a4e8d9aa3a98e502",
                   "hub_recorded_at": "2026-10-22T08:02:00Z",
                   "operation_id": "op-inventory-0002",
                   "operation_seq": 42,
                   "operation_type": "inventory.append",
                   "outcome": {
                     "result_status": "SUCCEEDED",
-                    "stock": 8
+                    "stock_millis": 8000
                   },
                   "payload": {
                     "product_id": "prod-0001",
-                    "quantity_delta": -2,
+                    "quantity_delta_millis": -2000,
                     "reason": "SALE"
                   },
                   "previous_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
                   "protocol_version": "0",
-                  "request_hash": "6786ca9246a0e00a696eea8569c3b6867c8e94e45bc83e0dddff2e13797b6e21",
+                  "request_hash": "73f3ba984ec8ef70fc56be8e4067f3f00d57c41e6d93d07d39786013ff00a795",
                   "response_snapshot": {
                     "operation_seq": 42,
                     "status": "SUCCEEDED",
-                    "stock": 8
+                    "stock_millis": 8000
                   },
                   "store_id": "11111111-1111-4111-8111-111111111111",
                   "writer_device_id": "22222222-2222-4222-8222-222222222222",
@@ -2162,27 +2170,27 @@
                 {
                   "base_version": null,
                   "device_id": "44444444-4444-4444-8444-444444444444",
-                  "entry_hash": "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d",
+                  "entry_hash": "fa0daab5586810444f1ecfb1ebf8f3f7e061a42630d77806a4e8d9aa3a98e502",
                   "hub_recorded_at": "2026-10-22T08:02:00Z",
                   "operation_id": "op-inventory-0002",
                   "operation_seq": 42,
                   "operation_type": "inventory.append",
                   "outcome": {
                     "result_status": "SUCCEEDED",
-                    "stock": 8
+                    "stock_millis": 8000
                   },
                   "payload": {
                     "product_id": "prod-0001",
-                    "quantity_delta": -2,
+                    "quantity_delta_millis": -2000,
                     "reason": "SALE"
                   },
                   "previous_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
                   "protocol_version": "0",
-                  "request_hash": "6786ca9246a0e00a696eea8569c3b6867c8e94e45bc83e0dddff2e13797b6e21",
+                  "request_hash": "73f3ba984ec8ef70fc56be8e4067f3f00d57c41e6d93d07d39786013ff00a795",
                   "response_snapshot": {
                     "operation_seq": 42,
                     "status": "SUCCEEDED",
-                    "stock": 8
+                    "stock_millis": 8000
                   },
                   "store_id": "11111111-1111-4111-8111-111111111111",
                   "writer_device_id": "22222222-2222-4222-8222-222222222222",
@@ -2291,27 +2299,27 @@
                 {
                   "base_version": null,
                   "device_id": "44444444-4444-4444-8444-444444444444",
-                  "entry_hash": "860f23aa6c1942f2ff82ed47579b8607409e80685336aadafb003dfcdc38599d",
+                  "entry_hash": "fa0daab5586810444f1ecfb1ebf8f3f7e061a42630d77806a4e8d9aa3a98e502",
                   "hub_recorded_at": "2026-10-22T08:02:00Z",
                   "operation_id": "op-inventory-0002",
                   "operation_seq": 42,
                   "operation_type": "inventory.append",
                   "outcome": {
                     "result_status": "SUCCEEDED",
-                    "stock": 8
+                    "stock_millis": 8000
                   },
                   "payload": {
                     "product_id": "prod-0001",
-                    "quantity_delta": -2,
+                    "quantity_delta_millis": -2000,
                     "reason": "SALE"
                   },
                   "previous_entry_hash": "ca15b6e0b3d101f57f9855c6e43871e4d5db6875d87a19b0b8b0ee8baa9975a8",
                   "protocol_version": "0",
-                  "request_hash": "6786ca9246a0e00a696eea8569c3b6867c8e94e45bc83e0dddff2e13797b6e21",
+                  "request_hash": "73f3ba984ec8ef70fc56be8e4067f3f00d57c41e6d93d07d39786013ff00a795",
                   "response_snapshot": {
                     "operation_seq": 42,
                     "status": "SUCCEEDED",
-                    "stock": 8
+                    "stock_millis": 8000
                   },
                   "store_id": "11111111-1111-4111-8111-111111111111",
                   "writer_device_id": "22222222-2222-4222-8222-222222222222",

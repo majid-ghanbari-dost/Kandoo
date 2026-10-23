@@ -6,9 +6,10 @@ info:
   title: Kandoo Cloud API
   version: 1.0.0
   summary: P-04 documentation-only contract for Hub replication, administration, restore, and invoice delivery.
-  description: Normative HTTP contract for P-05/P-07 and downstream P-06/P-08/P-09 implementation. It does not claim an implemented
-    service. Store Hub authority, P-02 canonical hashes, strict store isolation, SEC-1 restore second factor, SMS stub, and
-    lawyer-copy gates are mandatory. Path version /v1 is independent of kandoo.sync.v0 and Canonical Invoice v0.
+  description: Normative HTTP contract for P-05/P-07 and downstream P-06/P-08/P-09 implementation, including the owner-approved
+    P-0104r pre-implementation revision. It does not claim an implemented service. Store Hub authority, P-02 canonical hashes,
+    strict store isolation, SEC-1 restore second factor, SMS stub, lawyer-copy gates, issue-only display numbering, accepted-change-only
+    lock activity, and ASM-22 scaled quantities are mandatory. Path version /v1 is independent of kandoo.sync.v0 and Canonical Invoice v0.
   license:
     name: Proprietary
     identifier: LicenseRef-Proprietary
@@ -2027,6 +2028,7 @@ components:
       - result_status
     LogEntry:
       type: object
+      description: P-02 replication envelope. Quantity fields inside generic payload, outcome, and response_snapshot data use ASM-22 signed integer thousandths (quantity_millis, quantity_delta_millis, and derived stock_millis); Rial amounts remain unscaled integers.
       properties:
         protocol_version:
           const: '0'
@@ -3032,8 +3034,11 @@ components:
           - 'null'
           format: uuid
         display_number:
-          type: integer
+          type:
+          - integer
+          - 'null'
           minimum: 1
+          description: Null before successful ISSUE and for retired drafts; otherwise the Hub-assigned gapless positive store number. Cloud never allocates or changes it.
         status:
           type: string
           enum:
@@ -3201,6 +3206,7 @@ components:
         display_number:
           type: integer
           minimum: 1
+          description: Required positive Hub-assigned number for this issued-only public projection; pre-issuance nulls are never exposed.
         lifecycle_status:
           type: string
           enum:
@@ -3223,6 +3229,8 @@ components:
       - legal_copy
 x-contract:
   documentation_only: true
+  revision: P-0104r
+  quantity_encoding: ASM-22 signed integer thousandths; Rials remain unscaled
   operation_count: 22
   mutating_operation_count: 15
   error_code_count: 51

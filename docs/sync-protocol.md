@@ -1,8 +1,8 @@
 # KANDOO — SYNC / REPLICATION PROTOCOL SPECIFICATION
 
-**Document status:** P-02 specification for PM review
+**Document status:** P-02 specification, revised by owner-approved `P-0104r` for PM review
 
-**Date:** `2026-10-22`
+**Date:** `2026-10-23`
 
 **Repository:** `majid-ghanbari-dost/Kandoo` (Parent Platform Repository)
 
@@ -22,7 +22,7 @@ This specification defines three cooperating protocol paths:
 2. **Store Hub → Cloud:** an append-only per-store operation log with ordered, idempotent, gap-sensitive, retryable replication and backpressure.
 3. **Cloud → replacement Store Hub:** restore gated by SMS OTP **and** a second factor, followed by log verification, deterministic replay, and a replayed-state hash comparison before writer activation.
 
-It refines `D7`, `D8`, `D10`, `D11`, `D12`, `D13`, and `SEC-1` without changing frozen decisions or the Canonical Invoice v0 contract. The 15 entities and operation/lock semantics are those in [`docs/domain-model.md`](domain-model.md).
+It refines `D7`, `D8`, `D10`, `D11`, `D12`, `D13`, and `SEC-1`; owner-approved `P-0104r` explicitly revises only the recorded D11 activity and D12 numbering semantics, while all other frozen decisions and the Canonical Invoice v0 contract remain unchanged. The 15 entities and operation/lock semantics are those in [`docs/domain-model.md`](domain-model.md).
 
 All behavior below is a requirement to implement and test, not a claim that an implementation exists. Every security, concurrency, replication, and restore claim has at least one concrete synthetic vector in [`docs/sync-protocol-test-vectors.json`](sync-protocol-test-vectors.json) for P-05 and P-07.
 
@@ -30,8 +30,8 @@ All behavior below is a requirement to implement and test, not a claim that an i
 
 - Exactly one active Store Hub writer exists per store. Companion devices never maintain an authoritative peer-to-peer ledger.
 - A companion whose Hub is unreachable cannot start a new authoritative store operation. A reachable Hub continues LAN work when internet/WAN is unavailable.
-- The Hub assigns `operation_seq`, display numbers, lock ownership, and Hub timestamps. Clients and Cloud do not reorder local operations.
-- Every accepted mutation has an `Operation` record and one durable log/outbox entry. Operation effects, idempotency response, lock/number changes, and outbox append commit atomically.
+- The Hub assigns `operation_seq`, lock ownership, and Hub timestamps. It assigns `display_number` only at successful `ISSUE`; every pre-issuance/retired draft is null-numbered. Clients and Cloud do not reorder local operations or allocate numbers.
+- Every accepted mutation has an `Operation` record and one durable log/outbox entry. Operation effects, idempotency response, lock changes, any successful-issue number/high-watermark change, and outbox append commit atomically.
 - Cloud ingest is append-only and idempotent. It never silently fills gaps, overwrites a conflicting entry, or applies a partial batch.
 - Restore never activates a replacement writer after OTP alone, after a failed second factor, or after a consistency mismatch.
 - Unsynced data on a lost Hub disk is not claimed to be recoverable from Cloud. Divergent unsynced data from a fenced writer is quarantined for review, never automatically merged.
@@ -44,6 +44,8 @@ All behavior below is a requirement to implement and test, not a claim that an i
 | `writer_epoch` | Positive fencing generation for a store. Authorized replacement-Hub activation increments it; ordinary companion pairing does not. |
 | `operation_seq` | Hub-assigned, contiguous, strictly increasing sequence within a store log. It continues across authorized writer epochs after restore. |
 | `accepted_through_seq` | Cloud high watermark: the last contiguous operation sequence durably ingested for the store. |
+| `display_number_high_watermark` | Last display number allocated by a successful `ISSUE`, or `0` if none; drafts and retired drafts never advance it. |
+| `next_display_number` | Test-fixture convenience equal to the issued-only high watermark plus one; it is only a candidate until a successful `ISSUE`, never a draft allocation. |
 | `entry_hash` | SHA-256 of one canonical log entry, excluding the `entry_hash` field itself. |
 | `previous_entry_hash` | Hash of the preceding store-log entry, linking sequence and content regardless of writer epoch. |
 | `outbox` | Durable Hub-local suffix of log entries not yet acknowledged by Cloud. Entries are removed only after the required acknowledgment. |
@@ -53,7 +55,7 @@ All behavior below is a requirement to implement and test, not a claim that an i
 
 ### 1.4 Wire and hash conventions
 
-The test-vector protocol identifier is `kandoo.sync.v0`, with `protocol_version: "0"` and `schema_version: "0"`. These versions identify this P-02 specification; they do not revise Canonical Invoice v0.
+The test-vector protocol identifier is `kandoo.sync.v0`, with `protocol_version: "0"` and `schema_version: "0"`. These versions identify this P-02 specification; they do not revise Canonical Invoice v0. `P-0104r` corrects this pre-implementation documentation/vector baseline in place; it does not authorize mixed decoders. Legacy `quantity` / `quantity_delta` names or draft-time display-number allocation are invalid after this revision and must fail validation/review rather than be silently coerced.
 
 Canonical JSON used for hashes has this profile:
 
@@ -62,6 +64,7 @@ Canonical JSON used for hashes has this profile:
 - Array order preserved. State entity collections are first sorted as specified in Section 4.5.
 - No insignificant whitespace: separators are `,` and `:`.
 - JSON integers in all hash-bearing vectors; NaN and Infinity are forbidden.
+- Under `ASM-22`, quantities are signed scaled-integer thousandths: invoice-item payload/state uses `quantity_millis`, inventory-movement payload/state uses `quantity_delta_millis`, and derived stock projections use `stock_millis` (`1000 = 1.000`; `-2000 = -2.000`). Floating point, decimal strings, and locale-sensitive parsing are forbidden. Integer Rial fields remain unscaled.
 - SHA-256 output is lowercase 64-character hexadecimal.
 
 Hash inputs are exactly:
@@ -179,6 +182,8 @@ The Hub handles a mutation in this order:
 6. In one durable transaction, write the Operation/result, domain effects, lock or display-number changes, response snapshot, and append-only outbox log entry.
 7. Return the response only after durable commit. If the response is lost, the client retries the identical operation.
 
+Draft creation and pre-issue changes carry `display_number=null` and leave the numbering high watermark unchanged. A successful `invoice.issue` validates first, then allocates the next gapless store number and advances the issued-only high watermark in the same transaction as the invoice, Operation response, lock release, and outbox entry. A failed issue allocates nothing; an exact issue replay returns the original number without advancing the watermark.
+
 The Cloud never assigns a different `operation_id`, `request_hash`, display number, or local sequence for an accepted entry.
 
 **Vectors:** `LAN-OP-001`, `LAN-OP-002`, `LAN-OP-003`, `LAN-OP-004`.
@@ -187,7 +192,7 @@ The Cloud never assigns a different `operation_id`, `request_hash`, display numb
 
 #### Acquire and replay
 
-A phone-associated `invoice.draft_create` operation includes the customer phone in its payload. The Hub normalizes the phone before evaluating `(store_id, customer_phone)` and atomically creates the draft and active Lock.
+A phone-associated `invoice.draft_create` operation includes the customer phone in its payload. The Hub normalizes the phone before evaluating `(store_id, customer_phone)` and atomically creates the null-numbered draft and active Lock without advancing the issued-only display-number high watermark.
 
 - If another device owns an active, unexpired lock, a different acquisition operation returns `DRAFT_LOCK_CONFLICT`; no second draft/lock or display number is created.
 - A different operation from the same device cannot create a second concurrent draft for that phone.
@@ -200,12 +205,12 @@ A phone-associated `invoice.draft_create` operation includes the customer phone 
 
 | Event | Required atomic result |
 | --- | --- |
-| Successful issue | Release with `ISSUE`; issued invoice remains immutable; a later sequential purchase may acquire immediately. |
-| Cancel | Retire the pre-issuance draft with `CANCEL` and release with `CANCEL`. |
-| Hub-observed disconnect or device revocation | Release with `DISCONNECT`; late writes cannot reactivate ownership. |
-| Inactivity timeout | Release with `TIMEOUT`, retire the abandoned draft with `TIMEOUT`, and reject old-owner writes. |
+| Successful issue | Allocate the next gapless `display_number`, advance the issued-only high watermark, persist the immutable issued invoice, and release with `ISSUE` in one transaction; a later sequential purchase may acquire immediately. |
+| Cancel | Retire the null-numbered pre-issuance draft with `CANCEL` and release with `CANCEL`; consume no display number and leave the high watermark unchanged. |
+| Hub-observed disconnect or device revocation | Release with `DISCONNECT`; late writes cannot reactivate ownership or allocate a number. |
+| Inactivity timeout | Release with `TIMEOUT`, retire the abandoned null-numbered draft with `TIMEOUT`, reject old-owner writes, and leave the high watermark unchanged. |
 
-Hub-accepted draft activity updates inactivity state. Whether passive UI heartbeat extends the timeout remains the existing `D11` Open item; no passive-heartbeat behavior is silently authorized here. Sequential purchases after release remain allowed.
+Only a newly Hub-accepted draft item, `quantity_millis`, or customer change updates `last_activity_at` to Hub acceptance time and recomputes `expires_at = last_activity_at + timeout_seconds`. Opening/viewing a screen, polling, a passive UI heartbeat, a rejected operation, or an exact replay that applies no new change does not restart the window. Session renewal, transport activity, and Cloud replica traffic likewise have no effect; no lock-extension endpoint exists. Sequential purchases after release remain allowed.
 
 **Vectors:** `LAN-LOCK-001` through `LAN-LOCK-006`.
 
@@ -240,7 +245,7 @@ Each accepted Hub operation produces one immutable log entry with at least:
 | Operation identity | `operation_id`, originating `device_id`, `operation_type`, `base_version`, `request_hash`, `payload`. |
 | Authoritative outcome | `outcome`, including domain events/effects needed for deterministic restore; `response_snapshot`; `hub_recorded_at`. |
 
-The entry preserves assigned IDs, versions, display numbers, operation results, and domain effects. Cloud does not re-execute a command to invent different values. It appends the entry and updates its replica/projection atomically.
+The entry preserves assigned IDs, versions, nullable display numbers, operation results, and domain effects. Draft/pre-issue outcomes preserve `display_number=null` and an unchanged issued-only high watermark; only a successful-issue outcome carries the newly allocated number and advanced watermark. Quantity payloads and resulting item/inventory state use `quantity_millis` / `quantity_delta_millis` / `stock_millis` exactly as hashed. Cloud does not re-execute a command to invent different values. It appends the entry and updates its replica/projection atomically.
 
 `operation_seq` begins at `1` for a new store and is contiguous within each committed Hub log. Sequence 1 uses 64 zero characters as `previous_entry_hash`; every later entry references the preceding entry's hash. After an authorized restore through sequence `N`, the new writer continues at `N+1` with an incremented `writer_epoch`. The hash chain remains continuous across epochs.
 
@@ -370,8 +375,8 @@ The replacement Hub must:
 1. Verify the manifest authorization and replacement-device binding.
 2. Verify every log entry hash and `previous_entry_hash` linkage from genesis or from a verified snapshot boundary.
 3. Verify snapshot coverage and replay all later entries in ascending `operation_seq` order.
-4. Apply authoritative outcomes/domain events without generating new IDs, versions, display numbers, operation results, or timestamps.
-5. Preserve Operation idempotency records and the display-number high watermark.
+4. Apply authoritative outcomes/domain events without generating new IDs, versions, display numbers, operation results, quantities, or timestamps. Restore pre-issuance/retired drafts with `display_number=null`; only replayed successful-issue outcomes contain assigned numbers.
+5. Preserve Operation idempotency records and the issued-only display-number high watermark: the last successfully issued number, or `0` when none exists. Never derive it from draft count, operation sequence, or cancelled/timed-out drafts.
 6. Build the canonical replayed state projection in temporary storage and compute its `state_hash`.
 
 No new local operation is accepted during staging.
@@ -382,7 +387,7 @@ The state projection contains:
 
 - One `store` object.
 - Store-owned collections `devices`, `memberships`, `customers`, `products`, `inventory_events`, `sales`, `invoices`, `invoice_items`, `digital_invoices`, `operations`, and `locks`, including empty collections.
-- `through_operation_seq`, `writer_epoch`, and `display_number_high_watermark`.
+- `through_operation_seq`, `writer_epoch`, and `display_number_high_watermark`. The last field is the last number allocated by a successful `ISSUE` (`0` if none), never a next-number counter or a count of persisted drafts; the next successful issue uses high watermark + 1.
 
 Before canonical serialization:
 
@@ -474,8 +479,8 @@ The vector file includes real, reproducible SHA-256 values, including:
 | Fixture | Purpose |
 | --- | --- |
 | `product_request_hash` | Product operation request identity and exact replay. |
-| `entry_41_hash`, `entry_42_hash` | Ordered log-chain ingest, duplicate detection, gap/order failures, and manifest head verification. |
-| `restore_state_hash` | Successful restore consistency comparison. |
+| `entry_41_hash`, `entry_42_hash` | Ordered log-chain ingest, duplicate detection, gap/order failures, and manifest head verification; entry 42 uses scaled `quantity_delta_millis`. |
+| `restore_state_hash` | Successful restore consistency comparison, including the issued-only display-number high watermark. |
 | `restore_bad_state_hash` | Negative restore comparison after one product price changes. |
 
 These values are expected outputs, not implementation hints to bypass. Tests must independently canonicalize and hash the supplied objects.
@@ -487,25 +492,25 @@ These values are expected outputs, not implementation hints to bypass. Tests mus
 | Decision | Protocol realization | Required proof |
 | --- | --- | --- |
 | **D7 — Single Store Hub on LAN and offline-first operation** | Companion-only QR pairing, one Hub writer, no peer ledger, `HUB_UNAVAILABLE` when LAN Hub is absent, continued Hub work during WAN outage, durable ordered outbox, and writer fencing. | `FAIL-002`, `LAN-HUB-001`, `FAIL-004`, `CLOUD-001`, `CLOUD-008` |
-| **D11 — Per-phone DRAFT lock** | Atomic normalized-phone acquisition tied to invoice/device; hard competing-device conflict; exact-operation replay; release on issue, cancel, disconnect/revoke, and configurable Hub-time timeout with default 300 seconds; sequential purchases allowed. | `LAN-LOCK-001` through `LAN-LOCK-006`, plus revocation in `LAN-SESSION-002` |
+| **D11 — Per-phone DRAFT lock** | Atomic normalized-phone acquisition tied to an unnumbered invoice/device; hard competing-device conflict; exact-operation replay without renewal; only newly Hub-accepted draft item/quantity/customer changes restart the configurable Hub-time inactivity window (default 300 seconds); passive screen/heartbeat activity does not; release on issue, cancel, disconnect/revoke, and timeout; sequential purchases allowed. | `LAN-LOCK-001` through `LAN-LOCK-006`, plus revocation in `LAN-SESSION-002` |
 | **SEC-1 / Restore Second Factor** | OTP alone is insufficient; recovery key or previously paired-device approval is mandatory; privileged restore is audited; transport/at-rest protection follows MVP server-side encryption without an E2EE claim; writer activation waits for replay/hash verification. | `RESTORE-001`, `RESTORE-002`, `RESTORE-003`, `RESTORE-004` |
 
 Supporting decisions remain coupled:
 
 - **D8:** Cloud restore honestly excludes unsynced disk-only operations (`FAIL-001`).
 - **D10 / ASM-08:** Strict operation identity, OCC, immutable effects, and exact replay (`LAN-OP-001`–`LAN-OP-004`).
-- **D12 / ASM-10:** Restore preserves display-number high watermark and does not renumber replayed invoices.
+- **ASM-22 (P-0104r):** All quantity-bearing payloads, outcomes, and derived stock projections use signed integer thousandths with the `quantity_millis` / `quantity_delta_millis` / `stock_millis` names; Rial amounts remain unscaled (`LAN-SESSION-002`, `LAN-LOCK-006`, `FAIL-003`, and the entry-42 Cloud/failure vectors).
+- **D12 / ASM-10 (P-0104r):** Restore preserves the issued-only display-number high watermark, restores drafts as null-numbered, and does not renumber replayed invoices or consume numbers for retired drafts.
 - **D13:** Two distinct companion devices appear in pairing, lock, OCC, and replication vectors from the outset.
 
 ---
 
 ## 8. Open Questions
 
-The conservative behavior above is recorded under `ASM-13`–`ASM-17` in [`docs/DECISIONS.md`](DECISIONS.md). The following questions still require Owner/PM or operational confirmation:
+The conservative behavior above is recorded under `ASM-13`–`ASM-17` and `ASM-22` in [`docs/DECISIONS.md`](DECISIONS.md). Owner-approved `P-0104r` closed former Open item 3: the default remains 300 seconds and only newly Hub-accepted draft item/quantity/customer changes restart inactivity; passive UI heartbeat does not. The following questions still require Owner/PM or operational confirmation:
 
 | Question | Conservative posture until decided | Register |
 | --- | --- | --- |
-| Does passive UI heartbeat extend D11 inactivity, and is the five-minute default finally confirmed? | Only Hub-accepted draft activity clearly extends inactivity; explicit disconnect still releases; default remains 300 seconds. | Existing Open item 3 / `ASM-09` |
 | Are 300-second QR expiry and Hub-issued session lifetimes acceptable operationally? | QR is single-use, companion-only, store/hub bound, and expires after 300 seconds. Session expiry is explicit and configurable; vector lifetimes are not product defaults. | New Open item 7 / `ASM-14` |
 | What retry, batch-size, and local outbox capacity thresholds are appropriate for target hardware? | Retry with 1-second doubling to 60 seconds plus jitter; obey Cloud limits; never discard unacknowledged entries; reject new mutations before durability is exhausted. | New Open item 8 / `ASM-15` |
 | What Hub/Cloud clock-skew threshold should trigger an operational incident? | Client timestamps never affect ordering/expiry. Sequence/hash remains authoritative; excessive Hub/Cloud skew is review, not a license to rewrite history. | New Open item 9 / `ASM-17` |

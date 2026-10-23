@@ -1,7 +1,7 @@
 # KANDOO — CLOUD API CONTRACT (P-04)
 
-**Document status:** P-04 specification for PM review
-**Date:** `2026-10-22`
+**Document status:** P-04 specification; owner-approved `P-0104r` unified revision for PM review
+**Date:** `2026-10-23`
 **Normative machine contract:** [`docs/openapi.yaml`](openapi.yaml) (`OpenAPI 3.1.0`, API `v1`)
 **Starting state:** `2b08caa16a794311c8f50cafb40c19a30919b69f` (`stable-p-02`)
 **Scope:** Documentation and YAML only. No API implementation, physical schema, production host, credentials, live SMS delivery, or legal copy is claimed.
@@ -32,7 +32,7 @@ The API has **22 operations across six groups**, with **15 mutating operations**
 | **P-08 delivery** | Deterministic SMS stub plus idempotent QR/share delivery records. No real provider is selected or called. |
 | **P-09 customer view** | Anonymous one-invoice public-token read, uniform invalid-token 404, and a hard lawyer-approved-copy gate. |
 
-JSON uses UTF-8. IDs/timestamps/hashes use the formats in `openapi.yaml`; P-02 hash inputs use its canonical JSON profile, not arbitrary HTTP serialization. Every store-scoped request is authorized against that store only. `STORE_NOT_FOUND` may conceal both missing and invisible stores; shared Business ownership never widens access.
+JSON uses UTF-8. IDs/timestamps/hashes use the formats in `openapi.yaml`; P-02 hash inputs use its canonical JSON profile, not arbitrary HTTP serialization. Quantity fields in generic P-02 payloads, outcomes, and response snapshots follow `ASM-22`: signed integer thousandths named `quantity_millis`, `quantity_delta_millis`, and derived `stock_millis`; Rial monetary amounts remain unscaled integers. Every store-scoped request is authorized against that store only. `STORE_NOT_FOUND` may conceal both missing and invisible stores; shared Business ownership never widens access.
 
 ## 2. Authentication
 
@@ -100,7 +100,7 @@ The active Hub generates the raw single-use QR/nonce locally and registers only 
 | `GET` | `/v1/stores/{store_id}/locks/current` | `queryCurrentLock` | Device bearer | `200` |
 | `POST` | `/v1/stores/{store_id}/locks/{lock_id}/release` | `releaseLock` | Device bearer | `200` |
 
-`queryCurrentLock` returns the lock or `null` at a Cloud replica watermark; it is not permission to operate while the LAN Hub is unavailable. `releaseLock` accepts a Hub-authored entry and never acts as a Cloud override. API release reasons map conservatively:
+`queryCurrentLock` returns the lock or `null` at a Cloud replica watermark; it is not permission to operate while the LAN Hub is unavailable. `releaseLock` accepts a Hub-authored entry and never acts as a Cloud override. Only Hub-accepted draft item, quantity, or customer changes restart the 300-second inactivity window, and no API endpoint extends it. API release reasons map conservatively:
 
 | API reason | Domain result |
 | --- | --- |
@@ -219,6 +219,8 @@ The HTTP API uses **path versioning**: every route starts with `/v1`, and `info.
 - `kandoo.sync.v0` / `protocol_version: "0"`, Canonical Invoice `schema_version: "0"`, and HTTP `/v1` are independent versions. None silently upgrades another.
 - A future deprecated version needs explicit migration and shutdown communication before removal; no `Sunset` date is invented here.
 
+`P-0104r` is an owner-approved pre-implementation correction to this documentation baseline, not a claim that a deployed `/v1` service has migrated. New implementations must use required-but-nullable `Invoice.display_number` (`null` before successful `ISSUE` and for retired drafts) while retaining required positive `PublicInvoiceView.display_number` for issued-only public views. They must use the `ASM-22` scaled quantity names from the outset; no legacy first-persistence number allocation or unscaled quantity spelling is a compatibility mode. Any later change to a deployed contract still follows the versioning rule above.
+
 ## 6. Idempotency
 
 Every POST in v1 requires `Idempotency-Key` (1–128 safe characters, matching the non-empty P-01 operation-ID baseline). The middleware stores a canonical request fingerprint with principal, method, path, and key. An exact retry returns the original status/body with no additional effect; the same scoped key with different content returns `IDEMPOTENCY_CONFLICT`. Administrative/bootstrap idempotency records are retained for at least 24 hours until production retention is decided; domain Operation identity and append-only log deduplication are permanent store records, not a 24-hour cache.
@@ -265,10 +267,11 @@ When limited, retain the durable outbox and retry the identical request after th
 | **D10 idempotency / OCC / immutability** | `LogEntry` carries `operation_id`, `device_id`, `operation_type`, `base_version`, `payload`, and `request_hash`; strict replay/conflict behavior and authoritative outcome snapshots are preserved. Cloud never re-executes a command to invent new values or edits issued invoices. |
 | **D11 lock semantics** | `Lock` mirrors P-01 fields, positive `timeout_seconds` default 300, Hub `expires_at`, device ownership, and P-01 release reasons. MANUAL/HUB_OFF transport reasons map only as specified in Section 3.4. |
 | **D8 / SEC-1 restore** | OTP plus recovery proof or paired approval gates manifest/key-envelope release. Full log verification and canonical state-hash MATCH precede epoch increment. Old sessions never return; unsynced disk loss is explicit. |
-| **D12 numbering** | Restore and ingest preserve Hub `operation_seq`, assigned IDs, versions, display numbers, and numbering high watermark. Cloud allocates no invoice display number. |
+| **D12 numbering** | Restore and ingest preserve Hub `operation_seq`, assigned IDs, versions, nullable pre-issue display numbers, issued numbers, and the issued-only numbering high watermark (last successful `ISSUE`, or `0`). Cloud allocates no invoice display number; drafts and failed/cancelled/timed-out issue paths consume none. |
 | **D4 delivery/token rules** | SMS is a deterministic stub, public tokens are 22–128 base64url characters (at least 128 bits at generation), and anonymous access is exactly one invoice. Full customer history is not exposed by this contract. |
 | **D14 legal copy** | Store registration requires digital acceptance of the configured lawyer-approved onboarding agreement, and public rendering fails closed with `LEGAL_COPY_UNAVAILABLE` until approved copy exists. SMS-stub/QR/share-link creation is not a public-rendering gate. No developer-authored legal notice is included. |
 | **ASM-08 / ASM-15 / ASM-17** | Strict operation identity, atomic ordered batches, durable retry, backpressure, and partial-delivery behavior map directly to request/response and error fields. |
+| **ASM-22 quantity encoding** | Generic P-02 `payload`, `outcome`, and `response_snapshot` data use signed integer thousandths for `quantity_millis`, `quantity_delta_millis`, and derived `stock_millis`; Rial amounts remain unscaled integer Rials, and Cloud verifies the canonical bytes without re-encoding quantities. |
 | **P-02 vectors** | `CLOUD-001`–`CLOUD-008` exercise batch acceptance, duplicates, gaps/order, throttling, hash corruption, and fencing; `RESTORE-001`–`RESTORE-004` exercise second factor, replay/hash activation and mismatch; `FAIL-001`, `FAIL-002`, and `FAIL-005` cover disk loss, two-Hub prevention, and partial delivery. Intentional `CLOUD-007` corruption must remain a negative fixture. |
 
 Schema provenance is explicit through `x-domain-entity`, `x-domain-ref`, and `x-protocol-ref`. `LogEntry` is the P-02 replication envelope, not a replacement for the P-01 Operation record. `CanonicalInvoice` is only a reference shape; the frozen external Canonical Invoice v0 validator remains authoritative. Nothing here copies extraction implementation or changes its schema.
@@ -292,10 +295,10 @@ Open questions never authorize weaker authentication, Cloud lock overrides, OTP-
 
 ### Validation record
 
-From the repository root on `2026-10-22`:
+From the repository root on `2026-10-23`:
 
 ```sh
-npx --yes @redocly/cli@2.69.0 lint docs/openapi.yaml
+npx --yes @redocly/cli lint docs/openapi.yaml
 ```
 
-Result: **exit code 0; zero errors and zero warnings** (`Node v22.22.3`, npm `10.9.8`). A separate local structural/P-02 compatibility check also validated all 11 wire-shaped batches and 18 contained entries across the 34-vector file; `CLOUD-006.entry_count` is harness metadata, and `CLOUD-007` remains an intentional semantic hash-corruption negative rather than a schema failure.
+Result: **exit code 0; zero errors and zero warnings** (`@redocly/cli 2.69.0`, `Node v22.22.3`, npm `10.9.8`). A separate structural/P-02 compatibility check validated all 34 vectors, 11 wire-shaped batches and 18 contained entries, 34 request-hash occurrences, 21 entry-hash occurrences, and two independently recomputed replayed-state hashes; `CLOUD-006.entry_count` is harness metadata, and `CLOUD-007` remains an intentional semantic hash-corruption negative rather than a schema failure. The narrative and YAML error matrices also match exactly at 51 codes, with 22 operations and 15 POST mutations preserved.

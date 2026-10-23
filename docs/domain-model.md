@@ -1,8 +1,8 @@
 # KANDOO — DOMAIN MODEL SPECIFICATION
 
-**Document status:** P-01 specification for PM review
+**Document status:** P-01 specification, revised by owner-approved `P-0104r` for PM review
 
-**Date:** `2026-10-22`
+**Date:** `2026-10-23`
 
 **Repository:** `majid-ghanbari-dost/Kandoo` (Parent Platform Repository)
 
@@ -24,6 +24,7 @@ All requirements below are **specified behavior**, not claims that behavior alre
 ### 1.2 Modeling conventions
 
 - Field types are logical types, not SQL or C# types. `UUID` means an opaque 128-bit identifier; `Instant` means a UTC timestamp; `Rials` means an integer amount with no fractional unit; `JSON` means a structured payload governed by its stated contract.
+- Quantities use only signed scaled-integer thousandths under `ASM-22`: `quantity_millis`, `quantity_delta_millis`, and derived `stock_millis` projections are JSON integers where `1000 = 1.000` unit. Binary floating point, locale-sensitive parsing, and decimal-string quantity encodings are forbidden; integer Rial amounts are not rescaled.
 - `Required = Derived` means the value is mandatory but is computed by the platform rather than supplied as independent business data.
 - Every store-owned record carries `store_id`, directly or through its owning aggregate. Cross-store references are invalid even when both records belong to the same `Business`.
 - Except for global `User` and `CustomerProfile`, identifiers used by store APIs are always evaluated inside an explicit store scope. A globally unique identifier never grants access by itself.
@@ -313,7 +314,7 @@ There are **67 concrete test cases**: 15 entity cases and 52 numbered-rule cases
 | `inventory_event_id` | UUID | Yes | Immutable event identifier. |
 | `store_id` | UUID | Yes | Owning store. |
 | `product_id` | String | Yes | Product in the same store. |
-| `quantity_delta` | Integer | Yes | Non-zero signed quantity change. |
+| `quantity_delta_millis` | Integer | Yes | Non-zero signed quantity change in thousandths; `1000 = 1.000` unit and `-2000 = -2.000` units. |
 | `event_type` | `RECEIPT \| SALE \| RETURN \| ADJUSTMENT \| CORRECTION` | Yes | Business meaning of the movement. |
 | `source_invoice_id` | UUID | No | Native invoice causing the movement, where applicable. |
 | `reverses_event_id` | UUID | Conditional | Required for `CORRECTION`; identifies the same-store event being compensated. |
@@ -332,7 +333,7 @@ There are **67 concrete test cases**: 15 entity cases and 52 numbered-rule cases
 
 - Events are append-only: update and delete are forbidden, including by privileged store operators.
 - Corrections append a compensating event; they never rewrite the original.
-- Stock for a product is the sum of its `quantity_delta` values in that store. Negative stock is allowed and does not by itself block a sale.
+- Stock for a product is the exact integer sum of its `quantity_delta_millis` values in that store and is exposed in sync projections as `stock_millis`. Negative stock is allowed and does not by itself block a sale.
 - Mode `B` capture creates no inventory event without a separate explicit native command.
 
 **Tests:** `TC-E09`, `TC-D10-R1`–`TC-D10-R3`, `TC-D10-R10`, `TC-MD-R8`.
@@ -381,7 +382,7 @@ There are **67 concrete test cases**: 15 entity cases and 52 numbered-rule cases
 | `store_id` | UUID | Yes | Owning store and numbering scope. |
 | `sale_id` | UUID | Conditional | Required for native Mode `A`; null for Mode `B` unless an explicit native workflow says otherwise. |
 | `customer_id` | UUID | No | Same-store customer, if identified. |
-| `display_number` | Integer | Derived | Positive sequential human-readable number allocated by the Store Hub. |
+| `display_number` | Integer or null | Conditional / Hub-derived | Null before successful issuance; a positive, gapless, store-sequential human-readable number allocated atomically at successful `ISSUE`. |
 | `status` | Canonical lifecycle | Yes | `DRAFT \| EXTRACTED \| VALIDATED \| ISSUED \| REVOKED \| SUPERSEDED`. |
 | `retired_at` | Instant | No | Pre-issuance cancellation/timeout time; a retired draft can never be issued. |
 | `retirement_reason` | `CANCEL \| TIMEOUT` | Conditional | Required when `retired_at` is set. |
@@ -400,7 +401,8 @@ There are **67 concrete test cases**: 15 entity cases and 52 numbered-rule cases
 
 **Constraints**
 
-- `invoice_id` is globally unique; `(store_id, display_number)` is unique and numbers are never reused.
+- `invoice_id` is globally unique. `display_number` is null for every pre-issuance or retired draft; `(store_id, display_number)` is unique when non-null, and an issued number is never reused.
+- Draft creation, validation, cancellation, timeout, a failed `ISSUE`, and an idempotent replay do not allocate or advance a display number. Only the successful `ISSUE` transition allocates the next number and advances the store high watermark in the same Hub transaction.
 - External printed POS numbers remain untrusted Canonical header data and never populate `invoice_id` or `display_number`.
 - Valid lifecycle transitions are those allowed by Canonical Invoice v0. Retirement is only pre-issuance and does not add a canonical status.
 - After `ISSUED`, invoice content and items are immutable. Only `REVOKED` or `SUPERSEDED` plus a new replacement invoice are permitted correction paths.
@@ -422,7 +424,7 @@ There are **67 concrete test cases**: 15 entity cases and 52 numbered-rule cases
 | `product_id` | String | Conditional | Same-store product; required for native Mode `A` catalog lines. |
 | `line_number` | Integer | Yes | Positive stable line position, unique within the invoice. |
 | `description` | String | Yes | Native or extracted item description. |
-| `quantity` | Decimal | Yes | Positive quantity. |
+| `quantity_millis` | Integer | Yes | Positive quantity in thousandths; `1000 = 1.000` unit. |
 | `unit_price_rials` | Rials | Yes | Non-negative integer unit price. |
 | `line_total_rials` | Rials | Yes | Non-negative integer line total. |
 | `provenance` | `NATIVE \| OPERATOR \| EXTRACTED` | Yes | Origin of the line data. |
@@ -517,7 +519,7 @@ There are **67 concrete test cases**: 15 entity cases and 52 numbered-rule cases
 | `invoice_id` | UUID | Yes | The single active draft protected by this lock. |
 | `device_id` | UUID | Yes | Active device currently allowed to mutate the draft. |
 | `acquired_at` | Instant | Yes | Hub acquisition time. |
-| `last_activity_at` | Instant | Yes | Last Hub-accepted activity on the draft. |
+| `last_activity_at` | Instant | Yes | Hub acquisition time or the latest newly Hub-accepted draft item/`quantity_millis`/customer change; passive activity never updates it. |
 | `timeout_seconds` | Integer | Yes | Positive configured timeout, copied from store configuration at acquisition; default `300`. |
 | `expires_at` | Instant | Derived | `last_activity_at + timeout_seconds`. |
 | `state` | `ACTIVE \| RELEASED` | Yes | Lease state. |
@@ -617,9 +619,9 @@ Every row names its concrete Section 7 scenario and the required expected result
 
 | Rule ID | Testable statement | Test case | Expected result |
 | --- | --- | --- | --- |
-| **D10-R1** | Inventory must be represented only by appended events, and stock must equal the sum of signed deltas for that store/product. | `TC-D10-R1` | Events `+10` and `-3` produce stock `7` and two immutable ledger entries. |
+| **D10-R1** | Inventory must be represented only by appended events, and stock must equal the exact integer sum of signed `quantity_delta_millis` values for that store/product. | `TC-D10-R1` | Events `+10000` and `-3000` produce stock `7000` (`7.000` units) and two immutable ledger entries. |
 | **D10-R2** | Updating or deleting an inventory event must be rejected; a correction must append a `CORRECTION` event referencing the original. | `TC-D10-R2` | Original bytes remain unchanged, update/delete fail, and the compensating event alone changes derived stock. |
-| **D10-R3** | Negative stock is allowed; shortage alone must not reject a native sale or invoice issuance. | `TC-D10-R3` | Selling two units from zero stock succeeds and derived stock becomes `-2`. |
+| **D10-R3** | Negative stock is allowed; shortage alone must not reject a native sale or invoice issuance. | `TC-D10-R3` | Selling `quantity_millis=2000` from zero stock succeeds and derived stock becomes `-2000` (`-2.000` units). |
 | **D10-R4** | Every product price/specification edit must supply `base_version`; a mismatch must return an explicit conflict and apply no part of the edit. | `TC-D10-R4` | First edit moves version `7→8`; stale second edit returns `VERSION_CONFLICT` and does not overwrite version 8. |
 | **D10-R5** | Once an invoice is `ISSUED`, its content, customer binding, display number, items, issued payload, and digest must be immutable. | `TC-D10-R5` | Every attempted content mutation is rejected and the original issued snapshot/digest remains byte-for-byte unchanged. |
 | **D10-R6** | Issued-invoice correction must use only an allowed terminal transition (`REVOKED` or `SUPERSEDED`); a superseding replacement must be a new invoice with new identifiers. | `TC-D10-R6` | Original content remains immutable, replacement references the original, and no item is edited in place. |
@@ -632,16 +634,16 @@ Every row names its concrete Section 7 scenario and the required expected result
 
 | Rule ID | Testable statement | Test case | Expected result |
 | --- | --- | --- | --- |
-| **D11-R1** | Creating a phone-associated draft must atomically create one active lock for `(store_id, normalized_phone)`, its invoice, and its owning device. | `TC-D11-R1` | Draft and lock commit together with normalized phone and correct device; no partial state is visible. |
+| **D11-R1** | Creating a phone-associated draft must atomically create one active lock for `(store_id, normalized_phone)`, its unnumbered invoice, and its owning device. | `TC-D11-R1` | Draft and lock commit together with normalized phone and correct device; `display_number` remains null and no partial state is visible. |
 | **D11-R2** | While that lock is active, a different device attempting to create a draft for the same normalized phone must receive an immediate hard conflict. | `TC-D11-R2` | `DRAFT_LOCK_CONFLICT`; no second draft, lock, item, or display number is created. |
 | **D11-R3** | The owning device's exact replay of the lock-acquiring `operation_id` must follow idempotency rather than conflict with its own lock. | `TC-D11-R3` | Original invoice and response are returned; exactly one draft and one lock exist. |
 | **D11-R4** | A different operation cannot create a second concurrent draft for the same store/phone even from the owning device. | `TC-D11-R4` | `DRAFT_ALREADY_ACTIVE`; the original draft remains the only active draft. |
 | **D11-R5** | Successful issue must atomically release the active lock with reason `ISSUE`. | `TC-D11-R5` | Another device can immediately start a new draft for the phone; the issued invoice remains immutable. |
-| **D11-R6** | Cancelling an active draft must retire it pre-issuance and release the lock with reason `CANCEL`. | `TC-D11-R6` | A new draft can start immediately; the cancelled draft cannot be mutated or issued. |
+| **D11-R6** | Cancelling an active draft must retire it pre-issuance and release the lock with reason `CANCEL` without consuming a display number. | `TC-D11-R6` | A new unnumbered draft can start immediately; the cancelled draft remains null-numbered, cannot be mutated or issued, and does not advance the numbering high watermark. |
 | **D11-R7** | A Hub-observed client disconnect must release the active lock with reason `DISCONNECT`; late owner writes must not regain ownership. | `TC-D11-R7` | Another device can acquire the phone; late writes from the disconnected device fail. |
-| **D11-R8** | Lock expiry must use Hub inactivity time and a positive configurable timeout defaulting to exactly 300 seconds. | `TC-D11-R8` | At `299s` the default lock is active; at `300s` it expires; a store configured to `600s` remains active at `300s`. |
-| **D11-R9** | Timeout must release the lock and retire the abandoned draft; acquiring a new lock must not restore write rights to the old device/draft. | `TC-D11-R9` | A new device can create a fresh draft, while old add-item/issue commands fail with no effects. |
-| **D11-R10** | Sequential purchases for the same phone must be allowed immediately after each prior lock is released. | `TC-D11-R10` | Two successive issued invoices for one phone succeed with distinct IDs and increasing display numbers. |
+| **D11-R8** | Lock expiry must use Hub inactivity time and a positive configurable timeout defaulting to exactly 300 seconds. Only a newly Hub-accepted draft item, `quantity_millis`, or customer change restarts the inactivity window; an open screen, passive heartbeat, rejected operation, or no-effect replay does not. | `TC-D11-R8` | An accepted change renews `expires_at`; subsequent passive activity does not. The lock is active at `299s` and expires at `300s` after the last accepted change; a store configured to `600s` remains active at `300s`. |
+| **D11-R9** | Timeout must release the lock and retire the abandoned unnumbered draft; acquiring a new lock must not restore write rights to the old device/draft. | `TC-D11-R9` | A new device can create a fresh unnumbered draft, while old add-item/issue commands fail with no effects and no number is consumed by the timed-out draft. |
+| **D11-R10** | Sequential purchases for the same phone must be allowed immediately after each prior lock is released. | `TC-D11-R10` | Two successive issued invoices for one phone succeed with distinct IDs and gapless increasing display numbers allocated at their respective successful `ISSUE` transitions. |
 | **D11-R11** | Phone locks must be store-scoped; identical phones in different stores must not block or reveal each other's locks. | `TC-D11-R11` | `S1` and `S2` locks coexist; releasing one leaves the other unchanged. |
 
 ### 4.4 D12 — Internal ID and Hub-sequential display number
@@ -649,11 +651,11 @@ Every row names its concrete Section 7 scenario and the required expected result
 | Rule ID | Testable statement | Test case | Expected result |
 | --- | --- | --- | --- |
 | **D12-R1** | Every invoice must receive a platform-generated, globally unique `invoice_id` independent of its display number and originating device. | `TC-D12-R1` | Invoices created on different devices/stores never share an internal ID. |
-| **D12-R2** | The Store Hub must allocate a positive `display_number` sequentially within each store when the invoice is first durably persisted. | `TC-D12-R2` | `S1` advances `41→42→43`; `S2` allocates from its own independent sequence. |
-| **D12-R3** | Concurrent allocations must be serialized by the Hub so each number is issued at most once and allocation order is strictly increasing. | `TC-D12-R3` | Twenty concurrent creates produce exactly `1..20`, with no duplicate or omitted value. |
-| **D12-R4** | Display numbers must survive Hub restart and authorized restore, and numbers consumed by retired invoices must never be reused. | `TC-D12-R4` | Restart/restore continues after the recorded maximum; a cancelled number remains an auditable gap. |
-| **D12-R5** | Mode `B` `header.invoice_number` must remain untrusted external data and must never determine either platform identifier. | `TC-D12-R5` | Duplicate/external printed numbers do not alter Hub numbering or internal IDs. |
-| **D12-R6** | Replaying invoice creation must not allocate another display number or invoice ID. | `TC-D12-R6` | Exact replay returns the original pair; the next new operation receives only the next number. |
+| **D12-R2** | The Store Hub must allocate a positive `display_number` only in the durable transaction that successfully transitions an invoice to `ISSUED`; every pre-issuance or retired draft has `display_number=null`. | `TC-D12-R2` | Draft persistence leaves both stores' issued-only display-number high watermarks unchanged; successful `S1` issues advance `41→42→43`, while `S2` allocates from its own independent sequence at issue. |
+| **D12-R3** | Concurrent successful `ISSUE` allocations must be serialized by the Hub so each number is issued at most once, issued-invoice numbering is gapless, and allocation order is strictly increasing. | `TC-D12-R3` | Twenty concurrent issues of distinct valid drafts produce exactly `1..20`, with no duplicate or omitted value. |
+| **D12-R4** | The issued-only display-number high watermark must survive Hub restart and authorized restore. Numbers assigned to issued invoices must never be reused; cancelled/timed-out drafts and failed issues consume no number and create no gap. | `TC-D12-R4` | Restart/restore continues after the last successful `ISSUE`; an abandoned draft leaves the next number unchanged, and an issued number remains unavailable even after revocation/supersession. |
+| **D12-R5** | Mode `B` `header.invoice_number` must remain untrusted external data and must never determine either platform identifier or cause pre-issue allocation. | `TC-D12-R5` | Duplicate/external printed numbers do not alter Hub numbering or internal IDs; Mode `B` drafts stay null-numbered until successful issue. |
+| **D12-R6** | Replaying draft creation or `ISSUE` must not allocate another invoice ID or display number; only a newly successful issue of a different invoice advances the sequence. | `TC-D12-R6` | Draft replay returns the original null-numbered invoice; issue replay returns its original number; the next distinct successful issue receives only the next number. |
 
 ---
 
@@ -687,11 +689,11 @@ Multi-device behavior is foundational, not a later compatibility feature. All Hu
 | **MD-R2** | Each store must have exactly one active Hub write authority; companions must not write peer-to-peer or maintain an authoritative local ledger. | `TC-MD-R2` | A second active Hub is rejected and a companion-only write never becomes store state. |
 | **MD-R3** | Loss of internet must not stop Hub-mediated multi-device operations; accepted effects must synchronize once without duplication after reconnection. | `TC-MD-R3` | Two devices operate during WAN outage, then cloud replicas contain each effect exactly once. |
 | **MD-R4** | A companion must not start new store work while its Hub is unreachable; it must fail explicitly instead of using local authoritative state. | `TC-MD-R4` | `HUB_UNAVAILABLE`, no local draft/event/number, and a later retry has only one accepted effect. |
-| **MD-R5** | Two devices must be able to build drafts concurrently for different customer phones in one store. | `TC-MD-R5` | Both drafts/locks succeed independently with distinct invoices and display numbers. |
+| **MD-R5** | Two devices must be able to build unnumbered drafts concurrently for different customer phones in one store. | `TC-MD-R5` | Both drafts/locks succeed independently with distinct invoice IDs and null display numbers; neither draft advances the issued-only sequence. |
 | **MD-R6** | Simultaneous draft creation for the same store/phone must serialize to exactly one active owner. | `TC-MD-R6` | Exactly one command succeeds, the other receives a lock conflict, and only one active draft/lock exists. |
 | **MD-R7** | Concurrent edits of the same product version from two devices must use OCC and never silently last-write-win. | `TC-MD-R7` | One edit commits, the other receives `VERSION_CONFLICT`, and final content equals the winning edit. |
-| **MD-R8** | Concurrent inventory commands from different devices must both append durable events; derived stock must reflect both. | `TC-MD-R8` | Starting at `10`, concurrent `+5` and `-2` produce stock `13` with both events present. |
-| **MD-R9** | Concurrent invoice creation and network retries from multiple devices must preserve both idempotency and Hub numbering. | `TC-MD-R9` | All accepted invoices have unique IDs and gap-controlled numbers; exact retries add no invoice or number. |
+| **MD-R8** | Concurrent inventory commands from different devices must both append durable events; derived stock must reflect both by exact `quantity_delta_millis` arithmetic. | `TC-MD-R8` | Starting at `10000`, concurrent `+5000` and `-2000` produce stock `13000` (`13.000` units) with both events present. |
+| **MD-R9** | Concurrent invoice creation/issuance and network retries from multiple devices must preserve both idempotency and issue-time Hub numbering. | `TC-MD-R9` | All accepted invoices have unique IDs; drafts are null-numbered, successful issues have gapless numbers, and exact retries add no invoice or number. |
 
 ---
 
@@ -711,9 +713,9 @@ These are concrete acceptance scenarios to automate against the eventual domain 
 | **TC-E06** | No `S1` customer exists for `P`. | Create a claimed customer, try to mark it verified without a matching profile, then complete OTP and link a profile for `P`. | Claimed customer has no profile; premature verification fails; OTP-backed verification succeeds with matching normalized phone. |
 | **TC-E07** | OTP verification for `P` has succeeded once. | Verify the same normalized phone again using differently formatted input. | Exactly one global profile exists for `P`, and the second flow links/reuses it rather than duplicating it. |
 | **TC-E08** | `S1` has no product `prod-1`. | Submit a product with negative price, then a valid product with required name/unit and price `1000`. | Negative price fails; valid product persists with `version = 1`, active state, and derived normalized/similarity keys. |
-| **TC-E09** | Product `prod-1` has one immutable `+5` event. | Attempt to change that event to `+6`. | Update is rejected, the stored event remains `+5`, and derived stock remains `5`. |
+| **TC-E09** | Product `prod-1` has one immutable event with `quantity_delta_millis=+5000`. | Attempt to change that event to `+6000`. | Update is rejected, the stored event remains `+5000`, and derived stock remains `5000` (`5.000` units). |
 | **TC-E10** | Customers `C1(S1)` and `C2(S2)` exist. | Create a native sale in `S1` referencing `C2`, then create one referencing `C1`. | Cross-store sale fails; same-store sale succeeds and `completed_at` is null while `OPEN`. |
-| **TC-E11** | `S1` has active Hub `H1`. | Create two native drafts and inspect their identity/number fields. | Each has a distinct global `invoice_id`, a unique positive `S1` display number, and valid initial lifecycle/retirement metadata. |
+| **TC-E11** | `S1` has active Hub `H1` and issued-only display-number high watermark `41`. | Create two native drafts and inspect their identity/number fields before and after successful issue. | Each draft has a distinct global `invoice_id`, `display_number=null`, and valid initial lifecycle/retirement metadata; the high watermark stays `41` until each successful `ISSUE`, which allocates `42` then `43`. |
 | **TC-E12** | `S1` invoice `I1` and `S2` product `prod-2` exist. | Add `prod-2` to `I1`, then add two same-store lines with line number `1`. | Cross-store reference is rejected; duplicate line number is rejected; no partial line is persisted. |
 | **TC-E13** | `I1` is a draft and `I2` is issued with a valid canonical payload. | Try creating a DigitalInvoice for `I1`, a 21-character token for `I2`, then a valid 22+-character CSPRNG token for `I2`. | Only the valid issued case succeeds; its payload/hash is immutable and token resolves only `I2`. |
 | **TC-E14** | `op-1` completed in `S1` from `D1` with request hash `H`. | Replay `op-1` with hash `H`, then with hash `H2`. | Exact replay returns the stored response; `H2` returns `OPERATION_ID_CONFLICT` and no new effect. |
@@ -733,11 +735,11 @@ These are concrete acceptance scenarios to automate against the eventual domain 
 
 | Test ID | Given | When | Then |
 | --- | --- | --- | --- |
-| **TC-D10-R1** | `S1/prod-1` has no stock events. | Append receipt `+10` (`op-1`) and native sale `-3` (`op-2`). | Exactly two events exist and derived stock is `7`; there is no separately authoritative mutable stock value to diverge. |
-| **TC-D10-R2** | Event `E1` contains `+10`; its serialized content is captured. | Attempt update/delete of `E1`, then append `CORRECTION E2` with delta `-2`, reason, and `reverses_event_id=E1`. | Update/delete fail; `E1` is byte-identical; `E2` is appended and stock is `8`. |
-| **TC-D10-R3** | Native `S1/prod-1` stock is `0`; a valid draft contains quantity `2`. | Issue the sale/invoice with sufficient authorization and operation envelope. | Issuance succeeds, a `-2` event is appended once, and stock is `-2`; no insufficient-stock error occurs. |
+| **TC-D10-R1** | `S1/prod-1` has no stock events. | Append receipt `quantity_delta_millis=+10000` (`op-1`) and native sale `-3000` (`op-2`). | Exactly two events exist and derived stock is `7000` (`7.000` units); there is no separately authoritative mutable stock value to diverge. |
+| **TC-D10-R2** | Event `E1` contains `quantity_delta_millis=+10000`; its serialized content is captured. | Attempt update/delete of `E1`, then append `CORRECTION E2` with `quantity_delta_millis=-2000`, reason, and `reverses_event_id=E1`. | Update/delete fail; `E1` is byte-identical; `E2` is appended and stock is `8000` (`8.000` units). |
+| **TC-D10-R3** | Native `S1/prod-1` stock is `0`; a valid draft item contains `quantity_millis=2000`. | Issue the sale/invoice with sufficient authorization and operation envelope. | Issuance succeeds, a `quantity_delta_millis=-2000` event is appended once, and stock is `-2000` (`-2.000` units); no insufficient-stock error occurs. |
 | **TC-D10-R4** | Product version is `7`, price `1000`; `D1` and `D2` each read version 7. | `D1` edits price to `1100` with `base_version=7`; `D2` then edits specification with `base_version=7`. | `D1` commits version 8; `D2` receives `VERSION_CONFLICT(current=8)` and version-8 price/specification is not overwritten. |
-| **TC-D10-R5** | Issued `I1` has issued payload bytes `B` and digest `H`. | Attempt separate operations changing quantity, customer, display number, deleting an item, and replacing the issued payload. | All fail; status remains valid, bytes remain `B`, digest remains `H`, and item set is unchanged. |
+| **TC-D10-R5** | Issued `I1` has issued payload bytes `B` and digest `H`. | Attempt separate operations changing `quantity_millis`, customer, display number, deleting an item, and replacing the issued payload. | All fail; status remains valid, bytes remain `B`, digest remains `H`, and item set is unchanged. |
 | **TC-D10-R6** | Issued `I1` requires correction. | Mark `I1` `SUPERSEDED` and create replacement `I2` referencing `I1`; also attempt an in-place edit of `I1`. | In-place edit fails; `I2` has new invoice ID/display number and DigitalInvoice snapshot, while `I1` issued content is unchanged. |
 | **TC-D10-R7** | A valid product-creation command is prepared for `S1`. | Submit it without `operation_id`, without `device_id`, with revoked `D1`, and with `D3` in an `S1`-scoped command. | All four submissions fail before product/version/ledger effects; each defect is explicit. |
 | **TC-D10-R8** | `op-1` from `D1` successfully created one product and returned response `R`. | Retry the byte-equivalent canonical request with the same store/device/operation ID one and ten times. | Every retry returns `R` and the original product ID; product count and side-effect counts remain those of one execution. |
@@ -748,15 +750,15 @@ These are concrete acceptance scenarios to automate against the eventual domain 
 
 | Test ID | Given | When | Then |
 | --- | --- | --- | --- |
-| **TC-D11-R1** | No draft/lock exists for `(S1,P)`; `D1` submits valid creation `op-1`. | Hub persists the phone-associated draft. | One transaction creates draft `I1` and active lock `L1(S1,P,I1,D1)`; a forced failure before commit leaves neither visible. |
+| **TC-D11-R1** | No draft/lock exists for `(S1,P)`; `D1` submits valid creation `op-1`; issued-only high watermark is `41`. | Hub persists the phone-associated draft. | One transaction creates draft `I1` with `display_number=null` and active lock `L1(S1,P,I1,D1)`; the high watermark remains `41`, and a forced failure before commit leaves neither visible. |
 | **TC-D11-R2** | `L1(S1,P,I1,D1)` is active. | `D2` submits new draft creation `op-2` using formatted phone `+98 912 000 0001`, which normalizes to `P`. | Immediate `DRAFT_LOCK_CONFLICT`; no `I2`, second lock, item, operation effect, or newly consumed display number exists. |
-| **TC-D11-R3** | `op-1` created `I1/L1` for `D1`. | `D1` exactly replays `op-1`. | Original response and `I1` are returned; there is still one draft and one active lock, not a lock conflict. |
+| **TC-D11-R3** | `op-1` created null-numbered `I1/L1` for `D1` at Hub time `T0`. | `D1` exactly replays `op-1` at `T0+30s`. | Original response and null-numbered `I1` are returned; there is still one draft and one active lock, not a lock conflict, and the no-effect replay does not change `last_activity_at` or `expires_at`. |
 | **TC-D11-R4** | `D1` owns active `I1/L1` for `P`. | `D1` submits different operation `op-2` to create another draft for `P`. | `DRAFT_ALREADY_ACTIVE`; `I1/L1` remain unchanged and no second draft is persisted. |
-| **TC-D11-R5** | `D1` owns valid draft `I1/L1` for `P`. | `D1` issues `I1`; immediately afterward `D2` creates `I2` for `P`. | Issue and release commit atomically with reason `ISSUE`; `I2` succeeds and `I1` is immutable. |
-| **TC-D11-R6** | `D1` owns draft `I1/L1`. | `D1` cancels `I1`, `D2` creates `I2`, then `D1` tries to add an item to or issue `I1`. | `I1` is retired with reason `CANCEL`, `L1` is released, `I2` succeeds, and both old-draft commands fail without effects. |
+| **TC-D11-R5** | `D1` owns valid null-numbered draft `I1/L1` for `P`; issued-only high watermark is `41`. | `D1` issues `I1`; immediately afterward `D2` creates `I2` for `P`. | Issue allocates `I1.display_number=42`, advances the high watermark, and releases atomically with reason `ISSUE`; `I2` succeeds with `display_number=null`, and `I1` is immutable. |
+| **TC-D11-R6** | `D1` owns null-numbered draft `I1/L1` for `P`; issued-only high watermark is `41`. | `D1` cancels `I1`, `D2` creates and issues `I2`, then `D1` tries to add an item to or issue `I1`. | `I1` is retired with reason `CANCEL` and remains null-numbered, `L1` is released, `I2` receives `42` at issue without a gap, and both old-draft commands fail without effects. |
 | **TC-D11-R7** | `D1` owns `I1/L1`; Hub receives an explicit disconnect for `D1`. | Process disconnect, acquire `I2/L2` from `D2`, then deliver a late `D1` item mutation. | `L1.release_reason=DISCONNECT`; `D2` succeeds; late mutation is rejected and does not reactivate `L1`. |
-| **TC-D11-R8** | Hub clock is `T0`; `S1` uses default timeout and `S2` is configured to `600s`; both acquire locks with no further activity. | Evaluate locks at `T0+299s`, `T0+300s`, and evaluate `S2` again at `T0+300s`. | `S1` is active at 299 and released/retired at 300 with `TIMEOUT`; `S2` remains active at 300. |
-| **TC-D11-R9** | `I1/L1(D1)` has just expired and been retired; `D2` then creates `I2/L2` for the same phone. | Submit add-item and issue commands for old `I1` from `D1`, then inspect both drafts. | Old commands fail (`DRAFT_RETIRED`/lock ownership error); only `I2/L2` is active and no old items/status change occurs. |
+| **TC-D11-R8** | Hub clock is `T0`; `S1` uses default timeout `300s` and `S2` is configured to `600s`; both acquire locks. | At `T0+299s`, Hub accepts an `S1` item `quantity_millis` change while `S2` receives only screen-open/passive-heartbeat activity. Evaluate `S1` at `T0+598s/+599s` and `S2` at `T0+300s/+600s` while passive activity continues. | The accepted `S1` change restarts its window: active at `T0+598s`, released/retired at `T0+599s`. Passive activity never restarts `S2`: active at `300s`, released/retired at `600s`. |
+| **TC-D11-R9** | Null-numbered `I1/L1(D1)` has just expired and been retired without advancing high watermark `41`; `D2` then creates `I2/L2` for the same phone. | Submit add-item and issue commands for old `I1` from `D1`, then inspect both drafts. | Old commands fail (`DRAFT_RETIRED`/lock ownership error); only null-numbered `I2/L2` is active, no old items/status change occurs, and the next successful issue still receives `42`. |
 | **TC-D11-R10** | No lock exists for `P`; numbering starts at 1. | `D1` creates/issues `I1`, then `D2` immediately creates/issues `I2` for the same phone. | Both sequential purchases succeed; lock ownership transfers only after release, IDs differ, and display numbers are `1`, `2`. |
 | **TC-D11-R11** | Authorized devices in `S1` and `S2` each create a draft for `P`. | Inspect both locks, then issue the `S1` draft. | Both locks were active independently; `S1` releases while `S2` remains active, and neither response contains the other store's lock metadata. |
 
@@ -765,11 +767,11 @@ These are concrete acceptance scenarios to automate against the eventual domain 
 | Test ID | Given | When | Then |
 | --- | --- | --- | --- |
 | **TC-D12-R1** | Hubs for `S1/S2` and devices `D1/D2/D3` are active. | Create invoices on all three devices, including simultaneous creation in different stores. | Every `invoice_id` is a distinct platform-generated UUID; none is derived from display number or external POS number. |
-| **TC-D12-R2** | `S1` last allocated display number is `41`; `S2` has no invoices. | Persist two new `S1` drafts and one `S2` draft. | Numbers are `42`, `43` in `S1` and `1` in `S2`; each is Hub-allocated and store-unique. |
-| **TC-D12-R3** | `S1` sequence is unused; 20 distinct creation commands are ready on `D1/D2`. | Release all commands through a concurrency barrier at `H1`. | All 20 succeed with display numbers exactly `1..20`, each once, and strictly increasing Hub allocation order. |
-| **TC-D12-R4** | `S1` has allocated through `7`. | Restart `H1` and allocate one draft; cancel number `8`; perform an authorized OTP+second-factor restore of the state and allocate again. | Post-restart number is `8`; post-restore next number is `9`; cancelled `8` is retained as an auditable gap and never reused. |
-| **TC-D12-R5** | Two Mode `B` captures both carry external `header.invoice_number="0007"`; `S2` next display number is `42`. | Ingest and persist both invoices. | They receive different invoice IDs and display numbers `42`, `43`; both external values remain `"0007"` with untrusted provenance. |
-| **TC-D12-R6** | Creation `op-1` returned `I1/display=42`; no other command has run. | Replay `op-1`, then submit new creation `op-2`. | Replay returns `I1/42`; `op-2` returns a new invoice with display `43`, and only two invoices exist. |
+| **TC-D12-R2** | `S1` last issued display number is `41`; `S2` has no issued invoices. | Persist two new `S1` drafts and one `S2` draft, verify all three, then successfully issue them in order. | All drafts initially have `display_number=null` and neither high watermark advances. Successful issues allocate `42`, `43` in `S1` and `1` in `S2`; each is Hub-allocated, store-unique, and gapless. |
+| **TC-D12-R3** | `S1` has issued no numbers; 20 distinct valid drafts and their `ISSUE` commands are ready on `D1/D2`. | Create all drafts, then release all issue commands through a concurrency barrier at `H1`. | Creation allocates no numbers. All 20 successful issues receive display numbers exactly `1..20`, each once, with no omission and strictly increasing Hub allocation order. |
+| **TC-D12-R4** | `S1` has successfully issued through `7`. | Restart `H1`; create and cancel draft `A`; create and issue `B`; perform an authorized OTP+second-factor restore; then create and issue `C`. Also attempt to reuse `7` on a revoked/superseded issued invoice. | `A` remains null-numbered and consumes nothing; `B` receives `8` after restart; restore preserves high watermark `8`; `C` receives `9`. No issued number is reused and the cancelled draft creates no gap. |
+| **TC-D12-R5** | Two Mode `B` captures both carry external `header.invoice_number="0007"`; `S2` last issued display number is `41`. | Ingest and persist both as drafts, then successfully issue both. | Drafts have different invoice IDs and null display numbers; issues allocate `42`, `43`. Both external values remain `"0007"` with untrusted provenance and never affect allocation. |
+| **TC-D12-R6** | Creation `op-1` returned null-numbered `I1`; issue `op-2` later returned `I1/display=42`; no other command has run. | Replay `op-1` and `op-2`, then create and issue distinct `I2` with new operation IDs. | Creation replay returns null-numbered `I1`; issue replay returns `I1/42`; neither replay advances the high watermark. `I2` is null at creation and receives `43` only at successful issue; exactly two invoices exist. |
 
 ### 7.6 Store-isolation scenarios (11)
 
@@ -780,7 +782,7 @@ These are concrete acceptance scenarios to automate against the eventual domain 
 | **TC-SI-R3** | `U-BOTH`, `S1` invoice `I1`, and `S2/prod-2` all exist. | Add `prod-2` to `I1` in one atomic command. | `CROSS_STORE_REFERENCE`; no item, inventory event, invoice version change, or partial relationship is created. |
 | **TC-SI-R4** | One global profile links `C1(S1)` and `C2(S2)` for phone `P`; `U-A` is `S1` owner only. | `U-A` reads `C1`, then requests `C2` and invoice history by `P/profile_id`. | `C1` response contains only `S1` data; `C2`/history requests are denied with no cross-store records. |
 | **TC-SI-R5** | The same profile is linked to a registered customer user and invoices in both stores. | Request global history as `S1` owner, then as the verified customer in an OTP-backed self-service session. | Owner is denied; verified customer receives only invoices linked to that profile, with no other customers' records. |
-| **TC-SI-R6** | `S1/prod-1` stock is `5`; independently created `S2/prod-1` stock is `9`. | Append `-2` to `S1/prod-1`, then query both stocks and event lists. | `S1=3`, `S2=9`; neither event list contains the other store's events despite identical product IDs. |
+| **TC-SI-R6** | `S1/prod-1` stock is `5000`; independently created `S2/prod-1` stock is `9000` (scaled thousandths). | Append `quantity_delta_millis=-2000` to `S1/prod-1`, then query both stocks and event lists. | `S1=3000`, `S2=9000` (`3.000` and `9.000` units); neither event list contains the other store's events despite identical product IDs. |
 | **TC-SI-R7** | `U-BOTH` can mutate both stores; no operation `op-shared` exists. | Execute product creation with `op-shared` in `S1(D1)` and independently in `S2(D3)`, then replay each exactly. | Each store has its own result and product; each replay returns only its own original response with no duplicate effect. |
 | **TC-SI-R8** | `U-A` knows `S2` invoice UUID `I2` and display number `7`. | Make `S1`-scoped detail requests using `I2`, and search `S1` for display `7` when only `S2/7` exists. | No `S2` invoice/content/metadata is returned; the request cannot re-scope itself using the identifier. |
 | **TC-SI-R9** | Issued `S2/I2` has public token `T`; same-phone invoices exist in `S1` and `S2`. | Open `T` anonymously, attempt to alter its store/invoice parameter, and use `T` as authorization for store or phone-history lists. | Only `I2`'s permitted single-invoice view is returned; enumeration, substitution, store access, and history fail. |
@@ -795,11 +797,11 @@ These are concrete acceptance scenarios to automate against the eventual domain 
 | **TC-MD-R2** | `H1` is already the active Hub for `S1`; `D1` is a companion. | Activate another Hub-role device for `S1`, then attempt a direct companion-local ledger write while bypassing `H1`. | Second Hub activation is rejected; local write is unavailable/not replicated and never becomes authoritative store state. |
 | **TC-MD-R3** | WAN is disconnected but `H1`, `D1`, and `D2` communicate over LAN. | Create/issue invoices for `P` and `P2`, queue replication, reconnect WAN, and run sync twice. | Local operations succeed offline; cloud receives each invoice/event once, with stable IDs and no duplicate on repeated sync. |
 | **TC-MD-R4** | `D1` cannot reach `H1`; creation `op-1` has never been accepted. | Attempt new draft/sale locally, restore LAN, then retry `op-1`. | Offline attempt returns `HUB_UNAVAILABLE` with no authoritative draft/event/number; retry succeeds exactly once. |
-| **TC-MD-R5** | No locks exist for `P/P2`; `D1/D2` submit distinct draft operations simultaneously. | Process both through `H1`. | `D1/P` and `D2/P2` both succeed with separate active locks, invoice IDs, and display numbers. |
+| **TC-MD-R5** | No locks exist for `P/P2`; `D1/D2` submit distinct draft operations simultaneously; issued-only high watermark is `41`. | Process both through `H1`, then inspect before issue. | `D1/P` and `D2/P2` both succeed with separate active locks and invoice IDs; both display numbers are null and the high watermark remains `41`. |
 | **TC-MD-R6** | `D1/op-1` and `D2/op-2` both request a new `S1/P` draft and wait at a barrier. | Release both requests concurrently. | Exactly one succeeds; the other gets `DRAFT_LOCK_CONFLICT`; one active non-retired draft and one active lock exist. |
 | **TC-MD-R7** | Product version is `7`; `D1/D2` prepare different price edits with `base_version=7`. | Submit both concurrently and record which obtains the commit first. | Winner persists version 8; loser gets `VERSION_CONFLICT`; final version/content equals winner, not an unreported mixture. |
-| **TC-MD-R8** | Product stock is `10` from event `E0`; `D1` prepares `+5`, `D2` prepares `-2`, with distinct operation IDs. | Commit both concurrently, then rebuild stock from the ledger. | Both events exist once and stock is `13`; neither event overwrites or loses the other. |
-| **TC-MD-R9** | Twenty create commands are split across `D1/D2`; each exact request is also scheduled for one retry. | Run all creations/retries concurrently through `H1`. | Exactly 20 invoices exist; display numbers are exactly `1..20`; retries return original responses and add no IDs/numbers. |
+| **TC-MD-R8** | Product stock is `10000` from event `E0`; `D1` prepares `quantity_delta_millis=+5000`, `D2` prepares `-2000`, with distinct operation IDs. | Commit both concurrently, then rebuild stock from the ledger. | Both events exist once and stock is `13000` (`13.000` units); neither event overwrites or loses the other. |
+| **TC-MD-R9** | Twenty draft-create commands are split across `D1/D2`; each exact create and subsequent issue request is also scheduled for one retry. | Run all creations concurrently, verify null numbering, then run all issues/retries concurrently through `H1`. | Exactly 20 invoices exist; creation/retries allocate no numbers, successful issues receive exactly `1..20`, and issue retries return original responses without new IDs/numbers or gaps. |
 
 ### 7.8 Coverage check
 
@@ -820,14 +822,12 @@ These are concrete acceptance scenarios to automate against the eventual domain 
 
 ### 8.1 Open questions
 
-The following items need explicit Owner/PM confirmation. Until then, implementations must use the conservative posture already recorded in [`docs/DECISIONS.md`](DECISIONS.md), not silently choose a more permissive behavior.
+The following item needs explicit Owner/PM confirmation. Until then, implementations must use the conservative posture already recorded in [`docs/DECISIONS.md`](DECISIONS.md), not silently choose a more permissive behavior. Owner-approved `P-0104r` (`2026-10-23`) closed the former D11 timeout/activity and D12 display-number gap questions: the default is 300 seconds with extension only on newly Hub-accepted draft changes, and numbers are allocated only at successful `ISSUE`.
 
 | Question | Conservative posture used by this specification | Decision needed |
 | --- | --- | --- |
-| Does active editing/heartbeat extend the five-minute D11 timeout, and is the 5-minute default finally confirmed? | Timeout is configurable, defaults to 300 seconds, and is measured from last Hub-accepted draft activity. Explicit disconnect still releases immediately. | Owner confirmation of default and heartbeat/active-editing semantics before production multi-device rollout (existing `D11` Open item). |
 | Should near-duplicate detection include broader fuzzy matching beyond equal conservative similarity keys? | Exact normalized duplicates reject; equal similarity keys with different normalized names warn. No undocumented probabilistic merge or blocking rule. | Owner/PM may approve a deterministic additional algorithm and threshold; any extension needs new fixtures (new Open item). |
-| Are auditable display-number gaps from cancelled/timed-out drafts acceptable? | Allocate at first durable Hub persistence, never reuse, and retain retired invoices to explain gaps. Failed atomic creation consumes no number. | Owner/PM confirmation before numbering implementation if gapless issued-invoice numbering is desired instead (new Open item). |
 
 ### 8.2 Assumptions recorded in the decision register
 
-`ASM-06`–`ASM-12` record the conservative P-01 choices for documentation scope, product matching, idempotency mismatches, pre-issuance retirement/lock ownership, display-number allocation, tenant/global-profile access, and verified-phone customer linking. These assumptions constrain implementation only until explicitly superseded; none changes a frozen `D1`–`D14` decision or the Canonical Invoice v0 contract.
+`ASM-06`–`ASM-12` record the conservative P-01 choices for documentation scope, product matching, idempotency mismatches, pre-issuance retirement/lock ownership, display-number allocation, tenant/global-profile access, and verified-phone customer linking. `ASM-09` and `ASM-10` contain the owner-approved `P-0104r` revisions; new `ASM-22` records the signed scaled-integer quantity profile for InvoiceItem, InventoryEvent, Operation payloads, and derived stock projections. These assumptions constrain implementation only until explicitly superseded; except for those recorded revisions, none changes a frozen `D1`–`D14` decision or the Canonical Invoice v0 contract.
