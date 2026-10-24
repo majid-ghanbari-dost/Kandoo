@@ -41,6 +41,22 @@ jobs:
       - name: Test and write TRX
         run: dotnet test Kandoo.sln --configuration Release --no-build --results-directory tests/Kandoo.Core.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
 
+      - name: Publish failed test annotations
+        if: always()
+        shell: pwsh
+        run: |
+          $resultFiles = Get-ChildItem -Path tests/Kandoo.Core.Tests/TestResults -Filter *.trx -Recurse -ErrorAction SilentlyContinue
+          foreach ($file in $resultFiles) {
+            [xml]$trx = Get-Content -LiteralPath $file.FullName
+            foreach ($result in @($trx.TestRun.Results.UnitTestResult)) {
+              if ($null -ne $result -and $result.outcome -ne 'Passed') {
+                $message = [string]$result.Output.ErrorInfo.Message
+                $message = $message -replace "[`r`n]+", " "
+                Write-Host "::error::$($result.testName): $message"
+              }
+            }
+          }
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
