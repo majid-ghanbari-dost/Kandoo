@@ -38,14 +38,17 @@ jobs:
       - name: Build
         run: dotnet build Kandoo.sln --configuration Release --no-restore
 
-      - name: Test and write TRX
-        run: dotnet test Kandoo.sln --configuration Release --no-build --results-directory tests/Kandoo.Core.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
+      - name: Test Core and write TRX
+        run: dotnet test tests/Kandoo.Core.Tests/Kandoo.Core.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Core.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
+
+      - name: Test Cloud and write TRX
+        run: dotnet test tests/Kandoo.Cloud.Tests/Kandoo.Cloud.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Cloud.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
 
       - name: Publish failed test annotations
         if: always()
         shell: pwsh
         run: |
-          $resultFiles = Get-ChildItem -Path tests/Kandoo.Core.Tests/TestResults -Filter *.trx -Recurse -ErrorAction SilentlyContinue
+          $resultFiles = Get-ChildItem -Path tests -Filter *.trx -Recurse -ErrorAction SilentlyContinue
           foreach ($file in $resultFiles) {
             [xml]$trx = Get-Content -LiteralPath $file.FullName
             foreach ($result in @($trx.TestRun.Results.UnitTestResult)) {
@@ -62,5 +65,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-results-${{ matrix.os }}
-          path: tests/Kandoo.Core.Tests/TestResults/*.trx
+          path: |
+            tests/Kandoo.Core.Tests/TestResults/*.trx
+            tests/Kandoo.Cloud.Tests/TestResults/*.trx
           if-no-files-found: error
