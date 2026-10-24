@@ -1,5 +1,22 @@
 # KANDOO — MASTER HANDOFF (Parent Platform Repository)
 
+## Current Implementation Handoff (`H-00`, 2026-10-24)
+
+The active implementation branch is `arena/1c5ae19c-kandoo`, based for this dispatch on C-03 commit `fca2262aeaa6dbfedd2c1f3d0107bd0ce147aa62`. The `main` baseline remains `82d40cf7d55ac170db7a464dad5985be75d6b71a`; no merge is implied by this handoff.
+
+| Task | Content commit | Annotated tag (object SHA) | CI run ID |
+| --- | --- | --- | --- |
+| **C-01** | `5ff98a5b52819af8ba215942532cdf2a3c6f565c` | `stable-c-01` (`4394f7b19a476ff4769b468f1decb7f91dc41153`) | `40068393877` |
+| **C-02** | `9a2581ed53d57575343bb1346575b11ab8c8fdfa` | **`stable-c-02-v4` (`9cca13b309fcf169e8aadc09a4cecc63fe9c42be`)** | `40069226292` |
+| **P-03-docs** | `f071070c5a7a835a104f5c3eb31859a1ffdae121` | `stable-p-03-docs` (`48c58d6cc921021dc3d20d22951c3270b0da31a6`) | `40069315245` |
+| **C-03** | `fca2262aeaa6dbfedd2c1f3d0107bd0ce147aa62` | `stable-c-03` (`a97767356019c17dcbfa00477ebfdb7414faa608`) | `40069741771` |
+
+**C-02 tag authority:** the authoritative C-02 tag is **`stable-c-02-v4`**, targeting `9a2581ed53d57575343bb1346575b11ab8c8fdfa`. `stable-c-02` remains on pre-fix commit `2c8a5796970d4e5bc159f264d1f2bed218894413` for audit history and **must not be moved**.
+
+The current CI loop requires owner/verifier confirmation for every new task and OS leg: **CI result needed from the owner**. Historical run IDs above are references, not a substitute for new-task verification.
+
+---
+
 **Document status:** Authoritative R-0 Baseline  
 **Date:** `2026-10-22`  
 **Repository:** `majid-ghanbari-dost/Kandoo` (Parent Platform Repository)  
