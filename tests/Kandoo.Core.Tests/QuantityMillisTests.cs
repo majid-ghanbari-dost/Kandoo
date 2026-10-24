@@ -6,13 +6,16 @@ namespace Kandoo.Core.Tests;
 public sealed class QuantityMillisTests
 {
     [Fact]
-    public void QuantityMillis_AddsScaledIntegerThousandths()
+    public void ASM_22_QuantityAndMoneyUseSignedIntegerUnits()
     {
         var oneUnit = QuantityMillis.FromUnits(1);
         var halfUnit = new QuantityMillis(500);
+        var negativeTwoUnits = new QuantityMillis(-2000);
+        var rials = new Rials(1000).Add(new Rials(250));
 
-        var result = oneUnit.Add(halfUnit);
-
-        Assert.Equal(1500L, result.Value);
+        Assert.Equal(1500L, oneUnit.Add(halfUnit).Value);
+        Assert.Equal(-2000L, negativeTwoUnits.Value);
+        Assert.Equal(1250L, rials.Value);
+        Assert.Equal(-1500L, oneUnit.Add(negativeTwoUnits).Value);
     }
 }
