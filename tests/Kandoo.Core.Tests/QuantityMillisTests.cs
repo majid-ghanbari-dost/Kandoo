@@ -16,6 +16,6 @@ public sealed class QuantityMillisTests
         Assert.Equal(1500L, oneUnit.Add(halfUnit).Value);
         Assert.Equal(-2000L, negativeTwoUnits.Value);
         Assert.Equal(1250L, rials.Value);
-        Assert.Equal(-1500L, oneUnit.Add(negativeTwoUnits).Value);
+        Assert.Equal(-1000L, oneUnit.Add(negativeTwoUnits).Value);
     }
 }
