@@ -10,7 +10,7 @@ namespace Kandoo.Cloud;
 /// commit transaction; no suffix, projection version, or watermark is mutated
 /// outside that transaction.
 /// </summary>
-public sealed class PostgresCloudStore : ICloudStore
+public sealed class PostgresCloudStore : ICloudStore, IPublicInvoiceStore
 {
     public const int MaxBatchEntries = 100;
     public const int MaxBatchBytes = 1_048_576;
@@ -44,6 +44,21 @@ public sealed class PostgresCloudStore : ICloudStore
             batch_id text NOT NULL,
             fingerprint text NOT NULL,
             PRIMARY KEY (store_id, batch_id)
+        );
+        CREATE TABLE IF NOT EXISTS public_invoices (
+            public_token text PRIMARY KEY,
+            digital_invoice_id uuid NOT NULL,
+            invoice_id uuid NOT NULL,
+            store_id uuid NOT NULL,
+            store_name text NOT NULL,
+            display_number bigint NOT NULL,
+            lifecycle_status text NOT NULL,
+            issued_at timestamptz NOT NULL,
+            issued_payload jsonb NOT NULL,
+            issued_content_sha256 text NOT NULL,
+            payable_rials bigint NOT NULL,
+            line_items jsonb NOT NULL,
+            CONSTRAINT public_invoices_store_invoice_unique UNIQUE (store_id, invoice_id)
         );
         """;
 
@@ -104,6 +119,110 @@ public sealed class PostgresCloudStore : ICloudStore
         using var connection = Open();
         var state = LoadState(connection, null, storeId, false);
         return state is null ? null : Snapshot(state);
+    }
+
+    /// <summary>Seeds one synthetic issued projection and returns its capability token.</summary>
+    public string SeedPublicInvoice(PublicInvoiceSeed seed)
+    {
+        var token = string.IsNullOrWhiteSpace(seed.PublicToken) ? PublicTokenGenerator.NewToken() : seed.PublicToken!;
+        if (!PublicTokenGenerator.IsValid(token)
+            || seed.InvoiceId == Guid.Empty
+            || seed.StoreId == Guid.Empty
+            || string.IsNullOrWhiteSpace(seed.StoreName)
+            || seed.DisplayNumber <= 0
+            || seed.LifecycleStatus is not ("ISSUED" or "REVOKED" or "SUPERSEDED")
+            || seed.IssuedPayload.ValueKind != JsonValueKind.Object
+            || string.IsNullOrWhiteSpace(seed.IssuedContentSha256)
+            || seed.PayableRials < 0)
+        {
+            throw new ArgumentException("A valid issued public-invoice projection is required.", nameof(seed));
+        }
+
+        var digitalInvoiceId = seed.DigitalInvoiceId == Guid.Empty ? Guid.NewGuid() : seed.DigitalInvoiceId;
+        using var connection = Open();
+        using var transaction = connection.BeginTransaction();
+        using (var delete = new NpgsqlCommand(
+                   "DELETE FROM public_invoices WHERE public_token = @token OR (store_id = @store AND invoice_id = @invoice)",
+                   connection,
+                   transaction))
+        {
+            delete.Parameters.AddWithValue("token", token);
+            delete.Parameters.AddWithValue("store", seed.StoreId);
+            delete.Parameters.AddWithValue("invoice", seed.InvoiceId);
+            delete.ExecuteNonQuery();
+        }
+
+        using (var insert = new NpgsqlCommand(
+                   "INSERT INTO public_invoices (public_token, digital_invoice_id, invoice_id, store_id, store_name, display_number, lifecycle_status, issued_at, issued_payload, issued_content_sha256, payable_rials, line_items) VALUES (@token, @digital, @invoice, @store, @name, @display, @status, @issuedAt, @payload, @hash, @payable, @items)",
+                   connection,
+                   transaction))
+        {
+            insert.Parameters.AddWithValue("token", token);
+            insert.Parameters.AddWithValue("digital", digitalInvoiceId);
+            insert.Parameters.AddWithValue("invoice", seed.InvoiceId);
+            insert.Parameters.AddWithValue("store", seed.StoreId);
+            insert.Parameters.AddWithValue("name", seed.StoreName);
+            insert.Parameters.AddWithValue("display", seed.DisplayNumber);
+            insert.Parameters.AddWithValue("status", seed.LifecycleStatus);
+            insert.Parameters.AddWithValue("issuedAt", seed.IssuedAt.ToUniversalTime());
+            insert.Parameters.AddWithValue("payload", NpgsqlDbType.Jsonb, JsonSerializer.Serialize(seed.IssuedPayload, CloudJson.Options));
+            insert.Parameters.AddWithValue("hash", seed.IssuedContentSha256);
+            insert.Parameters.AddWithValue("payable", seed.PayableRials);
+            insert.Parameters.AddWithValue("items", NpgsqlDbType.Jsonb, JsonSerializer.Serialize(seed.LineItems, CloudJson.Options));
+            insert.ExecuteNonQuery();
+        }
+
+        transaction.Commit();
+        return token;
+    }
+
+    public PublicInvoice? GetPublicInvoice(string token)
+    {
+        if (!PublicTokenGenerator.IsValid(token))
+        {
+            return null;
+        }
+
+        using var connection = Open();
+        using var command = new NpgsqlCommand(
+            "SELECT invoice_id, store_id, store_name, display_number, lifecycle_status, issued_at, issued_payload, issued_content_sha256, payable_rials, line_items FROM public_invoices WHERE public_token = @token AND lifecycle_status IN ('ISSUED', 'REVOKED', 'SUPERSEDED') LIMIT 1",
+            connection);
+        command.Parameters.AddWithValue("token", token);
+        using var reader = command.ExecuteReader();
+        if (!reader.Read())
+        {
+            return null;
+        }
+
+        var invoiceId = reader.GetGuid(0);
+        var storeId = reader.GetGuid(1);
+        var storeName = reader.GetString(2);
+        var displayNumber = reader.GetInt64(3);
+        var lifecycleStatus = reader.GetString(4);
+        var issuedAt = reader.GetFieldValue<DateTimeOffset>(5);
+        using var payloadDocument = JsonDocument.Parse(reader.GetString(6));
+        var issuedPayload = payloadDocument.RootElement.Clone();
+        var contentHash = reader.GetString(7);
+        var payable = reader.GetInt64(8);
+        var lineItems = JsonSerializer.Deserialize<PublicInvoiceLine[]>(reader.GetString(9), CloudJson.Options)
+            ?? Array.Empty<PublicInvoiceLine>();
+        var digitalInvoice = new PublicDigitalInvoice
+        {
+            InvoiceId = invoiceId,
+            StoreId = storeId,
+            IssuedPayload = issuedPayload,
+            IssuedContentSha256 = contentHash,
+            IssuedAt = issuedAt
+        };
+        var view = new PublicInvoiceView
+        {
+            StoreName = storeName,
+            DisplayNumber = displayNumber,
+            LifecycleStatus = lifecycleStatus,
+            IssuedAt = issuedAt,
+            DigitalInvoice = digitalInvoice
+        };
+        return new PublicInvoice(view, lineItems, payable);
     }
 
     private NpgsqlConnection Open()

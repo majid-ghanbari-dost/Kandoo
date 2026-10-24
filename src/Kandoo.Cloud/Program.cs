@@ -1,14 +1,53 @@
+using System.Text;
 using System.Text.Json;
 using Kandoo.Cloud;
 
 var builder = WebApplication.CreateBuilder(args);
 var postgresConnection = builder.Configuration.GetConnectionString("CloudPostgres")
     ?? "Host=localhost;Port=5432;Database=kandoo;Username=postgres;Password=postgres;Pooling=false";
-builder.Services.AddSingleton<ICloudStore>(new PostgresCloudStore(postgresConnection));
+var cloudStore = new PostgresCloudStore(postgresConnection);
+builder.Services.AddSingleton<ICloudStore>(cloudStore);
+builder.Services.AddSingleton<IPublicInvoiceStore>(cloudStore);
 
 var app = builder.Build();
 
 app.MapGet("/health", () => Results.Json(new { status = "ok" }, CloudJson.Options));
+
+app.MapGet("/i/{token}", (HttpContext context, string token, IPublicInvoiceStore store, IHostEnvironment environment) =>
+{
+    var invoice = store.GetPublicInvoice(token);
+    IResult response;
+    if (invoice is null)
+    {
+        // Deliberately identical for malformed, unknown, and invisible tokens.
+        response = Results.Json(
+            CloudErrors.Failure(404, "PUBLIC_INVOICE_NOT_FOUND", "The requested invoice is not available.", "NONE").Body,
+            CloudJson.Options,
+            statusCode: 404);
+    }
+    else if (!environment.IsDevelopment() && !environment.IsEnvironment("Testing"))
+    {
+        // D14 remains a production release gate; previews use the explicit placeholder.
+        response = Results.Json(
+            CloudErrors.Failure(503, "LEGAL_COPY_UNAVAILABLE", "Public invoice wording is awaiting lawyer approval.", "ENABLE_LEGAL_COPY").Body,
+            CloudJson.Options,
+            statusCode: 503);
+    }
+    else if (string.Equals(context.Request.Query["format"].ToString(), "json", StringComparison.OrdinalIgnoreCase)
+             || (context.Request.Headers.Accept.Any(value => value?.Contains("application/json", StringComparison.OrdinalIgnoreCase) == true)
+                 && !context.Request.Headers.Accept.Any(value => value?.Contains("text/html", StringComparison.OrdinalIgnoreCase) == true)))
+    {
+        response = Results.Json(invoice.View, CloudJson.Options);
+    }
+    else
+    {
+        response = Results.Content(PublicInvoiceHtml.Render(invoice), "text/html", Encoding.UTF8);
+    }
+
+    context.Response.Headers.CacheControl = "no-store";
+    context.Response.Headers.Vary = "Accept";
+    return response;
+});
 
 app.MapPost("/v1/stores/{store_id}/operation-batches", async (
     HttpContext context,

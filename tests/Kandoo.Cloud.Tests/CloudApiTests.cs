@@ -83,6 +83,106 @@ public sealed class CloudApiTests : IClassFixture<PostgresTestDatabase>, IDispos
         Assert.Equal(2, ack.DuplicateCount);
     }
 
+    [Fact]
+    public void C06_PublicTokensHave128BitsAndUnguessableShape()
+    {
+        var first = PublicTokenGenerator.NewToken();
+        var second = PublicTokenGenerator.NewToken();
+        Assert.Equal(16, PublicTokenGenerator.EntropyBytes);
+        Assert.Equal(22, first.Length);
+        Assert.True(PublicTokenGenerator.IsValid(first));
+        Assert.Matches("^[A-Za-z0-9_-]{22}$", first);
+        Assert.NotEqual(first, second);
+        Assert.False(PublicTokenGenerator.IsValid("short"));
+    }
+
+    [Fact]
+    public async Task C06_HtmlIsRtlPersianPrintableAndUsesD14Placeholder()
+    {
+        var token = PublicTokenGenerator.NewToken();
+        var invoiceId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var storeId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        _factory.Store.SeedPublicInvoice(PublicSeed(storeId, invoiceId, token, "فروشگاه نمونه"));
+        using var response = await _client.GetAsync($"/i/{token}");
+        var html = await response.Content.ReadAsStringAsync();
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(response.Content.Headers.ContentType);
+        Assert.Contains("text/html", response.Content.Headers.ContentType!.ToString());
+        Assert.Contains("lang=\"fa\"", html);
+        Assert.Contains("dir=\"rtl\"", html);
+        Assert.Contains("@media print", html);
+        Assert.Contains("فروشگاه نمونه", html);
+        Assert.Contains("نمونه کالا", html);
+        Assert.Contains("Kandoo digital invoice", html);
+        Assert.Contains(PublicInvoiceLegalCopy.ApprovalStatus, html);
+        Assert.DoesNotContain("receipt", html, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task C06_JsonIsSingleInvoiceAndStrictlyStoreIsolated()
+    {
+        var firstToken = PublicTokenGenerator.NewToken();
+        var secondToken = PublicTokenGenerator.NewToken();
+        var firstInvoice = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        var secondInvoice = Guid.Parse("44444444-4444-4444-4444-444444444444");
+        var firstStore = Guid.Parse("55555555-5555-5555-5555-555555555555");
+        var secondStore = Guid.Parse("66666666-6666-6666-6666-666666666666");
+        _factory.Store.SeedPublicInvoice(PublicSeed(firstStore, firstInvoice, firstToken, "Store One"));
+        _factory.Store.SeedPublicInvoice(PublicSeed(secondStore, secondInvoice, secondToken, "Store Two"));
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"/i/{firstToken}");
+        request.Headers.Add("Accept", "application/json");
+        using var response = await _client.SendAsync(request);
+        var raw = await response.Content.ReadAsStringAsync();
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var body = JsonDocument.Parse(raw);
+        var root = body.RootElement;
+        Assert.Equal("Kandoo digital invoice", root.GetProperty("product_name").GetString());
+        Assert.Equal("Store One", root.GetProperty("store_name").GetString());
+        Assert.Equal(firstInvoice, root.GetProperty("digital_invoice").GetProperty("invoice_id").GetGuid());
+        Assert.Equal(firstStore, root.GetProperty("digital_invoice").GetProperty("store_id").GetGuid());
+        Assert.Equal(PublicInvoiceLegalCopy.ApprovalStatus, root.GetProperty("legal_copy_status").GetString());
+        Assert.Equal(PublicInvoiceLegalCopy.Placeholder, root.GetProperty("legal_copy").GetProperty("content").GetString());
+        Assert.DoesNotContain(secondInvoice.ToString(), raw);
+        Assert.DoesNotContain("Store Two", raw);
+
+        using var secondResponse = await _client.GetAsync($"/i/{secondToken}?format=json");
+        Assert.Equal(HttpStatusCode.OK, secondResponse.StatusCode);
+        using var secondBody = await ReadBody(secondResponse);
+        Assert.Equal(secondInvoice, secondBody.RootElement.GetProperty("digital_invoice").GetProperty("invoice_id").GetGuid());
+        Assert.Equal(secondStore, secondBody.RootElement.GetProperty("digital_invoice").GetProperty("store_id").GetGuid());
+    }
+
+    [Fact]
+    public async Task C06_MalformedAndUnknownTokensHaveIndistinguishable404()
+    {
+        using var malformed = await _client.GetAsync("/i/not-a-token");
+        using var unknown = await _client.GetAsync("/i/AAAAAAAAAAAAAAAAAAAAAA");
+        var malformedBody = await malformed.Content.ReadAsStringAsync();
+        var unknownBody = await unknown.Content.ReadAsStringAsync();
+        Assert.Equal(HttpStatusCode.NotFound, malformed.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, unknown.StatusCode);
+        Assert.Equal(malformedBody, unknownBody);
+        using var body = JsonDocument.Parse(malformedBody);
+        Assert.Equal("PUBLIC_INVOICE_NOT_FOUND", body.RootElement.GetProperty("code").GetString());
+    }
+
+    private static PublicInvoiceSeed PublicSeed(Guid storeId, Guid invoiceId, string token, string storeName) => new()
+    {
+        StoreId = storeId,
+        InvoiceId = invoiceId,
+        PublicToken = token,
+        StoreName = storeName,
+        DisplayNumber = 42,
+        IssuedAt = new DateTimeOffset(2026, 1, 2, 3, 4, 5, TimeSpan.Zero),
+        IssuedPayload = JsonSerializer.SerializeToElement(new { invoice_id = invoiceId, display_number = 42 }),
+        LineItems = new[]
+        {
+            new PublicInvoiceLine { ProductName = "نمونه کالا", QuantityMillis = 1250, UnitPriceRials = 800, LineTotalRials = 1000 }
+        },
+        PayableRials = 1000
+    };
+
     private async Task RunVector(string vectorId)
     {
         var vector = VectorFile.Get(vectorId);
@@ -239,7 +339,9 @@ public sealed class CloudApiTests : IClassFixture<PostgresTestDatabase>, IDispos
             builder.ConfigureServices(services =>
             {
                 services.RemoveAll<ICloudStore>();
+                services.RemoveAll<IPublicInvoiceStore>();
                 services.AddSingleton<ICloudStore>(Store);
+                services.AddSingleton<IPublicInvoiceStore>(Store);
             });
         }
     }
