@@ -136,6 +136,26 @@ public sealed class Invoice
         RetirementReason = reason;
     }
 
+    internal void RestoreForPersistence(
+        long? displayNumber,
+        InvoiceStatus status,
+        DateTimeOffset? retiredAt,
+        RetirementReason? retirementReason,
+        DateTimeOffset? issuedAt,
+        string? issuedPayload,
+        string? issuedContentSha256,
+        Guid? customerId)
+    {
+        DisplayNumber = displayNumber;
+        Status = status;
+        RetiredAt = retiredAt;
+        RetirementReason = retirementReason;
+        IssuedAt = issuedAt;
+        IssuedPayload = issuedPayload;
+        IssuedContentSha256 = issuedContentSha256;
+        CustomerId = customerId;
+    }
+
     public void Revoke()
     {
         if (Status != InvoiceStatus.Issued)

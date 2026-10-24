@@ -83,6 +83,19 @@ public sealed class OperationLog
         }
     }
 
+    internal void Restore(OperationRecord record)
+    {
+        lock (_gate)
+        {
+            _records[(record.StoreId, record.OperationId)] = record;
+            var next = checked(record.OperationSeq + 1);
+            if (_nextSequenceByStore.GetValueOrDefault(record.StoreId) < next)
+            {
+                _nextSequenceByStore[record.StoreId] = next;
+            }
+        }
+    }
+
     public int Count(Guid storeId)
     {
         lock (_gate)

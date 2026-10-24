@@ -44,6 +44,9 @@ jobs:
       - name: Test Cloud and write TRX
         run: dotnet test tests/Kandoo.Cloud.Tests/Kandoo.Cloud.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Cloud.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
 
+      - name: Test Hub and write TRX
+        run: dotnet test tests/Kandoo.Hub.Tests/Kandoo.Hub.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Hub.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
+
       - name: Publish failed test annotations
         if: always()
         shell: pwsh
@@ -68,4 +71,5 @@ jobs:
           path: |
             tests/Kandoo.Core.Tests/TestResults/*.trx
             tests/Kandoo.Cloud.Tests/TestResults/*.trx
+            tests/Kandoo.Hub.Tests/TestResults/*.trx
           if-no-files-found: error

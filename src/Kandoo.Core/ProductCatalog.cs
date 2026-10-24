@@ -109,6 +109,14 @@ public sealed class ProductCatalog
         }
     }
 
+    internal void Restore(Product product)
+    {
+        lock (_gate)
+        {
+            _products[(product.StoreId, product.ProductId)] = product;
+        }
+    }
+
     public Product? Get(Guid storeId, string productId)
     {
         lock (_gate)

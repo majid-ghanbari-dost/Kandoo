@@ -52,6 +52,18 @@ public sealed class InvoiceService
 
     public void Timeout(Invoice invoice, DateTimeOffset retiredAt) => invoice.Retire(retiredAt, RetirementReason.Timeout);
 
+    internal void Restore(Invoice invoice)
+    {
+        lock (_gate)
+        {
+            _invoices[invoice.InvoiceId] = invoice;
+            if (invoice.DisplayNumber is long number && _displayNumberHighWatermarks.GetValueOrDefault(invoice.StoreId) < number)
+            {
+                _displayNumberHighWatermarks[invoice.StoreId] = number;
+            }
+        }
+    }
+
     public long GetHighWatermark(Guid storeId)
     {
         lock (_gate)
