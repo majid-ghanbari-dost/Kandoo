@@ -10,13 +10,16 @@ using Xunit;
 
 namespace Kandoo.Cloud.Tests;
 
-public sealed class CloudApiTests : IDisposable
+public sealed class CloudApiTests : IClassFixture<PostgresTestDatabase>, IDisposable
 {
-    private readonly CloudFactory _factory = new();
+    private readonly PostgresTestDatabase _database;
+    private readonly CloudFactory _factory;
     private readonly HttpClient _client;
 
-    public CloudApiTests()
+    public CloudApiTests(PostgresTestDatabase database)
     {
+        _database = database;
+        _factory = new CloudFactory(database.Store);
         _client = _factory.CreateClient();
     }
 
@@ -53,6 +56,32 @@ public sealed class CloudApiTests : IDisposable
 
     [Fact]
     public Task CLOUD_008_StaleWriterIsFencedEvenForAnEmptyBatch() => RunVector("CLOUD-008");
+
+    [Fact]
+    public async Task C05_CommittedStateAndIdempotencySurviveStoreRecreation()
+    {
+        var vector = VectorFile.Get("CLOUD-001");
+        var batch = VectorFile.FirstBatch(vector);
+        var seed = VectorFile.Seed(vector, batch);
+        _factory.Store.Seed(seed);
+        using var response = await PostBatch(batch);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var restarted = new PostgresCloudStore(_database.ConnectionString);
+        var snapshot = restarted.GetSnapshot(seed.StoreId);
+        Assert.NotNull(snapshot);
+        var saved = snapshot!;
+        Assert.Equal(42L, saved.AcceptedThroughSeq);
+        Assert.Equal(42L, saved.EntryCount);
+        Assert.Equal(2, saved.OperationIdCount);
+
+        var persistedBatch = JsonSerializer.Deserialize<OperationBatch>(batch.GetRawText(), CloudJson.Options)!;
+        var replay = restarted.Ingest(seed.StoreId, persistedBatch, batch.GetProperty("batch_id").GetString());
+        var ack = Assert.IsType<IngestAck>(replay.Body);
+        Assert.Equal("DUPLICATE", ack.Status);
+        Assert.Equal(0, ack.IngestedCount);
+        Assert.Equal(2, ack.DuplicateCount);
+    }
 
     private async Task RunVector(string vectorId)
     {
@@ -200,15 +229,17 @@ public sealed class CloudApiTests : IDisposable
 
     private sealed class CloudFactory : WebApplicationFactory<Program>
     {
-        public InMemoryCloudStore Store { get; } = new();
+        public CloudFactory(PostgresCloudStore store) => Store = store;
+
+        public PostgresCloudStore Store { get; }
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseEnvironment("Testing");
             builder.ConfigureServices(services =>
             {
-                services.RemoveAll<InMemoryCloudStore>();
-                services.AddSingleton(Store);
+                services.RemoveAll<ICloudStore>();
+                services.AddSingleton<ICloudStore>(Store);
             });
         }
     }

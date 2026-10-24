@@ -2,7 +2,9 @@ using System.Text.Json;
 using Kandoo.Cloud;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddSingleton<InMemoryCloudStore>();
+var postgresConnection = builder.Configuration.GetConnectionString("CloudPostgres")
+    ?? "Host=localhost;Port=5432;Database=kandoo;Username=postgres;Password=postgres;Pooling=false";
+builder.Services.AddSingleton<ICloudStore>(new PostgresCloudStore(postgresConnection));
 
 var app = builder.Build();
 
@@ -11,22 +13,22 @@ app.MapGet("/health", () => Results.Json(new { status = "ok" }, CloudJson.Option
 app.MapPost("/v1/stores/{store_id}/operation-batches", async (
     HttpContext context,
     string store_id,
-    InMemoryCloudStore store) =>
+    ICloudStore store) =>
 {
     CloudIngestResult result;
     if (!Guid.TryParse(store_id, out var routeStoreId))
     {
         result = CloudErrors.Failure(400, "VALIDATION_ERROR", "store_id must be a UUID.", "FIX_REQUEST");
     }
-    else if (context.Request.ContentLength > InMemoryCloudStore.MaxBatchBytes)
+    else if (context.Request.ContentLength > PostgresCloudStore.MaxBatchBytes)
     {
         result = CloudErrors.Failure(
             413,
             "PAYLOAD_TOO_LARGE",
             "The request exceeds the batch byte limit.",
             "FIX_REQUEST",
-            ("max_batch_entries", InMemoryCloudStore.MaxBatchEntries),
-            ("max_batch_bytes", InMemoryCloudStore.MaxBatchBytes));
+            ("max_batch_entries", PostgresCloudStore.MaxBatchEntries),
+            ("max_batch_bytes", PostgresCloudStore.MaxBatchBytes));
     }
     else
     {

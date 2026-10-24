@@ -1,13 +1,16 @@
 using System.Text.Json;
 using Kandoo.Core;
+using Npgsql;
+using NpgsqlTypes;
 
 namespace Kandoo.Cloud;
 
 /// <summary>
-/// Atomic in-memory Cloud replica for the C-03 vertical slice. All validation
-/// completes before a suffix, projection version, or watermark is mutated.
+/// PostgreSQL Cloud replica. A store row is locked for the whole validation and
+/// commit transaction; no suffix, projection version, or watermark is mutated
+/// outside that transaction.
 /// </summary>
-public sealed class InMemoryCloudStore
+public sealed class PostgresCloudStore : ICloudStore
 {
     public const int MaxBatchEntries = 100;
     public const int MaxBatchBytes = 1_048_576;
@@ -16,70 +19,197 @@ public sealed class InMemoryCloudStore
     public const int ThrottledRetryAfterMs = 2_000;
     public const string ZeroHash = "0000000000000000000000000000000000000000000000000000000000000000";
 
-    private readonly object _sync = new();
-    private readonly Dictionary<Guid, StoreState> _stores = new();
+    private const string SchemaSql = """
+        CREATE TABLE IF NOT EXISTS cloud_stores (
+            store_id uuid PRIMARY KEY,
+            active_writer_device_id uuid NOT NULL,
+            active_writer_epoch bigint NOT NULL,
+            accepted_through_seq bigint NOT NULL,
+            entry_count bigint NOT NULL,
+            head_entry_hash text NULL,
+            projection_version bigint NOT NULL,
+            throttled boolean NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS cloud_entries (
+            store_id uuid NOT NULL REFERENCES cloud_stores(store_id) ON DELETE CASCADE,
+            operation_seq bigint NOT NULL,
+            operation_id text NOT NULL,
+            entry_hash text NOT NULL,
+            entry_json jsonb NOT NULL,
+            PRIMARY KEY (store_id, operation_seq),
+            CONSTRAINT cloud_entries_store_operation_unique UNIQUE (store_id, operation_id)
+        );
+        CREATE TABLE IF NOT EXISTS cloud_batches (
+            store_id uuid NOT NULL REFERENCES cloud_stores(store_id) ON DELETE CASCADE,
+            batch_id text NOT NULL,
+            fingerprint text NOT NULL,
+            PRIMARY KEY (store_id, batch_id)
+        );
+        """;
 
+    private readonly string _connectionString;
+    private readonly object _schemaSync = new();
+    private bool _schemaReady;
+
+    public PostgresCloudStore(string connectionString)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new ArgumentException("A PostgreSQL connection string is required.", nameof(connectionString));
+        }
+
+        _connectionString = connectionString;
+    }
+
+    /// <summary>Replaces one synthetic test store atomically; production writes use Ingest.</summary>
     public void Seed(CloudSeed seed)
     {
-        lock (_sync)
+        var head = seed.HeadEntryHash
+            ?? seed.Entries.OrderBy(entry => entry.OperationSeq).LastOrDefault()?.EntryHash
+            ?? (seed.AcceptedThroughSeq > 0 ? ZeroHash : null);
+        using var connection = Open();
+        using var transaction = connection.BeginTransaction();
+        using (var delete = new NpgsqlCommand("DELETE FROM cloud_stores WHERE store_id = @store", connection, transaction))
         {
-            var state = new StoreState
-            {
-                StoreId = seed.StoreId,
-                ActiveWriterDeviceId = seed.ActiveWriterDeviceId,
-                ActiveWriterEpoch = seed.ActiveWriterEpoch,
-                AcceptedThroughSeq = seed.AcceptedThroughSeq,
-                EntryCount = seed.EntryCount,
-                ProjectionVersion = seed.ProjectionVersion ?? seed.AcceptedThroughSeq,
-                Throttled = seed.Throttled
-            };
-
-            foreach (var entry in seed.Entries)
-            {
-                var copy = entry.Clone();
-                state.Entries[copy.OperationSeq] = copy;
-                state.OperationIndex[copy.OperationId] = copy;
-            }
-
-            state.HeadEntryHash = seed.HeadEntryHash
-                ?? state.Entries.Values.OrderBy(entry => entry.OperationSeq).LastOrDefault()?.EntryHash
-                ?? (seed.AcceptedThroughSeq > 0 ? ZeroHash : null);
-            _stores[seed.StoreId] = state;
+            delete.Parameters.AddWithValue("store", seed.StoreId);
+            delete.ExecuteNonQuery();
         }
+
+        using (var insert = new NpgsqlCommand(
+                   "INSERT INTO cloud_stores (store_id, active_writer_device_id, active_writer_epoch, accepted_through_seq, entry_count, head_entry_hash, projection_version, throttled) VALUES (@store, @writer, @epoch, @accepted, @count, @head, @projection, @throttled)",
+                   connection,
+                   transaction))
+        {
+            insert.Parameters.AddWithValue("store", seed.StoreId);
+            insert.Parameters.AddWithValue("writer", seed.ActiveWriterDeviceId);
+            insert.Parameters.AddWithValue("epoch", seed.ActiveWriterEpoch);
+            insert.Parameters.AddWithValue("accepted", seed.AcceptedThroughSeq);
+            insert.Parameters.AddWithValue("count", seed.EntryCount);
+            insert.Parameters.AddWithValue("head", NpgsqlDbType.Text, (object?)head ?? DBNull.Value);
+            insert.Parameters.AddWithValue("projection", seed.ProjectionVersion ?? seed.AcceptedThroughSeq);
+            insert.Parameters.AddWithValue("throttled", seed.Throttled);
+            insert.ExecuteNonQuery();
+        }
+
+        foreach (var entry in seed.Entries)
+        {
+            InsertEntry(connection, transaction, seed.StoreId, entry);
+        }
+
+        transaction.Commit();
     }
 
     public CloudSnapshot? GetSnapshot(Guid storeId)
     {
-        lock (_sync)
+        using var connection = Open();
+        var state = LoadState(connection, null, storeId, false);
+        return state is null ? null : Snapshot(state);
+    }
+
+    private NpgsqlConnection Open()
+    {
+        EnsureSchema();
+        var connection = new NpgsqlConnection(_connectionString);
+        connection.Open();
+        return connection;
+    }
+
+    private void EnsureSchema()
+    {
+        if (_schemaReady)
         {
-            if (!_stores.TryGetValue(storeId, out var state))
+            return;
+        }
+
+        lock (_schemaSync)
+        {
+            if (_schemaReady)
+            {
+                return;
+            }
+
+            using var connection = new NpgsqlConnection(_connectionString);
+            connection.Open();
+            using var command = new NpgsqlCommand(SchemaSql, connection);
+            command.ExecuteNonQuery();
+            _schemaReady = true;
+        }
+    }
+
+    private static StoreState? LoadState(NpgsqlConnection connection, NpgsqlTransaction? transaction, Guid storeId, bool forUpdate)
+    {
+        var sql = "SELECT store_id, active_writer_device_id, active_writer_epoch, accepted_through_seq, entry_count, head_entry_hash, projection_version, throttled FROM cloud_stores WHERE store_id = @store"
+            + (forUpdate ? " FOR UPDATE" : string.Empty);
+        StoreState state;
+        using (var command = new NpgsqlCommand(sql, connection, transaction))
+        {
+            command.Parameters.AddWithValue("store", storeId);
+            using var reader = command.ExecuteReader();
+            if (!reader.Read())
             {
                 return null;
             }
 
-            return new CloudSnapshot
+            state = new StoreState
             {
-                StoreId = state.StoreId,
-                ActiveWriterDeviceId = state.ActiveWriterDeviceId,
-                ActiveWriterEpoch = state.ActiveWriterEpoch,
-                AcceptedThroughSeq = state.AcceptedThroughSeq,
-                EntryCount = state.EntryCount,
-                HeadEntryHash = state.HeadEntryHash,
-                ProjectionVersion = state.ProjectionVersion,
-                OperationIdCount = state.OperationIndex.Count,
-                Entries = state.Entries.Values.OrderBy(entry => entry.OperationSeq).Select(entry => entry.Clone()).ToArray()
+                StoreId = reader.GetGuid(0),
+                ActiveWriterDeviceId = reader.GetGuid(1),
+                ActiveWriterEpoch = reader.GetInt64(2),
+                AcceptedThroughSeq = reader.GetInt64(3),
+                EntryCount = reader.GetInt64(4),
+                HeadEntryHash = reader.IsDBNull(5) ? null : reader.GetString(5),
+                ProjectionVersion = reader.GetInt64(6),
+                Throttled = reader.GetBoolean(7)
             };
         }
+
+        using (var command = new NpgsqlCommand("SELECT entry_json FROM cloud_entries WHERE store_id = @store ORDER BY operation_seq", connection, transaction))
+        {
+            command.Parameters.AddWithValue("store", storeId);
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                var entry = JsonSerializer.Deserialize<LogEntry>(reader.GetString(0), CloudJson.Options)!;
+                state.Entries[entry.OperationSeq] = entry;
+                state.OperationIndex[entry.OperationId] = entry;
+            }
+        }
+
+        using (var command = new NpgsqlCommand("SELECT batch_id, fingerprint FROM cloud_batches WHERE store_id = @store", connection, transaction))
+        {
+            command.Parameters.AddWithValue("store", storeId);
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                state.BatchRecords[reader.GetString(0)] = new BatchRecord(reader.GetString(1));
+            }
+        }
+
+        return state;
     }
+
+    private static CloudSnapshot Snapshot(StoreState state) => new()
+    {
+        StoreId = state.StoreId,
+        ActiveWriterDeviceId = state.ActiveWriterDeviceId,
+        ActiveWriterEpoch = state.ActiveWriterEpoch,
+        AcceptedThroughSeq = state.AcceptedThroughSeq,
+        EntryCount = state.EntryCount,
+        HeadEntryHash = state.HeadEntryHash,
+        ProjectionVersion = state.ProjectionVersion,
+        OperationIdCount = state.OperationIndex.Count,
+        Entries = state.Entries.Values.OrderBy(entry => entry.OperationSeq).Select(entry => entry.Clone()).ToArray()
+    };
 
     public CloudIngestResult Ingest(Guid routeStoreId, OperationBatch batch, string? idempotencyKey)
     {
-        lock (_sync)
+        using var connection = Open();
+        using var transaction = connection.BeginTransaction();
+        var state = LoadState(connection, transaction, routeStoreId, true);
+        if (state is null)
         {
-            if (!_stores.TryGetValue(routeStoreId, out var state))
-            {
-                return CloudErrors.Failure(404, "STORE_NOT_FOUND", "The store is not available in this scope.", "NONE");
-            }
+            return CloudErrors.Failure(404, "STORE_NOT_FOUND", "The store is not available in this scope.", "NONE");
+        }
 
             // Fencing deliberately precedes empty-batch and other shape checks (CLOUD-008).
             if (batch.WriterEpoch != state.ActiveWriterEpoch || batch.WriterDeviceId != state.ActiveWriterDeviceId)
@@ -242,37 +372,80 @@ public sealed class InMemoryCloudStore
                 }
             }
 
-            // Commit point: no code above this point mutates the store.
-            foreach (var item in newEntries)
-            {
-                var copy = item.Entry.Clone();
-                state.Entries[copy.OperationSeq] = copy;
-                state.OperationIndex[copy.OperationId] = copy;
-            }
-
-            if (newEntries.Count > 0)
-            {
-                state.AcceptedThroughSeq = newEntries[^1].Entry.OperationSeq;
-                state.EntryCount += newEntries.Count;
-                state.HeadEntryHash = newEntries[^1].ComputedHash;
-                state.ProjectionVersion += newEntries.Count;
-            }
-
-            var ack = new IngestAck
-            {
-                BatchId = batch.BatchId,
-                Status = newEntries.Count == 0 ? "DUPLICATE" : "ACCEPTED",
-                AcceptedThroughSeq = state.AcceptedThroughSeq,
-                IngestedCount = newEntries.Count,
-                DuplicateCount = duplicateCount,
-                HeadEntryHash = state.HeadEntryHash,
-                NextExpectedSeq = state.AcceptedThroughSeq + 1,
-                CloudCursor = newEntries.Count == 0 ? null : $"{state.StoreId:N}:{state.AcceptedThroughSeq}"
-            };
-            var result = CloudIngestResult.Success(ack);
-            state.BatchRecords[batch.BatchId] = new BatchRecord(fingerprint, result);
-            return result;
+        // Commit point: no code above this point mutates the database.
+        foreach (var item in newEntries)
+        {
+            var copy = item.Entry.Clone();
+            state.Entries[copy.OperationSeq] = copy;
+            state.OperationIndex[copy.OperationId] = copy;
+            InsertEntry(connection, transaction, state.StoreId, copy);
         }
+
+        if (newEntries.Count > 0)
+        {
+            state.AcceptedThroughSeq = newEntries[^1].Entry.OperationSeq;
+            state.EntryCount += newEntries.Count;
+            state.HeadEntryHash = newEntries[^1].ComputedHash;
+            state.ProjectionVersion += newEntries.Count;
+            UpdateStore(connection, transaction, state);
+        }
+
+        var ack = new IngestAck
+        {
+            BatchId = batch.BatchId,
+            Status = newEntries.Count == 0 ? "DUPLICATE" : "ACCEPTED",
+            AcceptedThroughSeq = state.AcceptedThroughSeq,
+            IngestedCount = newEntries.Count,
+            DuplicateCount = duplicateCount,
+            HeadEntryHash = state.HeadEntryHash,
+            NextExpectedSeq = state.AcceptedThroughSeq + 1,
+            CloudCursor = newEntries.Count == 0 ? null : $"{state.StoreId:N}:{state.AcceptedThroughSeq}"
+        };
+        var result = CloudIngestResult.Success(ack);
+        state.BatchRecords[batch.BatchId] = new BatchRecord(fingerprint);
+        SaveBatchRecord(connection, transaction, state.StoreId, batch.BatchId, fingerprint);
+        transaction.Commit();
+        return result;
+    }
+
+    private static void InsertEntry(NpgsqlConnection connection, NpgsqlTransaction transaction, Guid storeId, LogEntry entry)
+    {
+        using var command = new NpgsqlCommand(
+            "INSERT INTO cloud_entries (store_id, operation_seq, operation_id, entry_hash, entry_json) VALUES (@store, @sequence, @operation, @hash, @entry)",
+            connection,
+            transaction);
+        command.Parameters.AddWithValue("store", storeId);
+        command.Parameters.AddWithValue("sequence", entry.OperationSeq);
+        command.Parameters.AddWithValue("operation", entry.OperationId);
+        command.Parameters.AddWithValue("hash", entry.EntryHash);
+        command.Parameters.AddWithValue("entry", NpgsqlDbType.Jsonb, JsonSerializer.Serialize(entry, CloudJson.Options));
+        command.ExecuteNonQuery();
+    }
+
+    private static void UpdateStore(NpgsqlConnection connection, NpgsqlTransaction transaction, StoreState state)
+    {
+        using var command = new NpgsqlCommand(
+            "UPDATE cloud_stores SET accepted_through_seq = @accepted, entry_count = @count, head_entry_hash = @head, projection_version = @projection WHERE store_id = @store",
+            connection,
+            transaction);
+        command.Parameters.AddWithValue("store", state.StoreId);
+        command.Parameters.AddWithValue("accepted", state.AcceptedThroughSeq);
+        command.Parameters.AddWithValue("count", state.EntryCount);
+        command.Parameters.AddWithValue("head", NpgsqlDbType.Text, (object?)state.HeadEntryHash ?? DBNull.Value);
+        command.Parameters.AddWithValue("projection", state.ProjectionVersion);
+        command.ExecuteNonQuery();
+    }
+
+    private static void SaveBatchRecord(NpgsqlConnection connection, NpgsqlTransaction transaction, Guid storeId, string batchId, string fingerprint)
+    {
+        using var command = new NpgsqlCommand(
+            "INSERT INTO cloud_batches (store_id, batch_id, fingerprint) VALUES (@store, @batch, @fingerprint) ON CONFLICT (store_id, batch_id) DO UPDATE SET fingerprint = EXCLUDED.fingerprint",
+            connection,
+            transaction);
+        command.Parameters.AddWithValue("store", storeId);
+        command.Parameters.AddWithValue("batch", batchId);
+        command.Parameters.AddWithValue("fingerprint", fingerprint);
+        command.ExecuteNonQuery();
     }
 
     private static CloudIngestResult? ValidateEntries(
@@ -406,5 +579,5 @@ public sealed class InMemoryCloudStore
 
     private sealed record ValidatedEntry(LogEntry Entry, string ComputedHash);
 
-    private sealed record BatchRecord(string Fingerprint, CloudIngestResult Result);
+    private sealed record BatchRecord(string Fingerprint);
 }
