@@ -46,7 +46,7 @@ public sealed class InventoryLedgerTests
         Assert.Equal(3000, ledger.StockMillis(TestData.S1, "prod-1"));
         Assert.Equal(9000, ledger.StockMillis(TestData.S2, "prod-1"));
         Assert.Equal(2, ledger.Events.Count(e => e.StoreId == TestData.S1));
-        Assert.Single(ledger.Events.Where(e => e.StoreId == TestData.S2));
+        Assert.Single(ledger.Events, e => e.StoreId == TestData.S2);
     }
 
     [Fact]
