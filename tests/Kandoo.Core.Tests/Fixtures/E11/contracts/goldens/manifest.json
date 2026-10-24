@@ -1,0 +1,102 @@
+{
+  "contract_version": "v0",
+  "counts": {
+    "invalid": 3,
+    "valid": 4
+  },
+  "goldens": [
+    {
+      "covers": [
+        "mode B",
+        "DRAFT with no allocated display number",
+        "quantity_millis=1250 means 1.250 units",
+        "UTF-8 Persian product text"
+      ],
+      "expected_failure_code": null,
+      "expected_issued_content_sha256": null,
+      "expected_verdict": "VALID",
+      "file_sha256": "1f8660363ff5c6afaf23bf22a211fd82e4abff0d99c88f54a193aea6a289b12c",
+      "note": "Synthetic draft; display_number is null and its provenance is unavailable before ISSUE.",
+      "path": "valid/draft_mode_b_null_display_number.json"
+    },
+    {
+      "covers": [
+        "mode A",
+        "ISSUED display-number allocation",
+        "issued-content SHA-256",
+        "native provenance"
+      ],
+      "expected_failure_code": null,
+      "expected_issued_content_sha256": "4173d40539830b7386516ab6a5891b055d796e683cd96769ffac6e50169563fc",
+      "expected_verdict": "VALID",
+      "file_sha256": "eb12ea226e5def982201cc88445e7ce1df1d5d6e418e6660497bcb7d7c4f431a",
+      "note": "Synthetic issued invoice; the display number is assigned at ISSUE and is included in the immutable-content hash.",
+      "path": "valid/issued_mode_a.json"
+    },
+    {
+      "covers": [
+        "mode B",
+        "REVOKED terminal state",
+        "display number retained after ISSUE",
+        "issued-content hash retained across lifecycle transition"
+      ],
+      "expected_failure_code": null,
+      "expected_issued_content_sha256": "5cc6f34033a287c5fb7d6d3a4783e2d538bb53f7c113aa01fc1c9b1b3925291b",
+      "expected_verdict": "VALID",
+      "file_sha256": "c68c07f3ecbef805d9c25ec00a21271a4dc6023c7c2c9d5673437310db9b6fc2",
+      "note": "Synthetic revoked invoice; state/history change after ISSUE without changing the content projection or hash.",
+      "path": "valid/revoked_mode_b_retains_issue_hash.json"
+    },
+    {
+      "covers": [
+        "CLOUD-007-style rejection path",
+        "schema-valid issued object with incorrect immutable-content hash"
+      ],
+      "expected_failure_code": "ISSUED_CONTENT_HASH_MISMATCH",
+      "expected_issued_content_sha256": "3e2e6ffb358570590fe1096f57cacf739a78b0cf2dd5a0e705e7ec387b1a29be",
+      "expected_verdict": "INVALID",
+      "file_sha256": "762f785cd6f0b19ee6ee8779226a4626cb66c5ad5739766b8889bf3466e129b9",
+      "note": "Intentionally wrong issued_content_sha256; JSON Schema passes, but semantic hash verification must reject it.",
+      "path": "invalid/issued_hash_mismatch.json"
+    },
+    {
+      "covers": [
+        "display number cannot be allocated in DRAFT",
+        "pre-ISSUE display-number provenance"
+      ],
+      "expected_failure_code": "DISPLAY_NUMBER_BEFORE_ISSUE",
+      "expected_issued_content_sha256": null,
+      "expected_verdict": "INVALID",
+      "file_sha256": "54be95e10a1c5b4502ed245767d1b9db65c9c52e4498a407f4eec191de3c29c0",
+      "note": "A non-null display number before ISSUE is forbidden, even with native provenance.",
+      "path": "invalid/display_number_before_issue.json"
+    },
+    {
+      "covers": [
+        "quantity_millis must be a JSON integer, not a decimal or string"
+      ],
+      "expected_failure_code": "QUANTITY_MILLIS_NOT_INTEGER",
+      "expected_issued_content_sha256": null,
+      "expected_verdict": "INVALID",
+      "file_sha256": "19144e33b50abc62e1c937ff85995fe2e3394972bf2dfe02055dd7f67a18f552",
+      "note": "Intentional type error; values are integer-thousandths, not decimal strings.",
+      "path": "invalid/quantity_millis_string.json"
+    },
+    {
+      "covers": [
+        "mode B",
+        "signed negative quantity_millis=-250 means -0.250 units",
+        "zero-valued monetary line and summary fields",
+        "DRAFT with no allocated display number"
+      ],
+      "expected_failure_code": null,
+      "expected_issued_content_sha256": null,
+      "expected_verdict": "VALID",
+      "file_sha256": "d06dd223f3c9d716df3fc7e5a7e14f03ace39000ed752b552a7767f3f773186d",
+      "note": "Synthetic draft demonstrating that signed negative integer-thousandths are not rejected by the v0 schema; no accounting equation is inferred.",
+      "path": "valid/draft_mode_b_negative_quantity_millis.json"
+    }
+  ],
+  "schema": "../canonical_invoice_v0.schema.json",
+  "serialization": "Each golden is compact UTF-8 canonical JSON with recursively UTF-16-sorted object keys and exactly one terminal LF. file_sha256 covers those stored bytes; issued-content hashes do not include the terminal LF."
+}
