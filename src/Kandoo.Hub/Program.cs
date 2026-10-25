@@ -3,6 +3,11 @@ using Kandoo.Core;
 using Kandoo.Hub;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
+    options.SerializerOptions.PropertyNameCaseInsensitive = false;
+});
 var sqliteConnection = builder.Configuration.GetConnectionString("HubSqlite")
     ?? "Data Source=kandoo-hub.db;Pooling=False";
 var hubStore = new SqliteHubStore(sqliteConnection);
