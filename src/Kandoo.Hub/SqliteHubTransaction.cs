@@ -321,6 +321,88 @@ internal sealed class SqliteHubTransaction : IHubTransaction
         command.ExecuteNonQuery();
     }
 
+    internal void AppendOutbox(OperationRecord record, OperationRequest request)
+    {
+        using var command = Command("""
+            INSERT INTO operation_outbox
+                (store_id, operation_seq, operation_id, device_id, operation_type,
+                 base_version, payload, request_hash, response)
+            VALUES ($store, $sequence, $operation, $device, $type,
+                    $base, $payload, $hash, $response);
+            """);
+        Add(command, "$store", Uuid(record.StoreId));
+        Add(command, "$sequence", record.OperationSeq);
+        Add(command, "$operation", record.OperationId);
+        Add(command, "$device", Uuid(record.DeviceId));
+        Add(command, "$type", record.OperationType);
+        Add(command, "$base", request.BaseVersion);
+        Add(command, "$payload", CanonicalJson.Serialize(request.Payload));
+        Add(command, "$hash", record.RequestHash);
+        Add(command, "$response", record.Response);
+        command.ExecuteNonQuery();
+    }
+
+    public DraftLock? GetDraftLock(Guid storeId, Guid lockId)
+    {
+        using var command = Command("""
+            SELECT store_id, lock_id, customer_phone, invoice_id, device_id,
+                   acquired_at, last_activity_at, timeout_seconds, state,
+                   release_reason, released_at
+            FROM draft_locks WHERE store_id = $store AND lock_id = $lock;
+            """);
+        Add(command, "$store", Uuid(storeId));
+        Add(command, "$lock", Uuid(lockId));
+        using var reader = command.ExecuteReader();
+        return reader.Read() ? ReadDraftLock(reader) : null;
+    }
+
+    public IReadOnlyList<DraftLock> GetDraftLocks()
+    {
+        using var command = Command("""
+            SELECT store_id, lock_id, customer_phone, invoice_id, device_id,
+                   acquired_at, last_activity_at, timeout_seconds, state,
+                   release_reason, released_at
+            FROM draft_locks ORDER BY rowid;
+            """);
+        using var reader = command.ExecuteReader();
+        var locks = new List<DraftLock>();
+        while (reader.Read())
+        {
+            locks.Add(ReadDraftLock(reader));
+        }
+
+        return locks;
+    }
+
+    public void SaveDraftLock(DraftLock draftLock)
+    {
+        using var command = Command("""
+            INSERT INTO draft_locks
+                (store_id, lock_id, customer_phone, invoice_id, device_id,
+                 acquired_at, last_activity_at, timeout_seconds, state,
+                 release_reason, released_at)
+            VALUES ($store, $lock, $phone, $invoice, $device, $acquired,
+                    $activity, $timeout, $state, $reason, $released)
+            ON CONFLICT(store_id, lock_id) DO UPDATE SET
+                last_activity_at = excluded.last_activity_at,
+                state = excluded.state,
+                release_reason = excluded.release_reason,
+                released_at = excluded.released_at;
+            """);
+        Add(command, "$store", Uuid(draftLock.StoreId));
+        Add(command, "$lock", Uuid(draftLock.LockId));
+        Add(command, "$phone", draftLock.CustomerPhone);
+        Add(command, "$invoice", Uuid(draftLock.InvoiceId));
+        Add(command, "$device", Uuid(draftLock.DeviceId));
+        Add(command, "$acquired", Date(draftLock.AcquiredAt));
+        Add(command, "$activity", Date(draftLock.LastActivityAt));
+        Add(command, "$timeout", draftLock.TimeoutSeconds);
+        Add(command, "$state", (int)draftLock.State);
+        Add(command, "$reason", draftLock.ReleaseReason is LockReleaseReason reason ? (int)reason : null);
+        Add(command, "$released", draftLock.ReleasedAt is DateTimeOffset released ? Date(released) : null);
+        command.ExecuteNonQuery();
+    }
+
     internal Dictionary<Guid, long> GetCounters()
     {
         using var command = Command("SELECT store_id, display_number_high_watermark FROM store_counters;");
@@ -427,6 +509,24 @@ internal sealed class SqliteHubTransaction : IHubTransaction
         reader.GetString(4),
         reader.GetInt64(5),
         reader.GetString(6));
+
+    private static DraftLock ReadDraftLock(SqliteDataReader reader)
+    {
+        var draftLock = new DraftLock(
+            Guid.Parse(reader.GetString(1)),
+            Guid.Parse(reader.GetString(0)),
+            reader.GetString(2),
+            Guid.Parse(reader.GetString(3)),
+            Guid.Parse(reader.GetString(4)),
+            ParseDate(reader.GetString(5)),
+            reader.GetInt32(7));
+        draftLock.RestoreForPersistence(
+            ParseDate(reader.GetString(6)),
+            (DraftLockState)reader.GetInt32(8),
+            reader.IsDBNull(9) ? null : (LockReleaseReason)reader.GetInt32(9),
+            reader.IsDBNull(10) ? null : ParseDate(reader.GetString(10)));
+        return draftLock;
+    }
 
     private static InvoiceRow ReadInvoiceRow(SqliteDataReader reader) => new(
         Guid.Parse(reader.GetString(0)),

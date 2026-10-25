@@ -6,7 +6,7 @@ using Microsoft.Data.Sqlite;
 namespace Kandoo.Hub;
 
 /// <summary>SQLite-backed Hub store. One connection and one lock make transaction boundaries explicit.</summary>
-public sealed class SqliteHubStore : IHubStore
+public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore
 {
     private readonly object _gate = new();
     private readonly SqliteConnection _connection;
@@ -25,6 +25,7 @@ public sealed class SqliteHubStore : IHubStore
         command.CommandText = "PRAGMA foreign_keys = ON;";
         command.ExecuteNonQuery();
         InitializeSchema();
+        InitializeAccessSchema();
     }
 
     public OperationResult Execute(OperationRequest request, Func<IHubTransaction, string> action)
@@ -57,14 +58,16 @@ public sealed class SqliteHubStore : IHubStore
             {
                 var response = action(transaction);
                 var sequence = transaction.NextOperationSequence(request.StoreId);
-                transaction.AppendOperation(new OperationRecord(
+                var record = new OperationRecord(
                     request.StoreId,
                     request.DeviceId,
                     request.OperationId,
                     request.OperationType,
                     request.RequestHash,
                     sequence,
-                    response));
+                    response);
+                transaction.AppendOperation(record);
+                transaction.AppendOutbox(record, request);
                 transaction.Commit();
                 return new OperationResult(OperationExecutionStatus.Succeeded, response, sequence);
             }
@@ -137,6 +140,53 @@ public sealed class SqliteHubStore : IHubStore
             ThrowIfDisposed();
             using var transaction = new SqliteHubTransaction(_connection);
             return transaction.GetDisplayNumberHighWatermark(storeId);
+        }
+    }
+
+    public IReadOnlyList<DraftLock> GetDraftLocks()
+    {
+        lock (_gate)
+        {
+            ThrowIfDisposed();
+            using var transaction = new SqliteHubTransaction(_connection);
+            return transaction.GetDraftLocks();
+        }
+    }
+
+    public void CompleteTimeout(DraftLock draftLock)
+    {
+        if (draftLock.State != DraftLockState.Released || draftLock.ReleaseReason != LockReleaseReason.Timeout)
+        {
+            return;
+        }
+
+        Write(transaction =>
+        {
+            var persisted = transaction.GetDraftLock(draftLock.StoreId, draftLock.LockId);
+            if (persisted is null || persisted.State == DraftLockState.Released)
+            {
+                return;
+            }
+
+            transaction.SaveDraftLock(draftLock);
+            var invoice = transaction.GetInvoice(draftLock.StoreId, draftLock.InvoiceId);
+            if (invoice is not null && invoice.RetiredAt is null && invoice.Status != InvoiceStatus.Issued)
+            {
+                invoice.Retire(draftLock.ReleasedAt ?? draftLock.ExpiresAt, RetirementReason.Timeout);
+                transaction.SaveInvoice(invoice);
+            }
+        });
+    }
+
+    public int GetOutboxDepth(Guid storeId)
+    {
+        lock (_gate)
+        {
+            ThrowIfDisposed();
+            using var command = _connection.CreateCommand();
+            command.CommandText = "SELECT COUNT(*) FROM operation_outbox WHERE store_id = $store AND acknowledged_at IS NULL;";
+            command.Parameters.AddWithValue("$store", storeId.ToString("D"));
+            return Convert.ToInt32(command.ExecuteScalar(), System.Globalization.CultureInfo.InvariantCulture);
         }
     }
 
@@ -311,6 +361,39 @@ public sealed class SqliteHubStore : IHubStore
             CREATE TABLE IF NOT EXISTS store_counters (
                 store_id TEXT PRIMARY KEY,
                 display_number_high_watermark INTEGER NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS draft_locks (
+                store_id TEXT NOT NULL,
+                lock_id TEXT NOT NULL,
+                customer_phone TEXT NOT NULL,
+                invoice_id TEXT NOT NULL,
+                device_id TEXT NOT NULL,
+                acquired_at TEXT NOT NULL,
+                last_activity_at TEXT NOT NULL,
+                timeout_seconds INTEGER NOT NULL,
+                state INTEGER NOT NULL,
+                release_reason INTEGER NULL,
+                released_at TEXT NULL,
+                PRIMARY KEY (store_id, lock_id),
+                UNIQUE (store_id, invoice_id),
+                FOREIGN KEY (store_id, invoice_id) REFERENCES invoices(store_id, invoice_id)
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS ux_draft_locks_active_phone
+                ON draft_locks(store_id, customer_phone) WHERE state = 0;
+            CREATE TABLE IF NOT EXISTS operation_outbox (
+                store_id TEXT NOT NULL,
+                operation_seq INTEGER NOT NULL,
+                operation_id TEXT NOT NULL,
+                device_id TEXT NOT NULL,
+                operation_type TEXT NOT NULL,
+                base_version INTEGER NULL,
+                payload TEXT NOT NULL,
+                request_hash TEXT NOT NULL,
+                response TEXT NOT NULL,
+                acknowledged_at TEXT NULL,
+                PRIMARY KEY (store_id, operation_seq),
+                UNIQUE (store_id, operation_id),
+                FOREIGN KEY (store_id, operation_id) REFERENCES operations(store_id, operation_id)
             );
             CREATE TRIGGER IF NOT EXISTS invoices_terminal_update_forbidden
             BEFORE UPDATE ON invoices

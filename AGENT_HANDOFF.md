@@ -1,6 +1,10 @@
 # KANDOO — PARENT PROJECT AGENT HANDOFF
 
-## Current Implementation Handoff (`H-00`, 2026-10-24)
+## Current Implementation Handoff (`C-08`, 2026-10-25)
+
+The active branch remains `arena/1c5ae19c-kandoo`; C-08 starts from the independently verified CI-green commit `3af5c898743451ff4574c45374b5b7dd9a077832`. `main` remains at `82d40cf7d55ac170db7a464dad5985be75d6b71a`. The C-08 candidate adds the ASP.NET Core Hub API, persistent companion-only QR grants/device registry/hashed credentials and sessions, owner-only pairing/revocation, disconnect and D11 lock handling, durable rejected responses/outbox entries, and C-04-backed operation idempotency. The in-process `WebApplicationFactory` suite executes all 16 `LAN-PAIR`/`LAN-SESSION`/`LAN-OP`/`LAN-LOCK` vectors on temporary SQLite databases; client-only `LAN-HUB-001` is intentionally outside the Hub harness. Target tag: `stable-c-08`. CI is pending at candidate publication; final pushed SHA, tag object, and per-OS run URL are reported in the dispatch result. Never move a published tag; any red CI requires a fix and a new tag.
+
+## Previous Implementation Handoff (`H-00`, 2026-10-24)
 
 This section supersedes the older documentation-only snapshots below for the active implementation line. The active Arena branch is `arena/1c5ae19c-kandoo`; `main` remains at baseline `82d40cf7d55ac170db7a464dad5985be75d6b71a`. The C-03 starting tip for the next dispatch is `fca2262aeaa6dbfedd2c1f3d0107bd0ce147aa62`.
 

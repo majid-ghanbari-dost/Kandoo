@@ -16,6 +16,9 @@ public interface IHubTransaction : IDisposable
     long GetDisplayNumberHighWatermark(Guid storeId);
     void SetDisplayNumberHighWatermark(Guid storeId, long value);
     IReadOnlyList<OperationRecord> GetOperations();
+    DraftLock? GetDraftLock(Guid storeId, Guid lockId);
+    IReadOnlyList<DraftLock> GetDraftLocks();
+    void SaveDraftLock(DraftLock draftLock);
 }
 
 /// <summary>
@@ -37,6 +40,9 @@ public interface IHubStore : IDisposable
     void SaveInvoice(Invoice invoice);
     Invoice? GetInvoice(Guid storeId, Guid invoiceId);
     long GetDisplayNumberHighWatermark(Guid storeId);
+    IReadOnlyList<DraftLock> GetDraftLocks();
+    void CompleteTimeout(DraftLock draftLock);
+    int GetOutboxDepth(Guid storeId);
     ProductCatalog LoadProductCatalog();
     InventoryLedger LoadInventoryLedger();
     InvoiceService LoadInvoiceService();

@@ -77,6 +77,18 @@ public sealed class DraftLock
         ReleaseReason = reason;
         ReleasedAt = releasedAt;
     }
+
+    internal void RestoreForPersistence(
+        DateTimeOffset lastActivityAt,
+        DraftLockState state,
+        LockReleaseReason? releaseReason,
+        DateTimeOffset? releasedAt)
+    {
+        LastActivityAt = lastActivityAt;
+        State = state;
+        ReleaseReason = releaseReason;
+        ReleasedAt = releasedAt;
+    }
 }
 
 /// <summary>Hub-time, per-store/per-phone draft leases with accepted-change-only renewal.</summary>
@@ -216,6 +228,34 @@ public sealed class DraftLockManager
         lock (_gate)
         {
             return _locks.GetValueOrDefault((storeId, normalizedPhone));
+        }
+    }
+
+    public DraftLock? GetByInvoice(Guid storeId, Guid invoiceId)
+    {
+        lock (_gate)
+        {
+            var current = _locks.Values.FirstOrDefault(candidate =>
+                candidate.StoreId == storeId && candidate.InvoiceId == invoiceId);
+            if (current is not null)
+            {
+                ExpireIfNeeded(current);
+            }
+
+            return current;
+        }
+    }
+
+    internal void ReplaceForPersistence(IEnumerable<DraftLock> restoredLocks)
+    {
+        ArgumentNullException.ThrowIfNull(restoredLocks);
+        lock (_gate)
+        {
+            _locks.Clear();
+            foreach (var restored in restoredLocks)
+            {
+                _locks[(restored.StoreId, restored.CustomerPhone)] = restored;
+            }
         }
     }
 
