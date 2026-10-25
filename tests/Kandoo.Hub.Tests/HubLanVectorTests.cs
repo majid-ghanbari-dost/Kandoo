@@ -309,7 +309,12 @@ public sealed class HubLanVectorTests : IDisposable
         Assert.Equal("SUCCEEDED", Status(added));
 
         var vector = VectorFile.Get("LAN-LOCK-004");
-        var issued = await _api.SubmitRequest(VectorFile.Request(vector), first.Session);
+        var issueRequest = VectorFile.Request(vector);
+        // Bind the vector command to the Hub-generated invoice ID; the fixed UUID
+        // in the synthetic given is not a client-supplied allocation contract.
+        var issued = await _api.SubmitNew(
+            S1, first.Session, issueRequest.GetProperty("operation_id").GetString()!,
+            "invoice.issue", new { invoice_id = invoiceId });
         Assert.Equal("SUCCEEDED", Status(issued));
         Assert.Equal(1, issued.Body.GetProperty("response").GetProperty("invoice").GetProperty("display_number").GetInt64());
         Assert.Equal("ISSUE", issued.Body.GetProperty("response").GetProperty("lock").GetProperty("release_reason").GetString());
@@ -367,7 +372,17 @@ public sealed class HubLanVectorTests : IDisposable
         var invoiceId = draft.Body.GetProperty("response").GetProperty("invoice").GetProperty("invoice_id").GetGuid();
         var disconnected = await _api.Post($"/v1/stores/{S1}/devices/{D1}/disconnect", new { }, first.Session.Token);
         Assert.Equal(1, disconnected.Body.GetProperty("locks_released").GetInt32());
-        var late = await _api.SubmitRequest(VectorFile.Request(VectorFile.Get("LAN-LOCK-006"), 1), first.Session);
+        var lateRequest = VectorFile.Request(VectorFile.Get("LAN-LOCK-006"), 1);
+        var latePayload = lateRequest.GetProperty("payload");
+        var late = await _api.SubmitNew(
+            S1, first.Session, lateRequest.GetProperty("operation_id").GetString()!, "invoice.item_add", new
+            {
+                invoice_id = invoiceId,
+                description = latePayload.GetProperty("description").GetString(),
+                quantity_millis = latePayload.GetProperty("quantity_millis").GetInt64(),
+                unit_price_rials = 1000L,
+                line_total_rials = 1000L
+            });
 
         Assert.Equal("LOCK_NOT_OWNED", Status(late));
         var released = await Lock(first.Session.Token);

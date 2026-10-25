@@ -227,7 +227,13 @@ public sealed class DraftLockManager
         var normalizedPhone = PhoneNormalizer.Normalize(phone);
         lock (_gate)
         {
-            return _locks.GetValueOrDefault((storeId, normalizedPhone));
+            var current = _locks.GetValueOrDefault((storeId, normalizedPhone));
+            if (current is not null)
+            {
+                ExpireIfNeeded(current);
+            }
+
+            return current;
         }
     }
 
