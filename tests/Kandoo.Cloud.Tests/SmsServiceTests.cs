@@ -4,7 +4,8 @@ using Xunit;
 
 namespace Kandoo.Cloud.Tests;
 
-public sealed class SmsServiceTests : IClassFixture<PostgresTestDatabase>
+[Collection("Postgres")]
+public sealed class SmsServiceTests
 {
     private static readonly DateTimeOffset T0 = new(2026, 10, 25, 8, 0, 0, TimeSpan.Zero);
     private readonly PostgresTestDatabase _database;

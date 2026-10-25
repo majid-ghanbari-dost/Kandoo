@@ -10,7 +10,8 @@ using Xunit;
 
 namespace Kandoo.Cloud.Tests;
 
-public sealed class CloudApiTests : IClassFixture<PostgresTestDatabase>, IDisposable
+[Collection("Postgres")]
+public sealed class CloudApiTests : IDisposable
 {
     private readonly PostgresTestDatabase _database;
     private readonly CloudFactory _factory;
