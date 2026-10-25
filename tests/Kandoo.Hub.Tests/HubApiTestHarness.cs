@@ -26,11 +26,13 @@ public sealed class HubApiFactory : WebApplicationFactory<Program>
     {
         Directory.CreateDirectory(_directory);
         ConnectionString = $"Data Source={Path.Combine(_directory, "hub.db")};Pooling=False";
+        TestStore = new SqliteHubStore(ConnectionString);
     }
 
     public string ConnectionString { get; }
     public ManualHubClock Clock { get; } = new();
-    public SqliteHubStore Store => (SqliteHubStore)Services.GetRequiredService<IHubStore>();
+    public SqliteHubStore TestStore { get; }
+    public SqliteHubStore Store => TestStore;
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -45,6 +47,14 @@ public sealed class HubApiFactory : WebApplicationFactory<Program>
         {
             services.RemoveAll<IClock>();
             services.AddSingleton<IClock>(Clock);
+            // Replace both interfaces and the operation service together. The
+            // top-level default store must never be shared by parallel vectors.
+            services.RemoveAll<IHubStore>();
+            services.RemoveAll<IHubAccessStore>();
+            services.RemoveAll<HubOperationService>();
+            services.AddSingleton<IHubStore>(TestStore);
+            services.AddSingleton<IHubAccessStore>(TestStore);
+            services.AddSingleton<HubOperationService>();
         });
     }
 
@@ -53,6 +63,7 @@ public sealed class HubApiFactory : WebApplicationFactory<Program>
         base.Dispose(disposing);
         if (disposing)
         {
+            TestStore.Dispose();
             try
             {
                 Directory.Delete(_directory, recursive: true);
