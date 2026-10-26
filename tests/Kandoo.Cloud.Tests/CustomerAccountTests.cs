@@ -112,12 +112,12 @@ public sealed class CustomerAccountTests : IDisposable
         var secondItems = await ListInvoiceIds(second.Token);
         Assert.Equal(new[] { invoiceC.InvoiceId }, secondItems);
 
-        using var claim = await Claim(first.Token, invoiceD.PublicToken);
+        using var claim = await Claim(first.Token, invoiceD.PublicToken!);
         Assert.Equal(HttpStatusCode.Created, claim.StatusCode);
-        using var duplicate = await Claim(first.Token, invoiceD.PublicToken);
+        using var duplicate = await Claim(first.Token, invoiceD.PublicToken!);
         Assert.Equal(HttpStatusCode.OK, duplicate.StatusCode);
         Assert.Contains(invoiceD.InvoiceId, await ListInvoiceIds(first.Token));
-        using var conflict = await Claim(second.Token, invoiceD.PublicToken);
+        using var conflict = await Claim(second.Token, invoiceD.PublicToken!);
         Assert.Equal(HttpStatusCode.Conflict, conflict.StatusCode);
         Assert.DoesNotContain(invoiceD.InvoiceId, await ListInvoiceIds(second.Token));
     }
