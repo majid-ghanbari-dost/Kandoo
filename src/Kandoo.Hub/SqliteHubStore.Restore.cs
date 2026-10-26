@@ -15,7 +15,7 @@ public sealed partial class SqliteHubStore
         lock (_gate)
         {
             ThrowIfDisposed();
-            using var transaction = BeginTransaction();
+            using var transaction = new SqliteHubTransaction(_connection);
             var state = ReadRestoreState(transaction, storeId, writerEpoch);
             transaction.Commit();
             return JsonSerializer.SerializeToElement(state, HubJson.Options);
@@ -75,7 +75,7 @@ public sealed partial class SqliteHubStore
                 }
             }
 
-            using var transaction = BeginTransaction();
+            using var transaction = new SqliteHubTransaction(_connection);
             try
             {
                 foreach (var device in state.Devices)
