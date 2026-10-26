@@ -111,6 +111,7 @@ public sealed partial class SqliteHubStore
                 }
 
                 transaction.SetDisplayNumberHighWatermark(storeId, state.DisplayNumberHighWatermark);
+                transaction.SetProductTagHighWatermark(storeId, state.ProductTagHighWatermark);
                 foreach (var entry in entries.OrderBy(value => value.OperationSeq))
                 {
                     transaction.RestoreReplicationEntry(entry, CanonicalJson.Serialize(JsonSerializer.SerializeToElement(entry, HubJson.Options)));
@@ -150,7 +151,8 @@ public sealed partial class SqliteHubStore
             Locks = transaction.GetDraftLocks().Where(value => value.StoreId == storeId).Select(HubDraftLockRestore.FromLock).ToList(),
             ThroughOperationSeq = operations.Count == 0 ? 0 : operations.Max(value => value.OperationSeq),
             WriterEpoch = writerEpoch,
-            DisplayNumberHighWatermark = transaction.GetDisplayNumberHighWatermark(storeId)
+            DisplayNumberHighWatermark = transaction.GetDisplayNumberHighWatermark(storeId),
+            ProductTagHighWatermark = transaction.GetProductTagHighWatermark(storeId)
         };
     }
 }

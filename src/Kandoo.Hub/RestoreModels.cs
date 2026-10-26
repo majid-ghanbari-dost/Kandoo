@@ -229,4 +229,5 @@ public sealed class HubReplayedState
     public long ThroughOperationSeq { get; set; }
     public long WriterEpoch { get; set; }
     public long DisplayNumberHighWatermark { get; set; }
+    public long ProductTagHighWatermark { get; set; }
 }

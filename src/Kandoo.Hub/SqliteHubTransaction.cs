@@ -21,7 +21,8 @@ internal sealed class SqliteHubTransaction : IHubTransaction
     {
         using var command = Command("""
             SELECT store_id, product_id, name, normalized_name, similarity_key,
-                   unit_price_rials, version, is_active, specification
+                   unit_price_rials, version, is_active, specification, product_tag_number,
+                   category, color, size, material, brand, barcode
             FROM products WHERE store_id = $store AND product_id = $product;
             """);
         Add(command, "$store", Uuid(storeId));
@@ -34,7 +35,8 @@ internal sealed class SqliteHubTransaction : IHubTransaction
     {
         using var command = Command("""
             SELECT store_id, product_id, name, normalized_name, similarity_key,
-                   unit_price_rials, version, is_active, specification
+                   unit_price_rials, version, is_active, specification, product_tag_number,
+                   category, color, size, material, brand, barcode
             FROM products ORDER BY store_id, product_id;
             """);
         using var reader = command.ExecuteReader();
@@ -52,12 +54,16 @@ internal sealed class SqliteHubTransaction : IHubTransaction
         using var command = Command("""
             INSERT INTO products
                 (store_id, product_id, name, normalized_name, similarity_key,
-                 unit_price_rials, version, is_active, specification)
-            VALUES ($store, $product, $name, $normalized, $similarity, $price, $version, $active, $specification)
+                 unit_price_rials, version, is_active, specification, product_tag_number,
+                 category, color, size, material, brand, barcode)
+            VALUES ($store, $product, $name, $normalized, $similarity, $price, $version, $active, $specification,
+                    $tag, $category, $color, $size, $material, $brand, $barcode)
             ON CONFLICT(store_id, product_id) DO UPDATE SET
                 name = excluded.name, normalized_name = excluded.normalized_name,
                 similarity_key = excluded.similarity_key, unit_price_rials = excluded.unit_price_rials,
-                version = excluded.version, is_active = excluded.is_active, specification = excluded.specification;
+                version = excluded.version, is_active = excluded.is_active, specification = excluded.specification,
+                category = excluded.category, color = excluded.color, size = excluded.size,
+                material = excluded.material, brand = excluded.brand, barcode = excluded.barcode;
             """);
         Add(command, "$store", Uuid(product.StoreId));
         Add(command, "$product", product.ProductId);
@@ -68,6 +74,13 @@ internal sealed class SqliteHubTransaction : IHubTransaction
         Add(command, "$version", product.Version);
         Add(command, "$active", product.IsActive ? 1 : 0);
         Add(command, "$specification", product.Specification);
+        Add(command, "$tag", product.ProductTagNumber);
+        Add(command, "$category", product.Category);
+        Add(command, "$color", product.Color);
+        Add(command, "$size", product.Size);
+        Add(command, "$material", product.Material);
+        Add(command, "$brand", product.Brand);
+        Add(command, "$barcode", product.Barcode);
         command.ExecuteNonQuery();
     }
 
@@ -269,6 +282,74 @@ internal sealed class SqliteHubTransaction : IHubTransaction
         Add(command, "$store", Uuid(storeId));
         Add(command, "$value", value);
         command.ExecuteNonQuery();
+    }
+
+    public long GetProductTagHighWatermark(Guid storeId)
+    {
+        using var command = Command("SELECT product_tag_high_watermark FROM store_counters WHERE store_id = $store;");
+        Add(command, "$store", Uuid(storeId));
+        var value = command.ExecuteScalar();
+        return value is null || value is DBNull ? 0 : Convert.ToInt64(value, CultureInfo.InvariantCulture);
+    }
+
+    public long AllocateProductTag(Guid storeId)
+    {
+        var current = GetProductTagHighWatermark(storeId);
+        long maximum;
+        using (var command = Command("SELECT COALESCE(MAX(product_tag_number), 0) FROM products WHERE store_id = $store;"))
+        {
+            Add(command, "$store", Uuid(storeId));
+            maximum = Convert.ToInt64(command.ExecuteScalar(), CultureInfo.InvariantCulture);
+        }
+
+        if (current < maximum)
+        {
+            throw new InvalidOperationException("PRODUCT_TAG_COUNTER_CONFLICT");
+        }
+
+        var next = checked(current + 1);
+        SetProductTagHighWatermark(storeId, next);
+        return next;
+    }
+
+    public void SetProductTagHighWatermark(Guid storeId, long value)
+    {
+        if (value < 0 || value < GetProductTagHighWatermark(storeId))
+        {
+            throw new InvalidOperationException("PRODUCT_TAG_REGRESSION");
+        }
+
+        using (var command = Command("SELECT COALESCE(MAX(product_tag_number), 0) FROM products WHERE store_id = $store;"))
+        {
+            Add(command, "$store", Uuid(storeId));
+            if (value < Convert.ToInt64(command.ExecuteScalar(), CultureInfo.InvariantCulture))
+            {
+                throw new InvalidOperationException("PRODUCT_TAG_COUNTER_CONFLICT");
+            }
+        }
+
+        using var command = Command("""
+            INSERT INTO store_counters (store_id, display_number_high_watermark, product_tag_high_watermark)
+            VALUES ($store, 0, $value)
+            ON CONFLICT(store_id) DO UPDATE SET product_tag_high_watermark = excluded.product_tag_high_watermark;
+            """);
+        Add(command, "$store", Uuid(storeId));
+        Add(command, "$value", value);
+        command.ExecuteNonQuery();
+    }
+
+    public Product? GetProductByTag(Guid storeId, long productTagNumber)
+    {
+        using var command = Command("""
+            SELECT store_id, product_id, name, normalized_name, similarity_key,
+                   unit_price_rials, version, is_active, specification, product_tag_number,
+                   category, color, size, material, brand, barcode
+            FROM products WHERE store_id = $store AND product_tag_number = $tag;
+            """);
+        Add(command, "$store", Uuid(storeId));
+        Add(command, "$tag", productTagNumber);
+        using var reader = command.ExecuteReader();
+        return reader.Read() ? ReadProduct(reader) : null;
     }
 
     internal IReadOnlyList<HubDeviceRestore> GetRestoreDevices(Guid storeId)
@@ -660,7 +741,14 @@ internal sealed class SqliteHubTransaction : IHubTransaction
         reader.GetInt64(5),
         reader.GetInt32(6),
         reader.GetInt64(7) != 0,
-        reader.IsDBNull(8) ? null : reader.GetString(8));
+        reader.IsDBNull(8) ? null : reader.GetString(8),
+        reader.IsDBNull(9) ? null : reader.GetInt64(9),
+        reader.IsDBNull(10) ? null : reader.GetString(10),
+        reader.IsDBNull(11) ? null : reader.GetString(11),
+        reader.IsDBNull(12) ? null : reader.GetString(12),
+        reader.IsDBNull(13) ? null : reader.GetString(13),
+        reader.IsDBNull(14) ? null : reader.GetString(14),
+        reader.IsDBNull(15) ? null : reader.GetString(15));
 
     private static OperationRecord ReadOperation(SqliteDataReader reader) => new(
         Guid.Parse(reader.GetString(0)),

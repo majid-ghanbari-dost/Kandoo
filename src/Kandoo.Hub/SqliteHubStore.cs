@@ -496,6 +496,13 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore, IHubRep
                 version INTEGER NOT NULL,
                 is_active INTEGER NOT NULL,
                 specification TEXT NULL,
+                product_tag_number INTEGER NULL,
+                category TEXT NULL,
+                color TEXT NULL,
+                size TEXT NULL,
+                material TEXT NULL,
+                brand TEXT NULL,
+                barcode TEXT NULL,
                 PRIMARY KEY (store_id, product_id)
             );
             CREATE TABLE IF NOT EXISTS inventory_events (
@@ -557,7 +564,8 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore, IHubRep
             );
             CREATE TABLE IF NOT EXISTS store_counters (
                 store_id TEXT PRIMARY KEY,
-                display_number_high_watermark INTEGER NOT NULL
+                display_number_high_watermark INTEGER NOT NULL,
+                product_tag_high_watermark INTEGER NOT NULL DEFAULT 0
             );
             CREATE TABLE IF NOT EXISTS draft_locks (
                 store_id TEXT NOT NULL,
@@ -643,6 +651,43 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore, IHubRep
             BEGIN SELECT RAISE(ABORT, 'DISPLAY_NUMBER_REGRESSION'); END;
             """;
         command.ExecuteNonQuery();
+        EnsureColumn("products", "product_tag_number", "INTEGER NULL");
+        EnsureColumn("products", "category", "TEXT NULL");
+        EnsureColumn("products", "color", "TEXT NULL");
+        EnsureColumn("products", "size", "TEXT NULL");
+        EnsureColumn("products", "material", "TEXT NULL");
+        EnsureColumn("products", "brand", "TEXT NULL");
+        EnsureColumn("products", "barcode", "TEXT NULL");
+        EnsureColumn("store_counters", "product_tag_high_watermark", "INTEGER NOT NULL DEFAULT 0");
+        using var tagCommand = _connection.CreateCommand();
+        tagCommand.CommandText = """
+            CREATE UNIQUE INDEX IF NOT EXISTS ux_products_store_tag
+                ON products(store_id, product_tag_number) WHERE product_tag_number IS NOT NULL;
+            CREATE TRIGGER IF NOT EXISTS product_tag_regression_forbidden
+            BEFORE UPDATE ON store_counters
+            WHEN NEW.product_tag_high_watermark < OLD.product_tag_high_watermark
+            BEGIN SELECT RAISE(ABORT, 'PRODUCT_TAG_REGRESSION'); END;
+            """;
+        tagCommand.ExecuteNonQuery();
+    }
+
+    private void EnsureColumn(string table, string column, string definition)
+    {
+        using var inspect = _connection.CreateCommand();
+        inspect.CommandText = $"PRAGMA table_info({table});";
+        using var reader = inspect.ExecuteReader();
+        while (reader.Read())
+        {
+            if (string.Equals(reader.GetString(1), column, StringComparison.Ordinal))
+            {
+                return;
+            }
+        }
+
+        reader.Close();
+        using var alter = _connection.CreateCommand();
+        alter.CommandText = $"ALTER TABLE {table} ADD COLUMN {column} {definition};";
+        alter.ExecuteNonQuery();
     }
 
     private void ThrowIfReplicationFenced(Guid storeId)

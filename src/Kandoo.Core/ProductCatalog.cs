@@ -17,7 +17,14 @@ public sealed record Product(
     long UnitPriceRials,
     int Version,
     bool IsActive = true,
-    string? Specification = null);
+    string? Specification = null,
+    long? ProductTagNumber = null,
+    string? Category = null,
+    string? Color = null,
+    string? Size = null,
+    string? Material = null,
+    string? Brand = null,
+    string? Barcode = null);
 
 public sealed record ProductRegistrationResult(
     ProductRegistrationStatus Status,
