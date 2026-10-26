@@ -271,6 +271,58 @@ internal sealed class SqliteHubTransaction : IHubTransaction
         command.ExecuteNonQuery();
     }
 
+    internal IReadOnlyList<HubDeviceRestore> GetRestoreDevices(Guid storeId)
+    {
+        using var command = Command("""
+            SELECT store_id, device_id, device_role, pairing_status, owner_user_id, label, platform,
+                   device_public_key, credential_hash, paired_at, revoked_at
+            FROM devices WHERE store_id = $store ORDER BY device_id;
+            """);
+        Add(command, "$store", Uuid(storeId));
+        using var reader = command.ExecuteReader();
+        var values = new List<HubDeviceRestore>();
+        while (reader.Read())
+        {
+            values.Add(new HubDeviceRestore
+            {
+                StoreId = Guid.Parse(reader.GetString(0)),
+                DeviceId = Guid.Parse(reader.GetString(1)),
+                DeviceRole = (HubDeviceRole)reader.GetInt32(2),
+                PairingStatus = (HubPairingStatus)reader.GetInt32(3),
+                OwnerUserId = reader.IsDBNull(4) ? null : Guid.Parse(reader.GetString(4)),
+                Label = reader.GetString(5),
+                Platform = reader.GetString(6),
+                DevicePublicKey = reader.IsDBNull(7) ? null : reader.GetString(7),
+                CredentialHash = reader.GetString(8),
+                PairedAt = DateTimeOffset.Parse(reader.GetString(9), CultureInfo.InvariantCulture),
+                RevokedAt = reader.IsDBNull(10) ? null : DateTimeOffset.Parse(reader.GetString(10), CultureInfo.InvariantCulture)
+            });
+        }
+
+        return values;
+    }
+
+    internal void RestoreDevice(HubDeviceRestore value)
+    {
+        using var command = Command("""
+            INSERT INTO devices (store_id, device_id, device_role, pairing_status, owner_user_id, label, platform,
+                                 device_public_key, credential_hash, paired_at, revoked_at)
+            VALUES ($store, $device, $role, $status, $owner, $label, $platform, $publicKey, $credential, $paired, $revoked);
+            """);
+        Add(command, "$store", Uuid(value.StoreId));
+        Add(command, "$device", Uuid(value.DeviceId));
+        Add(command, "$role", (int)value.DeviceRole);
+        Add(command, "$status", (int)value.PairingStatus);
+        Add(command, "$owner", value.OwnerUserId is Guid owner ? Uuid(owner) : null);
+        Add(command, "$label", value.Label);
+        Add(command, "$platform", value.Platform);
+        Add(command, "$publicKey", value.DevicePublicKey);
+        Add(command, "$credential", value.CredentialHash);
+        Add(command, "$paired", Date(value.PairedAt));
+        Add(command, "$revoked", value.RevokedAt is DateTimeOffset revoked ? Date(revoked) : null);
+        command.ExecuteNonQuery();
+    }
+
     public IReadOnlyList<OperationRecord> GetOperations()
     {
         using var command = Command("""
@@ -388,6 +440,21 @@ internal sealed class SqliteHubTransaction : IHubTransaction
             Add(command, "$json", entryJson);
             command.ExecuteNonQuery();
         }
+    }
+
+    internal void RestoreReplicationEntry(ReplicationLogEntry entry, string canonicalEntryJson)
+    {
+        using var command = Command("""
+            INSERT INTO replication_log (store_id, operation_seq, operation_id, entry_hash, entry_json, acknowledged_at)
+            VALUES ($store, $sequence, $operation, $hash, $json, $acknowledged);
+            """);
+        Add(command, "$store", Uuid(entry.StoreId));
+        Add(command, "$sequence", entry.OperationSeq);
+        Add(command, "$operation", entry.OperationId);
+        Add(command, "$hash", entry.EntryHash);
+        Add(command, "$json", canonicalEntryJson);
+        Add(command, "$acknowledged", DateTimeOffset.UnixEpoch.ToString("O", CultureInfo.InvariantCulture));
+        command.ExecuteNonQuery();
     }
 
     private static (JsonElement Outcome, JsonElement ResponseSnapshot) ReplicationOutcome(OperationRecord record)

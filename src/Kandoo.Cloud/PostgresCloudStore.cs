@@ -10,7 +10,7 @@ namespace Kandoo.Cloud;
 /// commit transaction; no suffix, projection version, or watermark is mutated
 /// outside that transaction.
 /// </summary>
-public sealed class PostgresCloudStore : ICloudStore, IPublicInvoiceStore
+public sealed class PostgresCloudStore : ICloudStore, IPublicInvoiceStore, IRestoreExportStore
 {
     public const int MaxBatchEntries = 100;
     public const int MaxBatchBytes = 1_048_576;
@@ -44,6 +44,11 @@ public sealed class PostgresCloudStore : ICloudStore, IPublicInvoiceStore
             batch_id text NOT NULL,
             fingerprint text NOT NULL,
             PRIMARY KEY (store_id, batch_id)
+        );
+        CREATE TABLE IF NOT EXISTS cloud_restore_states (
+            store_id uuid PRIMARY KEY REFERENCES cloud_stores(store_id) ON DELETE CASCADE,
+            replayed_state jsonb NOT NULL,
+            state_hash text NOT NULL
         );
         CREATE TABLE IF NOT EXISTS public_invoices (
             public_token text PRIMARY KEY,
@@ -121,6 +126,168 @@ public sealed class PostgresCloudStore : ICloudStore, IPublicInvoiceStore
         using var connection = Open();
         var state = LoadState(connection, null, storeId, false);
         return state is null ? null : Snapshot(state);
+    }
+
+    /// <summary>Publishes the canonical replay projection corresponding to the durable Cloud high watermark.</summary>
+    public void PublishRestoreProjection(Guid storeId, JsonElement replayedState)
+    {
+        if (replayedState.ValueKind != JsonValueKind.Object ||
+            replayedState.GetProperty("store").GetProperty("store_id").GetGuid() != storeId)
+        {
+            throw new ArgumentException("Replay state must belong to the replicated store.", nameof(replayedState));
+        }
+
+        using var connection = Open();
+        using var transaction = connection.BeginTransaction();
+        var state = LoadState(connection, transaction, storeId, true)
+            ?? throw new InvalidOperationException("STORE_NOT_FOUND");
+        if (replayedState.GetProperty("through_operation_seq").GetInt64() != state.AcceptedThroughSeq ||
+            replayedState.GetProperty("writer_epoch").GetInt64() != state.ActiveWriterEpoch)
+        {
+            throw new InvalidOperationException("RESTORE_PROJECTION_WATERMARK_MISMATCH");
+        }
+
+        var canonicalState = CanonicalJson.SerializeReplayedState(replayedState);
+        var stateHash = CanonicalJson.ReplayedStateHash(replayedState);
+        using var command = new NpgsqlCommand("""
+            INSERT INTO cloud_restore_states (store_id, replayed_state, state_hash) VALUES (@store, @state, @hash)
+            ON CONFLICT (store_id) DO UPDATE SET replayed_state = EXCLUDED.replayed_state, state_hash = EXCLUDED.state_hash;
+            """, connection, transaction);
+        command.Parameters.AddWithValue("store", storeId);
+        command.Parameters.AddWithValue("state", NpgsqlDbType.Jsonb, canonicalState);
+        command.Parameters.AddWithValue("hash", stateHash);
+        command.ExecuteNonQuery();
+        transaction.Commit();
+    }
+
+    public RestoreManifest? GetRestoreManifest(Guid storeId)
+    {
+        using var connection = Open();
+        var state = LoadState(connection, null, storeId, false);
+        if (state is null)
+        {
+            return null;
+        }
+
+        var replayed = LoadReplayedState(connection, null, storeId);
+        var stateHash = LoadRestoreStateHash(connection, null, storeId);
+        return replayed is null || stateHash is null ? null : Manifest(state, stateHash);
+    }
+
+    public RestoreExport? GetRestoreExport(Guid storeId)
+    {
+        using var connection = Open();
+        var state = LoadState(connection, null, storeId, false);
+        if (state is null)
+        {
+            return null;
+        }
+
+        var replayed = LoadReplayedState(connection, null, storeId);
+        var stateHash = LoadRestoreStateHash(connection, null, storeId);
+        if (replayed is null || stateHash is null || state.EntryCount != state.AcceptedThroughSeq || state.Entries.Count != state.AcceptedThroughSeq)
+        {
+            throw new InvalidOperationException("CLOUD_REPLICA_INVALID");
+        }
+
+        var entries = new List<JsonElement>();
+        var previousHash = ZeroHash;
+        for (var sequence = 1L; sequence <= state.AcceptedThroughSeq; sequence++)
+        {
+            if (!state.Entries.TryGetValue(sequence, out var entry) ||
+                !string.Equals(entry.PreviousEntryHash, previousHash, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException("CLOUD_REPLICA_INVALID");
+            }
+
+            var element = JsonSerializer.SerializeToElement(entry, CloudJson.Options);
+            if (!string.Equals(CanonicalJson.EntryHash(element), entry.EntryHash, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException("CLOUD_REPLICA_INVALID");
+            }
+
+            entries.Add(element);
+            previousHash = entry.EntryHash;
+        }
+
+        if (!string.Equals(previousHash, state.HeadEntryHash ?? ZeroHash, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("CLOUD_REPLICA_INVALID");
+        }
+
+        var manifest = Manifest(state, stateHash);
+        if (!string.Equals(manifest.HeadEntryHash, previousHash, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("CLOUD_REPLICA_INVALID");
+        }
+
+        return new RestoreExport(manifest, replayed.Value, entries);
+    }
+
+    public long ActivateRestoredWriter(Guid storeId, long expectedWriterEpoch, string expectedStateHash, Guid replacementWriterDeviceId)
+    {
+        if (replacementWriterDeviceId == Guid.Empty)
+        {
+            throw new ArgumentException("A replacement writer is required.", nameof(replacementWriterDeviceId));
+        }
+
+        using var connection = Open();
+        using var transaction = connection.BeginTransaction();
+        var state = LoadState(connection, transaction, storeId, true)
+            ?? throw new InvalidOperationException("STORE_NOT_FOUND");
+        var replayed = LoadReplayedState(connection, transaction, storeId)
+            ?? throw new InvalidOperationException("RESTORE_STATE_INVALID");
+        var publishedHash = LoadRestoreStateHash(connection, transaction, storeId)
+            ?? throw new InvalidOperationException("RESTORE_STATE_INVALID");
+        var actualHash = CanonicalJson.ReplayedStateHash(replayed);
+        if (state.ActiveWriterEpoch != expectedWriterEpoch ||
+            !string.Equals(publishedHash, expectedStateHash, StringComparison.Ordinal) ||
+            !string.Equals(actualHash, expectedStateHash, StringComparison.Ordinal) ||
+            state.ActiveWriterDeviceId == replacementWriterDeviceId)
+        {
+            throw new InvalidOperationException("RESTORE_STATE_INVALID");
+        }
+
+        var newEpoch = checked(state.ActiveWriterEpoch + 1);
+        using var command = new NpgsqlCommand("""
+            UPDATE cloud_stores SET active_writer_device_id = @replacement, active_writer_epoch = @epoch
+            WHERE store_id = @store;
+            """, connection, transaction);
+        command.Parameters.AddWithValue("store", storeId);
+        command.Parameters.AddWithValue("replacement", replacementWriterDeviceId);
+        command.Parameters.AddWithValue("epoch", newEpoch);
+        command.ExecuteNonQuery();
+        transaction.Commit();
+        return newEpoch;
+    }
+
+    private static RestoreManifest Manifest(StoreState state, string stateHash) => new(
+        state.StoreId,
+        state.AcceptedThroughSeq,
+        state.HeadEntryHash ?? ZeroHash,
+        stateHash,
+        state.ActiveWriterEpoch,
+        state.ActiveWriterDeviceId);
+
+    private static string? LoadRestoreStateHash(NpgsqlConnection connection, NpgsqlTransaction? transaction, Guid storeId)
+    {
+        using var command = new NpgsqlCommand("SELECT state_hash FROM cloud_restore_states WHERE store_id = @store", connection, transaction);
+        command.Parameters.AddWithValue("store", storeId);
+        return command.ExecuteScalar()?.ToString();
+    }
+
+    private static JsonElement? LoadReplayedState(NpgsqlConnection connection, NpgsqlTransaction? transaction, Guid storeId)
+    {
+        using var command = new NpgsqlCommand("SELECT replayed_state FROM cloud_restore_states WHERE store_id = @store", connection, transaction);
+        command.Parameters.AddWithValue("store", storeId);
+        var value = command.ExecuteScalar();
+        if (value is null || value is DBNull)
+        {
+            return null;
+        }
+
+        using var document = JsonDocument.Parse((string)value);
+        return document.RootElement.Clone();
     }
 
     /// <summary>Seeds one synthetic issued projection and returns its capability token.</summary>
