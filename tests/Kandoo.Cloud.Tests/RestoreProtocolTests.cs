@@ -267,7 +267,7 @@ public sealed class RestoreProtocolTests
             Assert.Equal(OperationExecutionStatus.Succeeded, original.IssueInvoice(issue, issuedId, clock.UtcNow).Status);
 
             var operations = new HubOperationService(original, original, clock);
-            var activeDraft = Submit(operations, storeId, owner.Session, "op-restore-4", "invoice.draft_create", new { customer_phone = "09121234567" });
+            var activeDraft = Submit(operations, storeId, owner.Session, "op-restore-4", "invoice.draft_create", new { customer_phone = "+989121234567" });
             Assert.Equal("SUCCEEDED", activeDraft.Body.Status);
             var activeDraftId = activeDraft.Body.Response.GetProperty("invoice").GetProperty("invoice_id").GetGuid();
             var addLine = Submit(operations, storeId, owner.Session, "op-restore-5", "invoice.item_add", new
@@ -527,10 +527,26 @@ public sealed class RestoreProtocolTests
 
     private static class VectorFile
     {
-        private static readonly JsonElement Root = JsonDocument.Parse(
-            File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "sync-protocol-test-vectors.json"))).RootElement.Clone();
+        private static readonly JsonElement Root = LoadRoot();
 
         public static JsonElement Get(string id) => Root.GetProperty("vectors").EnumerateArray()
             .Single(vector => vector.GetProperty("id").GetString() == id);
+
+        private static JsonElement LoadRoot()
+        {
+            DirectoryInfo? directory = new(AppContext.BaseDirectory);
+            while (directory is not null)
+            {
+                var candidate = Path.Combine(directory.FullName, "docs", "sync-protocol-test-vectors.json");
+                if (File.Exists(candidate))
+                {
+                    return JsonDocument.Parse(File.ReadAllText(candidate)).RootElement.Clone();
+                }
+
+                directory = directory.Parent;
+            }
+
+            throw new FileNotFoundException("Could not locate docs/sync-protocol-test-vectors.json from the test output directory.");
+        }
     }
 }
