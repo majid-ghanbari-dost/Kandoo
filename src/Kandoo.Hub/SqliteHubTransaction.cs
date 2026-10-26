@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using Kandoo.Core;
 using Microsoft.Data.Sqlite;
 
@@ -321,25 +322,118 @@ internal sealed class SqliteHubTransaction : IHubTransaction
         command.ExecuteNonQuery();
     }
 
-    internal void AppendOutbox(OperationRecord record, OperationRequest request)
+    internal void AppendOutbox(OperationRecord record, OperationRequest request, HubWriterIdentity writer, DateTimeOffset recordedAt)
     {
-        using var command = Command("""
+        using (var command = Command("""
             INSERT INTO operation_outbox
                 (store_id, operation_seq, operation_id, device_id, operation_type,
                  base_version, payload, request_hash, response)
             VALUES ($store, $sequence, $operation, $device, $type,
                     $base, $payload, $hash, $response);
-            """);
-        Add(command, "$store", Uuid(record.StoreId));
-        Add(command, "$sequence", record.OperationSeq);
-        Add(command, "$operation", record.OperationId);
-        Add(command, "$device", Uuid(record.DeviceId));
-        Add(command, "$type", record.OperationType);
-        Add(command, "$base", request.BaseVersion);
-        Add(command, "$payload", CanonicalJson.Serialize(request.Payload));
-        Add(command, "$hash", record.RequestHash);
-        Add(command, "$response", record.Response);
-        command.ExecuteNonQuery();
+            """))
+        {
+            Add(command, "$store", Uuid(record.StoreId));
+            Add(command, "$sequence", record.OperationSeq);
+            Add(command, "$operation", record.OperationId);
+            Add(command, "$device", Uuid(record.DeviceId));
+            Add(command, "$type", record.OperationType);
+            Add(command, "$base", request.BaseVersion);
+            Add(command, "$payload", CanonicalJson.Serialize(request.Payload));
+            Add(command, "$hash", record.RequestHash);
+            Add(command, "$response", record.Response);
+            command.ExecuteNonQuery();
+        }
+
+        string? previousHash;
+        using (var command = Command("SELECT entry_hash FROM replication_log WHERE store_id = $store ORDER BY operation_seq DESC LIMIT 1;"))
+        {
+            Add(command, "$store", Uuid(record.StoreId));
+            previousHash = command.ExecuteScalar()?.ToString();
+        }
+
+        if (record.OperationSeq > 1 && previousHash is null)
+        {
+            throw new InvalidOperationException("LOCAL_REPLICATION_GAP");
+        }
+
+        var (outcome, responseSnapshot) = ReplicationOutcome(record);
+        var entry = new ReplicationLogEntry
+        {
+            StoreId = record.StoreId,
+            WriterDeviceId = writer.DeviceId,
+            WriterEpoch = writer.Epoch,
+            OperationSeq = record.OperationSeq,
+            PreviousEntryHash = previousHash ?? HubReplicationConstants.ZeroHash,
+            OperationId = record.OperationId,
+            DeviceId = record.DeviceId,
+            OperationType = record.OperationType,
+            BaseVersion = request.BaseVersion,
+            RequestHash = record.RequestHash,
+            Payload = request.Payload.Clone(),
+            Outcome = outcome,
+            ResponseSnapshot = responseSnapshot,
+            HubRecordedAt = recordedAt.ToUniversalTime().ToString("O")
+        };
+        entry.EntryHash = CanonicalJson.EntryHash(JsonSerializer.SerializeToElement(entry, HubJson.Options));
+        var entryJson = CanonicalJson.Serialize(JsonSerializer.SerializeToElement(entry, HubJson.Options));
+        using (var command = Command("""
+            INSERT INTO replication_log (store_id, operation_seq, operation_id, entry_hash, entry_json)
+            VALUES ($store, $sequence, $operation, $hash, $json);
+            """))
+        {
+            Add(command, "$store", Uuid(record.StoreId));
+            Add(command, "$sequence", record.OperationSeq);
+            Add(command, "$operation", record.OperationId);
+            Add(command, "$hash", entry.EntryHash);
+            Add(command, "$json", entryJson);
+            command.ExecuteNonQuery();
+        }
+    }
+
+    private static (JsonElement Outcome, JsonElement ResponseSnapshot) ReplicationOutcome(OperationRecord record)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(record.Response);
+            var root = document.RootElement;
+            if (root.ValueKind == JsonValueKind.Object)
+            {
+                var status = root.TryGetProperty("status", out var statusElement) && statusElement.ValueKind == JsonValueKind.String
+                    ? statusElement.GetString() ?? "SUCCEEDED"
+                    : "SUCCEEDED";
+                var resultStatus = root.TryGetProperty("result_status", out var resultElement) && resultElement.ValueKind == JsonValueKind.String
+                    ? resultElement.GetString() ?? status
+                    : status;
+                var response = root.TryGetProperty("response", out var responseElement) ? responseElement.Clone() : root.Clone();
+                var snapshot = JsonSerializer.SerializeToElement(new
+                {
+                    operation_seq = record.OperationSeq,
+                    status,
+                    result_status = resultStatus,
+                    response
+                }, HubJson.Options);
+                return (root.Clone(), snapshot);
+            }
+
+            return FallbackReplicationOutcome(record, root.Clone());
+        }
+        catch (JsonException)
+        {
+            return FallbackReplicationOutcome(record, JsonSerializer.SerializeToElement(record.Response));
+        }
+    }
+
+    private static (JsonElement Outcome, JsonElement ResponseSnapshot) FallbackReplicationOutcome(OperationRecord record, JsonElement response)
+    {
+        var outcome = JsonSerializer.SerializeToElement(new { result_status = "SUCCEEDED", response }, HubJson.Options);
+        var snapshot = JsonSerializer.SerializeToElement(new
+        {
+            operation_seq = record.OperationSeq,
+            status = "SUCCEEDED",
+            result_status = "SUCCEEDED",
+            response
+        }, HubJson.Options);
+        return (outcome, snapshot);
     }
 
     public DraftLock? GetDraftLock(Guid storeId, Guid lockId)

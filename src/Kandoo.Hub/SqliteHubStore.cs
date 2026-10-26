@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Kandoo.Core;
@@ -6,19 +7,23 @@ using Microsoft.Data.Sqlite;
 namespace Kandoo.Hub;
 
 /// <summary>SQLite-backed Hub store. One connection and one lock make transaction boundaries explicit.</summary>
-public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore
+public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore, IHubReplicationSource
 {
     private readonly object _gate = new();
     private readonly SqliteConnection _connection;
+    private readonly HubWriterIdentity? _replicationWriter;
+    private readonly IClock _clock;
     private bool _disposed;
 
-    public SqliteHubStore(string connectionString)
+    public SqliteHubStore(string connectionString, HubWriterIdentity? replicationWriter = null, IClock? clock = null)
     {
         if (string.IsNullOrWhiteSpace(connectionString))
         {
             throw new ArgumentException("A SQLite connection string is required.", nameof(connectionString));
         }
 
+        _replicationWriter = replicationWriter?.Validate();
+        _clock = clock ?? new SystemHubClock();
         _connection = new SqliteConnection(connectionString);
         _connection.Open();
         using var command = _connection.CreateCommand();
@@ -40,6 +45,7 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore
         lock (_gate)
         {
             ThrowIfDisposed();
+            ThrowIfReplicationFenced(request.StoreId);
             using var transaction = new SqliteHubTransaction(_connection);
             var existing = transaction.FindOperation(request.StoreId, request.OperationId);
             if (existing is not null)
@@ -67,7 +73,8 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore
                     sequence,
                     response);
                 transaction.AppendOperation(record);
-                transaction.AppendOutbox(record, request);
+                var writer = _replicationWriter ?? new HubWriterIdentity(request.DeviceId, 1);
+                transaction.AppendOutbox(record, request, writer, _clock.UtcNow);
                 transaction.Commit();
                 return new OperationResult(OperationExecutionStatus.Succeeded, response, sequence);
             }
@@ -117,11 +124,11 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore
         });
     }
 
-    public void SaveProduct(Product product) => Write(transaction => transaction.SaveProduct(product));
+    public void SaveProduct(Product product) => Write(transaction => transaction.SaveProduct(product), product.StoreId);
 
-    public void AppendInventory(InventoryEvent inventoryEvent) => Write(transaction => transaction.AppendInventory(inventoryEvent));
+    public void AppendInventory(InventoryEvent inventoryEvent) => Write(transaction => transaction.AppendInventory(inventoryEvent), inventoryEvent.StoreId);
 
-    public void SaveInvoice(Invoice invoice) => Write(transaction => transaction.SaveInvoice(invoice));
+    public void SaveInvoice(Invoice invoice) => Write(transaction => transaction.SaveInvoice(invoice), invoice.StoreId);
 
     public Invoice? GetInvoice(Guid storeId, Guid invoiceId)
     {
@@ -175,7 +182,7 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore
                 invoice.Retire(draftLock.ReleasedAt ?? draftLock.ExpiresAt, RetirementReason.Timeout);
                 transaction.SaveInvoice(invoice);
             }
-        });
+        }, draftLock.StoreId);
     }
 
     public int GetOutboxDepth(Guid storeId)
@@ -187,6 +194,191 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore
             command.CommandText = "SELECT COUNT(*) FROM operation_outbox WHERE store_id = $store AND acknowledged_at IS NULL;";
             command.Parameters.AddWithValue("$store", storeId.ToString("D"));
             return Convert.ToInt32(command.ExecuteScalar(), System.Globalization.CultureInfo.InvariantCulture);
+        }
+    }
+
+    public ReplicationBatch? ReadBatch(Guid storeId, int maxEntries, int maxBytes)
+    {
+        if (maxEntries <= 0 || maxBytes <= 0)
+        {
+            throw new ArgumentException("Batch limits must be positive.");
+        }
+
+        lock (_gate)
+        {
+            ThrowIfDisposed();
+            var entries = new List<ReplicationLogEntry>();
+            using (var command = _connection.CreateCommand())
+            {
+                command.CommandText = "SELECT entry_json FROM replication_log WHERE store_id = $store AND acknowledged_at IS NULL ORDER BY operation_seq;";
+                command.Parameters.AddWithValue("$store", storeId.ToString("D"));
+                using var reader = command.ExecuteReader();
+                while (reader.Read())
+                {
+                    entries.Add(JsonSerializer.Deserialize<ReplicationLogEntry>(reader.GetString(0), HubJson.Options)
+                        ?? throw new InvalidOperationException("Invalid durable replication entry."));
+                }
+            }
+
+            if (entries.Count == 0)
+            {
+                return null;
+            }
+
+            var expected = entries[0].OperationSeq;
+            var previousHash = entries[0].PreviousEntryHash;
+            if (expected > 1)
+            {
+                using var command = _connection.CreateCommand();
+                command.CommandText = "SELECT entry_hash FROM replication_log WHERE store_id = $store AND operation_seq = $previous AND acknowledged_at IS NOT NULL;";
+                command.Parameters.AddWithValue("$store", storeId.ToString("D"));
+                command.Parameters.AddWithValue("$previous", expected - 1);
+                var persistedPrevious = command.ExecuteScalar()?.ToString();
+                if (!string.Equals(previousHash, persistedPrevious, StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException($"LOCAL_REPLICATION_GAP:{expected - 1}");
+                }
+            }
+
+            foreach (var entry in entries)
+            {
+                if (entry.OperationSeq != expected || !string.Equals(entry.PreviousEntryHash, previousHash, StringComparison.Ordinal) ||
+                    entry.WriterDeviceId != entries[0].WriterDeviceId || entry.WriterEpoch != entries[0].WriterEpoch)
+                {
+                    throw new InvalidOperationException($"LOCAL_REPLICATION_INVALID:{entry.OperationSeq}");
+                }
+
+                expected = checked(expected + 1);
+                previousHash = entry.EntryHash;
+            }
+
+            var selected = new List<ReplicationLogEntry>();
+            foreach (var entry in entries)
+            {
+                selected.Add(entry);
+                var candidate = ReplicationBatch.Create(
+                    new HubWriterIdentity(entry.WriterDeviceId, entry.WriterEpoch), storeId, selected);
+                var bytes = Encoding.UTF8.GetByteCount(JsonSerializer.Serialize(candidate, HubJson.Options));
+                if (bytes > maxBytes)
+                {
+                    if (selected.Count == 1)
+                    {
+                        throw new InvalidOperationException("REPLICATION_ENTRY_EXCEEDS_BATCH_LIMIT");
+                    }
+
+                    selected.RemoveAt(selected.Count - 1);
+                    break;
+                }
+
+                if (selected.Count == maxEntries)
+                {
+                    break;
+                }
+            }
+
+            return ReplicationBatch.Create(
+                new HubWriterIdentity(selected[0].WriterDeviceId, selected[0].WriterEpoch), storeId, selected);
+        }
+    }
+
+    public void Acknowledge(Guid storeId, long throughSequence, string headEntryHash, DateTimeOffset acknowledgedAt)
+    {
+        lock (_gate)
+        {
+            ThrowIfDisposed();
+            using var transaction = _connection.BeginTransaction();
+            long previouslyAcknowledged;
+            using (var command = _connection.CreateCommand())
+            {
+                command.Transaction = transaction;
+                command.CommandText = "SELECT COALESCE(MAX(operation_seq), 0) FROM replication_log WHERE store_id = $store AND acknowledged_at IS NOT NULL;";
+                command.Parameters.AddWithValue("$store", storeId.ToString("D"));
+                previouslyAcknowledged = Convert.ToInt64(command.ExecuteScalar(), System.Globalization.CultureInfo.InvariantCulture);
+            }
+
+            string? persistedHead;
+            long contiguousCount;
+            using (var command = _connection.CreateCommand())
+            {
+                command.Transaction = transaction;
+                command.CommandText = "SELECT entry_hash FROM replication_log WHERE store_id = $store AND operation_seq = $through;";
+                command.Parameters.AddWithValue("$store", storeId.ToString("D"));
+                command.Parameters.AddWithValue("$through", throughSequence);
+                persistedHead = command.ExecuteScalar()?.ToString();
+            }
+
+            using (var command = _connection.CreateCommand())
+            {
+                command.Transaction = transaction;
+                command.CommandText = "SELECT COUNT(*) FROM replication_log WHERE store_id = $store AND operation_seq > $previous AND operation_seq <= $through;";
+                command.Parameters.AddWithValue("$store", storeId.ToString("D"));
+                command.Parameters.AddWithValue("$previous", previouslyAcknowledged);
+                command.Parameters.AddWithValue("$through", throughSequence);
+                contiguousCount = Convert.ToInt64(command.ExecuteScalar(), System.Globalization.CultureInfo.InvariantCulture);
+            }
+
+            if (throughSequence < previouslyAcknowledged || contiguousCount != throughSequence - previouslyAcknowledged ||
+                !string.Equals(headEntryHash, persistedHead, StringComparison.Ordinal))
+            {
+                transaction.Rollback();
+                throw new InvalidOperationException("REPLICATION_ACKNOWLEDGEMENT_MISMATCH");
+            }
+
+            using (var command = _connection.CreateCommand())
+            {
+                command.Transaction = transaction;
+                command.CommandText = "UPDATE replication_log SET acknowledged_at = $ack WHERE store_id = $store AND operation_seq <= $through AND acknowledged_at IS NULL;";
+                command.Parameters.AddWithValue("$store", storeId.ToString("D"));
+                command.Parameters.AddWithValue("$through", throughSequence);
+                command.Parameters.AddWithValue("$ack", acknowledgedAt.ToUniversalTime().ToString("O"));
+                command.ExecuteNonQuery();
+            }
+
+            using (var command = _connection.CreateCommand())
+            {
+                command.Transaction = transaction;
+                command.CommandText = "UPDATE operation_outbox SET acknowledged_at = $ack WHERE store_id = $store AND operation_seq <= $through AND acknowledged_at IS NULL;";
+                command.Parameters.AddWithValue("$store", storeId.ToString("D"));
+                command.Parameters.AddWithValue("$through", throughSequence);
+                command.Parameters.AddWithValue("$ack", acknowledgedAt.ToUniversalTime().ToString("O"));
+                command.ExecuteNonQuery();
+            }
+
+            transaction.Commit();
+        }
+    }
+
+    public bool IsWriterFenced(Guid storeId)
+    {
+        lock (_gate)
+        {
+            ThrowIfDisposed();
+            using var command = _connection.CreateCommand();
+            command.CommandText = "SELECT 1 FROM replication_fences WHERE store_id = $store LIMIT 1;";
+            command.Parameters.AddWithValue("$store", storeId.ToString("D"));
+            return command.ExecuteScalar() is not null;
+        }
+    }
+
+    public void MarkWriterFenced(Guid storeId, HubWriterIdentity writer, string reason)
+    {
+        writer.Validate();
+        lock (_gate)
+        {
+            ThrowIfDisposed();
+            using var command = _connection.CreateCommand();
+            command.CommandText = """
+                INSERT INTO replication_fences (store_id, writer_device_id, writer_epoch, reason, fenced_at)
+                VALUES ($store, $writer, $epoch, $reason, $fenced)
+                ON CONFLICT(store_id) DO UPDATE SET writer_device_id = excluded.writer_device_id,
+                    writer_epoch = excluded.writer_epoch, reason = excluded.reason, fenced_at = excluded.fenced_at;
+                """;
+            command.Parameters.AddWithValue("$store", storeId.ToString("D"));
+            command.Parameters.AddWithValue("$writer", writer.DeviceId.ToString("D"));
+            command.Parameters.AddWithValue("$epoch", writer.Epoch);
+            command.Parameters.AddWithValue("$reason", reason);
+            command.Parameters.AddWithValue("$fenced", _clock.UtcNow.ToString("O"));
+            command.ExecuteNonQuery();
         }
     }
 
@@ -266,11 +458,16 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore
         }
     }
 
-    private void Write(Action<IHubTransaction> action)
+    private void Write(Action<IHubTransaction> action, Guid? storeId = null)
     {
         lock (_gate)
         {
             ThrowIfDisposed();
+            if (storeId is Guid fencedStoreId)
+            {
+                ThrowIfReplicationFenced(fencedStoreId);
+            }
+
             using var transaction = new SqliteHubTransaction(_connection);
             try
             {
@@ -395,6 +592,24 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore
                 UNIQUE (store_id, operation_id),
                 FOREIGN KEY (store_id, operation_id) REFERENCES operations(store_id, operation_id)
             );
+            CREATE TABLE IF NOT EXISTS replication_log (
+                store_id TEXT NOT NULL,
+                operation_seq INTEGER NOT NULL,
+                operation_id TEXT NOT NULL,
+                entry_hash TEXT NOT NULL,
+                entry_json TEXT NOT NULL,
+                acknowledged_at TEXT NULL,
+                PRIMARY KEY (store_id, operation_seq),
+                UNIQUE (store_id, operation_id),
+                FOREIGN KEY (store_id, operation_id) REFERENCES operations(store_id, operation_id)
+            );
+            CREATE TABLE IF NOT EXISTS replication_fences (
+                store_id TEXT PRIMARY KEY,
+                writer_device_id TEXT NOT NULL,
+                writer_epoch INTEGER NOT NULL,
+                reason TEXT NOT NULL,
+                fenced_at TEXT NOT NULL
+            );
             CREATE TRIGGER IF NOT EXISTS invoices_terminal_update_forbidden
             BEFORE UPDATE ON invoices
             WHEN OLD.status IN (3, 4, 5) OR OLD.retired_at IS NOT NULL
@@ -415,12 +630,30 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore
             CREATE TRIGGER IF NOT EXISTS operations_delete_forbidden
             BEFORE DELETE ON operations
             BEGIN SELECT RAISE(ABORT, 'OPERATION_APPEND_ONLY'); END;
+            CREATE TRIGGER IF NOT EXISTS replication_content_update_forbidden
+            BEFORE UPDATE ON replication_log
+            WHEN NEW.entry_json <> OLD.entry_json OR NEW.entry_hash <> OLD.entry_hash
+            BEGIN SELECT RAISE(ABORT, 'REPLICATION_ENTRY_IMMUTABLE'); END;
+            CREATE TRIGGER IF NOT EXISTS replication_delete_forbidden
+            BEFORE DELETE ON replication_log
+            BEGIN SELECT RAISE(ABORT, 'REPLICATION_LOG_APPEND_ONLY'); END;
             CREATE TRIGGER IF NOT EXISTS counters_regression_forbidden
             BEFORE UPDATE ON store_counters
             WHEN NEW.display_number_high_watermark < OLD.display_number_high_watermark
             BEGIN SELECT RAISE(ABORT, 'DISPLAY_NUMBER_REGRESSION'); END;
             """;
         command.ExecuteNonQuery();
+    }
+
+    private void ThrowIfReplicationFenced(Guid storeId)
+    {
+        using var command = _connection.CreateCommand();
+        command.CommandText = "SELECT 1 FROM replication_fences WHERE store_id = $store LIMIT 1;";
+        command.Parameters.AddWithValue("$store", storeId.ToString("D"));
+        if (command.ExecuteScalar() is not null)
+        {
+            throw new HubWriterFencedException(storeId);
+        }
     }
 
     private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, this);

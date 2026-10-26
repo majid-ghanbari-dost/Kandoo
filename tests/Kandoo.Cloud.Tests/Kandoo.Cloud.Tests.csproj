@@ -21,5 +21,6 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Kandoo.Cloud/Kandoo.Cloud.csproj" />
     <ProjectReference Include="../../src/Kandoo.Core/Kandoo.Core.csproj" />
+    <ProjectReference Include="../../src/Kandoo.Hub/Kandoo.Hub.csproj" Aliases="Hub" />
   </ItemGroup>
 </Project>
