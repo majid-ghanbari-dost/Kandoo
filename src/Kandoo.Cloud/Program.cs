@@ -8,6 +8,10 @@ var postgresConnection = builder.Configuration.GetConnectionString("CloudPostgre
 var cloudStore = new PostgresCloudStore(postgresConnection);
 builder.Services.AddSingleton<ICloudStore>(cloudStore);
 builder.Services.AddSingleton<IPublicInvoiceStore>(cloudStore);
+builder.Services.AddSingleton(new CustomerAccountService(
+    new PostgresCustomerAccountStore(postgresConnection, cloudStore),
+    new DeterministicStubSmsProvider(),
+    new SystemCloudClock()));
 
 var app = builder.Build();
 
@@ -102,6 +106,8 @@ app.MapPost("/v1/stores/{store_id}/operation-batches", async (
 
     return Results.Json(result.Body, CloudJson.Options, statusCode: result.HttpStatus);
 });
+
+CustomerAccountEndpoints.Map(app);
 
 app.Run();
 

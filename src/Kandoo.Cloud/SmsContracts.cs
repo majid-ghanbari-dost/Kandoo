@@ -98,6 +98,17 @@ public interface ISmsDeliveryStore
 public static class SmsMessageTemplates
 {
     public const string PersianInvoiceV1 = "invoice_fa_v1";
+    public const string PersianOtpV1 = "otp_fa_v1";
+
+    public static string RenderOtp(string code)
+    {
+        if (code.Length != 6 || code.Any(character => character is < '0' or > '9'))
+        {
+            throw new ArgumentException("An OTP contains exactly six digits.", nameof(code));
+        }
+
+        return string.Create(CultureInfo.InvariantCulture, $"کندو\nکد تایید شما: {code}\nاعتبار: ۵ دقیقه");
+    }
 
     public static string Render(string storeName, long displayNumber, string invoiceLink)
     {

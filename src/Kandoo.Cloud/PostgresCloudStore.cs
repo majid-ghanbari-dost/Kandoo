@@ -58,8 +58,10 @@ public sealed class PostgresCloudStore : ICloudStore, IPublicInvoiceStore
             issued_content_sha256 text NOT NULL,
             payable_rials bigint NOT NULL,
             line_items jsonb NOT NULL,
+            customer_phone text NULL,
             CONSTRAINT public_invoices_store_invoice_unique UNIQUE (store_id, invoice_id)
         );
+        ALTER TABLE public_invoices ADD COLUMN IF NOT EXISTS customer_phone text NULL;
         """;
 
     private readonly string _connectionString;
@@ -139,6 +141,7 @@ public sealed class PostgresCloudStore : ICloudStore, IPublicInvoiceStore
         }
 
         var digitalInvoiceId = seed.DigitalInvoiceId == Guid.Empty ? Guid.NewGuid() : seed.DigitalInvoiceId;
+        var customerPhone = string.IsNullOrWhiteSpace(seed.CustomerPhone) ? null : PhoneNormalizer.Normalize(seed.CustomerPhone);
         using var connection = Open();
         using var transaction = connection.BeginTransaction();
         using (var delete = new NpgsqlCommand(
@@ -153,7 +156,7 @@ public sealed class PostgresCloudStore : ICloudStore, IPublicInvoiceStore
         }
 
         using (var insert = new NpgsqlCommand(
-                   "INSERT INTO public_invoices (public_token, digital_invoice_id, invoice_id, store_id, store_name, display_number, lifecycle_status, issued_at, issued_payload, issued_content_sha256, payable_rials, line_items) VALUES (@token, @digital, @invoice, @store, @name, @display, @status, @issuedAt, @payload, @hash, @payable, @items)",
+                   "INSERT INTO public_invoices (public_token, digital_invoice_id, invoice_id, store_id, store_name, display_number, lifecycle_status, issued_at, issued_payload, issued_content_sha256, payable_rials, line_items, customer_phone) VALUES (@token, @digital, @invoice, @store, @name, @display, @status, @issuedAt, @payload, @hash, @payable, @items, @phone)",
                    connection,
                    transaction))
         {
@@ -169,6 +172,7 @@ public sealed class PostgresCloudStore : ICloudStore, IPublicInvoiceStore
             insert.Parameters.AddWithValue("hash", seed.IssuedContentSha256);
             insert.Parameters.AddWithValue("payable", seed.PayableRials);
             insert.Parameters.AddWithValue("items", NpgsqlDbType.Jsonb, JsonSerializer.Serialize(seed.LineItems, CloudJson.Options));
+            insert.Parameters.AddWithValue("phone", NpgsqlDbType.Text, (object?)customerPhone ?? DBNull.Value);
             insert.ExecuteNonQuery();
         }
 
@@ -224,6 +228,8 @@ public sealed class PostgresCloudStore : ICloudStore, IPublicInvoiceStore
         };
         return new PublicInvoice(view, lineItems, payable);
     }
+
+    internal void EnsureInitialized() => EnsureSchema();
 
     private NpgsqlConnection Open()
     {

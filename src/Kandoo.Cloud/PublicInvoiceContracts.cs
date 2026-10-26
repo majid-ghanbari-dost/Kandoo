@@ -100,6 +100,7 @@ public sealed class PublicInvoiceSeed
     public string LifecycleStatus { get; set; } = "ISSUED";
     public DateTimeOffset IssuedAt { get; set; } = DateTimeOffset.UnixEpoch;
     public string? PublicToken { get; set; }
+    public string? CustomerPhone { get; set; }
     public JsonElement IssuedPayload { get; set; } = JsonSerializer.SerializeToElement(new { });
     public string IssuedContentSha256 { get; set; } = new('0', 64);
     public IReadOnlyList<PublicInvoiceLine> LineItems { get; set; } = Array.Empty<PublicInvoiceLine>();
