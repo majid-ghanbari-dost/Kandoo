@@ -1,6 +1,24 @@
 # KANDOO — PARENT PROJECT AGENT HANDOFF
 
-## Current Implementation Handoff (`C-13`, 2026-10-26)
+## Final Implementation Handoff (`H-01`, 2026-10-26)
+
+C-10 through C-13 are complete on the fixed review-only Arena branch. The authoritative implementation line ends at C-13 v2. Every candidate SHA, annotated tag/object, per-OS result, and run URL is recorded below; red tags remain immutable and were never moved.
+
+| Task / candidate | Commit SHA | Annotated tag / tag object | Ubuntu | Windows | CI run |
+| --- | --- | --- | --- | --- | --- |
+| **C-10 final** | `dbbf2511ff78dd6d154cc1b12cf99bf821eeecac` | `stable-c-10` / `0d02b9634d2fc095141f605dcffb6c2026cf7eb4` | Green | Green | [40293083629](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40293083629) |
+| C-11 v1 (retained red) | `58c1751ad4ed8e2c85d1a0ef1ca30cd6931f2619` | `stable-c-11` / `edada80faabd9baa88c763a8b9970855ca9e79ac` | Red — Build | Red — Build | [40293860657](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40293860657) |
+| **C-11 final v2** | `582a2cfd4876b38b85619f2690402ade6dfe0e72` | `stable-c-11-v2` / `d07001ab10ef76ffb8b58b991ad28ffb3c30019c` | Green | Green | [40294075398](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40294075398) |
+| C-12 v1 (retained red) | `45ce927df4786ab3f165df88ad2c3076d0c57f87` | `stable-c-12` / `f9a9a9a16d19483d5329d6adfddb2050349fec60` | Red — Build | Red — Build | [40295770215](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40295770215) |
+| C-12 v2 (retained red) | `90a92ab4207c78bdf5b9cc111ea1fa7f1aedded4` | `stable-c-12-v2` / `d5107297b95b006a23d156eb4b46c43219983313` | Red — Cloud tests | Red — Cloud tests | [40296029468](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40296029468) |
+| C-12 v3 (retained red) | `4c1ec4eb12e109e9a2de845a235fc0b95a78f74d` | `stable-c-12-v3` / `a78ae177afbf7b0caeeded4498904b46c67ca017` | Red — Cloud round trip | Red — Cloud round trip | [40296419280](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40296419280) |
+| **C-12 final v4** | `b35ede07a93c6c68ff8980201971e0c57c85d71c` | `stable-c-12-v4` / `0552215c490f603632a37d9f3caa284b0150caf7` | Green | Green | [40296755316](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40296755316) |
+| C-13 v1 (retained red) | `a136293199eff62f1c96524a24df60f1e526b3ca` | `stable-c-13` / `1859ca8557f2b414be29060ac67286d97fcd5ffb` | Red — Build | Red — Build | [40297875572](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40297875572) |
+| **C-13 final v2** | `f90dbc672b9c0c17eddfe6ff06fd4b60ca49e0a9` | `stable-c-13-v2` / `744ed1bb8834a093b8e0afcd7d880db0d16c8e9a` | Green | Green | [40298111209](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40298111209) |
+
+H-01 is documentation-only: it adds this final ledger and publication note, starts from verified C-13 v2, and targets new annotated tag `stable-h-01`. Its own pushed SHA, tag object, and per-OS CI URL are reported in the final dispatch result. No merge or PR closure is authorized; `main` remains unchanged.
+
+## Previous Implementation Handoff (`C-13`, 2026-10-26)
 
 C-12 is complete at `b35ede07a93c6c68ff8980201971e0c57c85d71c` with annotated `stable-c-12-v4` (`0552215c490f603632a37d9f3caa284b0150caf7`); run `40296755316` is green on Ubuntu and Windows. Its v1–v3 tags remain immutable with the documented build/fixture failures. C-13 starts from that verified commit and adds a no-UI durable product catalog creation path. Name, non-negative Rial price, and initial stock are required; structured category/color/size/material/brand/barcode/specification are optional and blank-normalized. Existing Persian/Arabic/half-space normalization and candidate-acknowledged near-duplicate behavior are preserved. Atomic idempotent creation allocates positive per-store numeric tags from a dedicated watermark, records initial stock through the append-only inventory ledger, and survives retirement/restart/restore without tag reuse. Products, tag assignments, and the tag watermark join the canonical restore projection. Canonical QR JSON carries only store ID/tag plus optional calculated Luhn digit, with strict round-trip validation and no authentication capability. Six focused tests cover required fields, metadata/stock/idempotency, duplicate warning/isolation, retirement/restart/restore continuation, and exact QR examples/error cases. `ASM-31` records the boundary. The first candidate was tagged `stable-c-13` at `a136293199eff62f1c96524a24df60f1e526b3ca`; run `40297875572` was red on Ubuntu and Windows at Build because a new tag-counter write command reused a nested local name, so no tests ran. That tag remains immutable. The v2 candidate targets `stable-c-13-v2` with only that local renamed and this handoff update. CI is pending at v2 publication; final pushed SHA, tag, and per-OS run URL are reported in the task result. Any further red CI requires another fix and new immutable tag. No merge is authorized.
 
