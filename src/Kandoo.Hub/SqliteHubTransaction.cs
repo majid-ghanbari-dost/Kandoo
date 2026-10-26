@@ -328,14 +328,14 @@ internal sealed class SqliteHubTransaction : IHubTransaction
             }
         }
 
-        using var command = Command("""
+        using var write = Command("""
             INSERT INTO store_counters (store_id, display_number_high_watermark, product_tag_high_watermark)
             VALUES ($store, 0, $value)
             ON CONFLICT(store_id) DO UPDATE SET product_tag_high_watermark = excluded.product_tag_high_watermark;
             """);
-        Add(command, "$store", Uuid(storeId));
-        Add(command, "$value", value);
-        command.ExecuteNonQuery();
+        Add(write, "$store", Uuid(storeId));
+        Add(write, "$value", value);
+        write.ExecuteNonQuery();
     }
 
     public Product? GetProductByTag(Guid storeId, long productTagNumber)
