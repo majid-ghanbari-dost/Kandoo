@@ -294,7 +294,7 @@ public sealed class RestoreProtocolTests
             recoveredHead = batch.Entries[^1].EntryHash;
             var cloudBatch = JsonSerializer.Deserialize<OperationBatch>(
                 JsonSerializer.Serialize(batch, HubJson.Options), CloudJson.Options)!;
-            var ingest = _database.Store.Ingest(storeId, cloudBatch, "c12-populated-roundtrip");
+            var ingest = _database.Store.Ingest(storeId, cloudBatch, cloudBatch.BatchId);
             Assert.Equal(200, ingest.HttpStatus);
             original.Acknowledge(storeId, restoredThrough, recoveredHead, clock.UtcNow);
 
