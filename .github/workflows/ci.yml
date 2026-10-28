@@ -1,0 +1,139 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: 'true'
+
+jobs:
+  build-and-test-linux:
+    name: Build and test (ubuntu-latest)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: kandoo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d kandoo"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      ConnectionStrings__CloudPostgres: "Host=localhost;Port=5432;Database=kandoo;Username=postgres;Password=postgres;Pooling=false"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore Kandoo.sln
+
+      - name: Build
+        run: dotnet build Kandoo.sln --configuration Release --no-restore
+
+      - name: Test Core and write TRX
+        run: dotnet test tests/Kandoo.Core.Tests/Kandoo.Core.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Core.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
+
+      - name: Test Cloud and write TRX
+        run: dotnet test tests/Kandoo.Cloud.Tests/Kandoo.Cloud.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Cloud.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
+
+      - name: Test Hub and write TRX
+        run: dotnet test tests/Kandoo.Hub.Tests/Kandoo.Hub.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Hub.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
+
+      - name: Publish failed test annotations
+        if: always()
+        shell: pwsh
+        run: |
+          $resultFiles = Get-ChildItem -Path tests -Filter *.trx -Recurse -ErrorAction SilentlyContinue
+          foreach ($file in $resultFiles) {
+            [xml]$trx = Get-Content -LiteralPath $file.FullName
+            foreach ($result in @($trx.TestRun.Results.UnitTestResult)) {
+              if ($null -ne $result -and $result.outcome -ne 'Passed') {
+                $message = [string]$result.Output.ErrorInfo.Message
+                $message = $message -replace "[`r`n]+", " "
+                Write-Host "::error::$($result.testName): $message"
+              }
+            }
+          }
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-ubuntu-latest
+          path: |
+            tests/Kandoo.Core.Tests/TestResults/*.trx
+            tests/Kandoo.Cloud.Tests/TestResults/*.trx
+            tests/Kandoo.Hub.Tests/TestResults/*.trx
+          if-no-files-found: error
+
+  build-and-test-windows:
+    name: Build and test (windows-latest)
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore Kandoo.sln
+
+      - name: Build
+        run: dotnet build Kandoo.sln --configuration Release --no-restore
+
+      - name: Test Core and write TRX
+        run: dotnet test tests/Kandoo.Core.Tests/Kandoo.Core.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Core.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
+
+      - name: Test Cloud and write TRX
+        run: dotnet test tests/Kandoo.Cloud.Tests/Kandoo.Cloud.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Cloud.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
+
+      - name: Test Hub and write TRX
+        run: dotnet test tests/Kandoo.Hub.Tests/Kandoo.Hub.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Hub.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
+
+      - name: Publish failed test annotations
+        if: always()
+        shell: pwsh
+        run: |
+          $resultFiles = Get-ChildItem -Path tests -Filter *.trx -Recurse -ErrorAction SilentlyContinue
+          foreach ($file in $resultFiles) {
+            [xml]$trx = Get-Content -LiteralPath $file.FullName
+            foreach ($result in @($trx.TestRun.Results.UnitTestResult)) {
+              if ($null -ne $result -and $result.outcome -ne 'Passed') {
+                $message = [string]$result.Output.ErrorInfo.Message
+                $message = $message -replace "[`r`n]+", " "
+                Write-Host "::error::$($result.testName): $message"
+              }
+            }
+          }
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-windows-latest
+          path: |
+            tests/Kandoo.Core.Tests/TestResults/*.trx
+            tests/Kandoo.Cloud.Tests/TestResults/*.trx
+            tests/Kandoo.Hub.Tests/TestResults/*.trx
+          if-no-files-found: error
