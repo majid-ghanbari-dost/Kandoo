@@ -213,9 +213,20 @@ public sealed class HubOperationService
             throw new DomainException("VALIDATION_ERROR");
         }
 
+        string? productId = null;
+        if (request.Payload.TryGetProperty("product_id", out _))
+        {
+            productId = RequiredString(request.Payload, "product_id");
+            var product = transaction.GetProduct(request.StoreId, productId);
+            if (product is null || !product.IsActive)
+            {
+                throw new DomainException("PRODUCT_NOT_FOUND");
+            }
+        }
+
         invoice.AddItem(new InvoiceItem(
             Guid.NewGuid(), request.StoreId, invoice.Items.Count + 1, description,
-            quantity, unitPrice, lineTotal));
+            quantity, unitPrice, lineTotal, productId));
         if (!_locks.AcceptChange(request.StoreId, draftLock.CustomerPhone, request.DeviceId, DraftChangeKind.Item))
         {
             throw new DomainException("LOCK_NOT_OWNED");
@@ -379,11 +390,36 @@ public sealed class HubOperationService
     private static object InvoiceProjection(Invoice invoice) => new
     {
         invoice_id = invoice.InvoiceId,
+        external_invoice_number = invoice.ExternalInvoiceNumber,
         display_number = invoice.DisplayNumber,
         status = invoice.Status.ToString().ToUpperInvariant(),
         retired = invoice.RetiredAt is not null,
-        retirement_reason = invoice.RetirementReason?.ToString().ToUpperInvariant()
+        retirement_reason = invoice.RetirementReason?.ToString().ToUpperInvariant(),
+        issued_at = invoice.IssuedAt,
+        issued_payload = IssuedPayloadProjection(invoice),
+        issued_content_sha256 = invoice.IssuedContentSha256,
+        items = invoice.Items.Select(item => new
+        {
+            invoice_item_id = item.InvoiceItemId,
+            line_number = item.LineNumber,
+            description = item.Description,
+            quantity_millis = item.QuantityMillis,
+            unit_price_rials = item.UnitPriceRials,
+            line_total_rials = item.LineTotalRials,
+            product_id = item.ProductId
+        }).ToArray()
     };
+
+    private static JsonElement? IssuedPayloadProjection(Invoice invoice)
+    {
+        if (invoice.IssuedPayload is null)
+        {
+            return null;
+        }
+
+        using var document = JsonDocument.Parse(invoice.IssuedPayload);
+        return document.RootElement.Clone();
+    }
 
     private static object LockProjection(DraftLock draftLock) => new
     {

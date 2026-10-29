@@ -396,6 +396,23 @@ public sealed class PostgresCloudStore : ICloudStore, IPublicInvoiceStore, IRest
         return new PublicInvoice(view, lineItems, payable);
     }
 
+    /// <summary>Returns the capability only to trusted server-side delivery orchestration.</summary>
+    public string? GetPublicToken(Guid storeId, Guid invoiceId)
+    {
+        if (storeId == Guid.Empty || invoiceId == Guid.Empty)
+        {
+            return null;
+        }
+
+        using var connection = Open();
+        using var command = new NpgsqlCommand(
+            "SELECT public_token FROM public_invoices WHERE store_id = @store AND invoice_id = @invoice",
+            connection);
+        command.Parameters.AddWithValue("store", storeId);
+        command.Parameters.AddWithValue("invoice", invoiceId);
+        return command.ExecuteScalar()?.ToString();
+    }
+
     internal void EnsureInitialized() => EnsureSchema();
 
     private NpgsqlConnection Open()
@@ -675,6 +692,12 @@ public sealed class PostgresCloudStore : ICloudStore, IPublicInvoiceStore, IRest
 
         if (newEntries.Count > 0)
         {
+            foreach (var item in newEntries)
+            {
+                PublicInvoiceReplicationProjection.Apply(
+                    connection, transaction, state.StoreId, state.Entries.Values, item.Entry);
+            }
+
             state.AcceptedThroughSeq = newEntries[^1].Entry.OperationSeq;
             state.EntryCount += newEntries.Count;
             state.HeadEntryHash = newEntries[^1].ComputedHash;
