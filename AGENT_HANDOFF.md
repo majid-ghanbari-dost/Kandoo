@@ -1,21 +1,23 @@
 # KANDOO — PARENT PROJECT AGENT HANDOFF
 
-## Window-3 Final Handoff (`H-02 v2`, 2026-10-29)
+## Window-3 Final Handoff (`H-02 v3`, 2026-10-30)
 
-This re-issued documentation-only ledger starts from C-18 v2 at `cbff8a5465e4e565641992aa67b050798305d830` / `stable-c-18-v2` (`85b966caf69e258fd48972bab48bd75985c04ce9`). It preserves the distinction between executive-verified results and the explicitly inferred C-15 result:
+This final documentation-only ledger starts from H-02 v2 at `f6d6ac22bef22e14e7295cde9ef13985d7124a9b` / `stable-h-02-v2` (`73b69702eb41c11c6d081b49a504ee61817321dc`). C-15 is certified GREEN by the executive's live read; the former inferred qualification is obsolete.
 
 | Task / candidate | Full commit SHA | Annotated tag / tag object | PM-relayed CI verdict |
 | --- | --- | --- | --- |
 | C-14 v1 (retained, superseded) | `9aa6383ffad88e9544e493ca055fcce4e5308153` | `stable-c-14` / `c3a4a1f87742b2a0200aa907432277f82e4391ec` | [40838199654](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40838199654) — RED; retained superseded catalog-fixture candidate |
 | **C-14 final v2** | `33ef8209f074f17fd1fe740517318889e1085bdc` | `stable-c-14-v2` / `6985f9b1a192d8c55ade7813fa945b856901a881` | [40838323344](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40838323344) — GREEN |
-| **C-15** | `2bf8614d277366323dd689f43790816eb93223d2` | `stable-c-15` / `454c335c5964e654f537000e6ac3904c0c2ebbe1` | [40838490817](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40838490817) — **GREEN inferred**: both test-result artifacts and `kandoo-hub-c14-win-x64` at 47,944,324 B uploaded; child C-16 green |
+| **C-15** | `2bf8614d277366323dd689f43790816eb93223d2` | `stable-c-15` / `454c335c5964e654f537000e6ac3904c0c2ebbe1` | [40838490817](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40838490817) — **CERTIFIED GREEN** on both jobs (push, created 2026-10-29T07:54:55Z), read live by the executive; the inferred qualification is obsolete; both test-result artifacts and `kandoo-hub-c14-win-x64` at 47,944,324 B uploaded |
 | **C-16** | `271730d1bef6f1ee4db174ee3bcdd6b073780bf0` | `stable-c-16` / `441c05dfd7b6e3c745f0ff777b2e903c809ced92` | [40838766492](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40838766492) — GREEN; `kandoo-hub-c14-win-x64` = 47,955,575 B |
 | C-18 v1 (retained red) | `4da3cb651499f39b09a99501013d0af3e9906416` | `stable-c-18` / `d5492573ab9a389460d6f4ed63e7a96c17f1ca26` | [40838999159](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40838999159) — RED, Build on Ubuntu and Windows; unresolved `IClock` |
-| **C-18 final v2** | `cbff8a5465e4e565641992aa67b050798305d830` | `stable-c-18-v2` / `85b966caf69e258fd48972bab48bd75985c04ce9` | `relayed after batch` |
+| **C-18 final v2** | `cbff8a5465e4e565641992aa67b050798305d830` | `stable-c-18-v2` / `85b966caf69e258fd48972bab48bd75985c04ce9` | [40858174391](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40858174391) — GREEN on both jobs (push, created 2026-10-29T10:31:02Z); the one-import fix; the FIRST fully-green full-suite run on this branch |
 | **C-19** | `7544f9bbc2de33c9b13eebcf2f1068e8dbb4eb64` | `stable-c-19` / `accc30983f4aef0e55dffde058f727da16286219` | [40839617820](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40839617820) — RED with the same inherited C-18 compile error; no additional C-19 compile error was relayed |
 | H-02 v1 (retained red) | `c089dc3bf5b792aabb9d3a37683dd67548480490` | `stable-h-02` / `58dcd04ac83ca66335d117baeebb80c3ab6a1aa0` | [40839664353](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40839664353) — RED with the same inherited compile error; documentation-only tip |
+| **H-02 v2** | `f6d6ac22bef22e14e7295cde9ef13985d7124a9b` | `stable-h-02-v2` / `73b69702eb41c11c6d081b49a504ee61817321dc` | [40858274525](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40858274525) — GREEN (push, created 2026-10-29T10:31:47Z); [40862607886](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40862607886) — GREEN on the merge ref (pull_request #5, created 2026-10-29T11:05:03Z, 4/4 checks; PR #5 created by the PM via compare URL, create-only, never merged) |
+| **H-02 v3 (this publication)** | commit SHA: published in the execution report (a commit cannot contain its own SHA) | `stable-h-02-v3` / tag object SHA: published in the execution report | PR #5 run on the new head: PENDING VERDICT (awaiting executive relay) |
 
-H-02 v2 targets new annotated tag `stable-h-02-v2`; its CI run URL is `relayed after batch`, and its own commit/tag object plus final branch tip belong in the consolidated dispatch result. The C-18/C-19 tests have never executed because their builds stopped first, so the next run is their first real test execution and no green result is anticipated here. The two real-SPL/SHD compatibility tests remain unchanged, skipped, and BLOCKED by absent owner-provided samples; no capture was fabricated. Nothing was pushed to `main`, no existing tag was moved, and no merge or UI work occurred.
+C-18/C-19 tests HAVE executed green: run #63 was the first fully-green full-suite execution on this branch (both jobs, including `Kandoo.Capture.Tests`); #64/#65 confirmed it. The two real-SPL/SHD compatibility tests remain unchanged, skipped, and BLOCKED by absent owner-provided samples; no capture was fabricated. Nothing was pushed to `main`, no existing tag was moved, and no merge or UI work occurred. The H-02 v3 commit and tag object SHAs are published in the execution report because a commit cannot contain its own SHA.
 
 ## Window-3 Fix-Forward Handoff (`C-18 v2`, 2026-10-29)
 
@@ -39,7 +41,50 @@ C-14 is complete at `33ef8209f074f17fd1fe740517318889e1085bdc` with annotated `s
 
 ## Window-3 Implementation Handoff (`C-14`, 2026-10-29)
 
-C-14 starts from the executive-verified PR #4 merge `1dd53ff74c091f71e35606c3e1254049c1ffc16a` on `arena/23ca21c9-kandoo`. The existing ASP.NET Core Hub executable is now the runnable console host: SQLite remains on disk, standard appsettings/environment configuration is used, loopback-only pages expose the latest explicitly issued pairing grant, the same payload is printed as `KANDOO_PAIRING_GRANT=...`, authenticated product creation is available over HTTP, and WebApplication lifetime handlers provide graceful shutdown with SQLite disposal. A disabled-by-default loopback shutdown switch exists only for the smoke harness. Windows CI publishes a self-contained `win-x64` folder, starts the executable, pairs a device, creates a stocked product, creates a phone draft, adds an item, issues display number 1, stops the host gracefully, measures the uncompressed publish bytes/MiB into `c14-artifact-size.txt` and the step summary, and uploads the publish plus smoke result. Two in-process tests cover local pairing display and durable idempotent product creation. The initial candidate was published as `9aa6383ffad88e9544e493ca055fcce4e5308153` / `stable-c-14`. Before C-15, static integration review found that the in-process test factory replaced the operation store but not the newly registered catalog service; v2 replaces both so the product test uses its isolated SQLite database. The production host was already wired to one store. Target final tag: `stable-c-14-v2`; the v1 tag remains immutable. CI run URLs and the CI-measured artifact size are `relayed after batch`. No real-capture samples, UI work, merges, or main pushes are included.
+C-14 starts from the executive-verified PR #4 merge `1dd53ff74c091f71e35606c3e1254049c1ffc16a` on `arena/23ca21c9-kandoo`. The existing ASP.NET Core Hub executable is now the runnable console host: SQLite remains on disk, standard appsettings/environment configuration is used, loopback-only pages expose the latest explicitly issued pairing grant, the same payload is printed as `KANDOO_PAIRING_GRANT=...`, authenticated product creation is available over HTTP, and WebApplication lifetime handlers provide graceful shutdown with SQLite disposal. A disabled-by-default loopback shutdown switch exists only for the smoke harness. Windows CI publishes a self-contained `win-x64` folder, starts the executable, pairs a device, creates a stocked product, creates a phone draft, adds an item, issues display number 1, stops the host gracefully, measures the uncompressed publish bytes/MiB into `c14-artifact-size.txt` and the step summary, and uploads the publish plus smoke result. Two in-process tests cover local pairing display and durable idempotent product creation. The initial candidate was published as `9aa6383ffad88e9544e493ca055fcce4e5308153` / `stable-c-14`. Before C-15, static integration review found that the in-process test factory replaced the operation store but not the newly registered catalog service; v2 replaces both so the product test uses its isolated SQLite database. The production host was already wired to one store. Target final tag: `stable-c-14-v2`; the v1 tag remains immutable. CI run URLs and the CI-measured artifact size are recorded in the SECTION C evidence block below, copied byte-for-byte from the executive relay. No real-capture samples, UI work, merges, or main pushes are included.
+
+### C-14 v2 Windows smoke evidence
+
+```text
+SECTION C — C-14 v2 WINDOWS SMOKE EVIDENCE (record VERBATIM; never re-derive)
+Source: Actions run #57, id 40838323344, head 33ef8209f074f17fd1fe740517318889e1085bdc
+(stable-c-14-v2, "test(c-14): isolate the host catalog fixture"), event push, created
+2026-10-29T07:53:23Z, conclusion SUCCESS. All figures below are verbatim from the CI
+run/job pages, fetched 2026-10-30 by the executive. Nothing derived, rounded, or invented.
+
+Jobs:
+  Build and test (ubuntu-latest)  job 123328319284  success  duration 1m 14s
+  Build and test (windows-latest) job 123328319640  success  duration 2m 43s
+  Run page header: 2m 47s, Artifacts 3
+
+Windows job steps (all conclusion=success; timestamps UTC):
+  #10 "Publish self-contained win-x64 Hub host"
+      started 2026-10-29T07:55:44Z, completed 2026-10-29T07:55:55Z
+  #11 "Start Hub, run C-14 smoke, stop it, and measure the publish"   <-- SMOKE RESULT
+      started 2026-10-29T07:55:55Z, completed 2026-10-29T07:55:58Z
+  #12 "Upload C-14 self-contained Hub artifact"
+      started 2026-10-29T07:55:58Z, completed 2026-10-29T07:56:03Z
+
+Artifacts (run page table, verbatim Name | Size | Digest):
+  kandoo-hub-c14-win-x64       45.7 MB  sha256:d5384482d1e41899f18e5e2e5df06431974c9d41b57cd930fe98795c29bc3772
+  test-results-ubuntu-latest   23.1 KB  sha256:a6144525343480defcc262d7cfafb6799015852804eb9c5c7840c277a9a7ff6c
+  test-results-windows-latest  23.1 KB  sha256:2feb0c1b8e7dfdc8de13bc6b8f15cf1d13af61bebbf736237f7e76e5206909a2
+
+Not supplied (never invent): the byte-exact size_in_bytes of kandoo-hub-c14-win-x64 at
+this run (API quota drained; logs require auth). "45.7 MB" is exactly as displayed on
+the run page. If the executive later relays an exact byte figure, record it in the next
+handoff update. Never compute, round, or infer it.
+
+Annotations (run page, verbatim; non-blocking warnings):
+  - Build and test (ubuntu-latest) Node.js 20 is deprecated. The following actions target
+    Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4,
+    actions/setup-dotnet@v4, actions/upload-artifact@v4. For more information see:
+    https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+  - Build and test (windows-latest) Node.js 20 is deprecated. (same action list and link)
+  - Build and test (ubuntu-latest) "The ubuntu-latest label will migrate to Ubuntu 26
+    beginning October 19, 2026. For more information, see
+    https://github.com/actions/runner-images/issues/14748 "
+```
 
 ## Final Implementation Handoff (`H-01`, 2026-10-26)
 
