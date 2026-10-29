@@ -2,7 +2,7 @@
 
 **Repository:** `majid-ghanbari-dost/Kandoo` (Parent Platform Repository)  
 **Baseline:** Board v4 + Amendment v4.1 + Amendment v4.2 (`R-0`)  
-**Last updated:** `2026-10-23` (`P-0104r`)
+**Last updated:** `2026-10-29` (PM Record — Owner decisions)
 
 > **Governance Rule:** Frozen decisions are not reopened without direct contradictory evidence or explicit Product Owner revision. Where Amendments `v4.1` or `v4.2` modify an earlier `Board v4` clause, the latest amendment governs. Whenever a detail is unspecified and the PM is unavailable, take the conservative fail-closed option (`REVIEW` / feature gate) and record it under [Assumptions](#assumptions).
 
@@ -201,6 +201,26 @@
      2. Market & competitor analysis
      3. Legal review of platform responsibility/liability shift
    - **Test Criterion:** MVP C# Canonical Invoice validator accepts omitted or structurally valid `tax_lines` / `discount_lines` / `rounding` fields without computing taxes, applying rounding, or enforcing accounting formulas.
+
+---
+
+## PM Record — Owner Decisions (`2026-10-29`)
+
+PM RECORD - Owner decisions, 29 Oct 2026 (add to docs/DECISIONS.md; do not change any code)
+
+U-01 open questions, answered by the Product Owner:
+1. Free-form fields: core fields (name, type, color, price, numeric tag, stock) are used for cross-store matching; operator-defined fields stay store-private. Product creation must not feel confusing to the operator.
+2. Phone vs Windows: same order and logic, field-by-field reveal; layout differs. Build it, test the experience with an operator, change if confusing.
+3. Service tabs: Sale, Rental, Other services are all VISIBLE; only Sale is ACTIVE in the MVP; the other two are visible but disabled.
+4. Customer-side ordering is NOT built in the MVP. Later: customer order arrives as "pending" in the operator queue with notification on Windows and phone.
+5. Cascading options: only from existing products of the same store with the same name; operator-defined fields follow the same rule.
+
+Other decisions:
+- SMS provider: Faraz SMS. Adapter stays disabled by default. No credentials in any repo.
+- Store verification (post-MVP): two tiers. Unverified stores may use Kandoo for digital invoices but are not listed in public search. Verified stores get a "verified" badge and appear in search. Early verification is manual. Automatic license lookup needs an official integration; NOT assumed available.
+- "Beside other software" path has two phases: (a) digital invoice + customer data collection from print capture; (b) shadow store built from the other software's data with manager permission. Phase (b) is blocked on Holoo data access and legal review.
+- Customer side needs only mobile-number verification.
+- Roles for phone operators: seller, operator, manager. Android is NOT in the first MVP.
 
 ---
 
