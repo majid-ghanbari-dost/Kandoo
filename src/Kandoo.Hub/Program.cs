@@ -20,6 +20,10 @@ builder.Services.AddSingleton<IHubAccessStore>(hubStore);
 builder.Services.AddSingleton<IClock, SystemHubClock>();
 builder.Services.AddSingleton<HubOperationService>();
 builder.Services.AddSingleton(new HubProductCatalogService(hubStore));
+builder.Services.AddSingleton(provider => new ModeBReviewService(
+    hubStore,
+    provider.GetRequiredService<HubOperationService>(),
+    provider.GetRequiredService<IClock>()));
 builder.Services.AddSingleton<HubPairingGrantDisplay>();
 
 var app = builder.Build();

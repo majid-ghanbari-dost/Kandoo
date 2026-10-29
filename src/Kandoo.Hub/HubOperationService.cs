@@ -177,8 +177,14 @@ public sealed class HubOperationService
     private string CreateDraft(OperationRequest request, IHubTransaction transaction)
     {
         var phone = PhoneNormalizer.Normalize(RequiredString(request.Payload, "customer_phone"));
+        string? externalInvoiceNumber = null;
+        if (request.Payload.TryGetProperty("external_invoice_number", out _))
+        {
+            externalInvoiceNumber = RequiredString(request.Payload, "external_invoice_number");
+        }
+
         var invoiceId = Guid.NewGuid();
-        var invoice = new Invoice(invoiceId, request.StoreId, request.OperationId, request.DeviceId, _clock.UtcNow, null);
+        var invoice = new Invoice(invoiceId, request.StoreId, request.OperationId, request.DeviceId, _clock.UtcNow, externalInvoiceNumber);
         // Acquire before any write: a conflict must not leave a second draft in the rejected transaction.
         var draftLock = _locks.Acquire(
             request.StoreId, phone, invoiceId, request.DeviceId, Guid.NewGuid(), 300);

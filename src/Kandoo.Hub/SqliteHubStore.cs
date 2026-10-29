@@ -31,6 +31,7 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore, IHubRep
         command.ExecuteNonQuery();
         InitializeSchema();
         InitializeAccessSchema();
+        InitializeModeBReviewSchema();
     }
 
     public OperationResult Execute(OperationRequest request, Func<IHubTransaction, string> action)
