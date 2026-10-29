@@ -1,5 +1,9 @@
 # KANDOO — PARENT PROJECT AGENT HANDOFF
 
+## Window-3 Fix-Forward Handoff (`C-18 v2`, 2026-10-29)
+
+PM relayed run `40838999159` as RED on both operating systems at Build for C-18 `4da3cb651499f39b09a99501013d0af3e9906416`; C-19 run `40839617820` and H-02 run `40839664353` inherited the same single unresolved-`IClock` error. Source verification against the clean published tree found that `Kandoo.Core.IClock` already exists, `SystemCloudClock` already implements it, and `Program.cs` already injects that implementation into `PublicInvoiceRateLimiter`. The attributable defect is only the missing `Kandoo.Core` import in `PublicTokenSecurity.cs`; v2 adds that import and does not duplicate the clock contract or touch any C-19 file. All existing tags remain immutable. Target tag: `stable-c-18-v2`; its CI run URL is `relayed after batch`, and no test execution is claimed before PM relay.
+
 ## Window-3 Final Handoff (`H-02`, 2026-10-29)
 
 The ordered Window-3 implementation batch is complete on `arena/23ca21c9-kandoo`; no merge, main push, tag move, or UI work occurred. H-02 is documentation-only and starts from C-19 at `7544f9bbc2de33c9b13eebcf2f1068e8dbb4eb64` / `stable-c-19` (`accc30983f4aef0e55dffde058f727da16286219`). The authoritative publication ledger is:

@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using Kandoo.Core;
 
 namespace Kandoo.Cloud;
 
