@@ -111,15 +111,16 @@ internal static class PublicInvoiceReplicationProjection
         var token = PublicTokenGenerator.NewToken();
         using var command = new NpgsqlCommand("""
             INSERT INTO public_invoices
-                (public_token, digital_invoice_id, invoice_id, store_id, store_name,
+                (public_token, public_token_hash, digital_invoice_id, invoice_id, store_id, store_name,
                  display_number, lifecycle_status, issued_at, issued_payload,
                  issued_content_sha256, payable_rials, line_items, customer_phone)
             VALUES
-                (@token, @digital, @invoice, @store, @name, @display, 'ISSUED',
+                (@token, @tokenHash, @digital, @invoice, @store, @name, @display, 'ISSUED',
                  @issuedAt, @payload, @hash, @payable, @items, @phone)
             ON CONFLICT (store_id, invoice_id) DO NOTHING;
             """, connection, transaction);
         command.Parameters.AddWithValue("token", token);
+        command.Parameters.AddWithValue("tokenHash", Convert.ToHexString(PublicTokenSecurity.Hash(token)).ToLowerInvariant());
         command.Parameters.AddWithValue("digital", Guid.NewGuid());
         command.Parameters.AddWithValue("invoice", invoiceId);
         command.Parameters.AddWithValue("store", storeId);

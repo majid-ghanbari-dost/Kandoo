@@ -3,6 +3,10 @@ using System.Text.Json;
 using Kandoo.Cloud;
 
 var builder = WebApplication.CreateBuilder(args);
+// Framework request logs can include raw paths. Public capability tokens must
+// never be emitted through request/routing diagnostics.
+builder.Logging.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", _ => false);
+builder.Logging.AddFilter("Microsoft.AspNetCore.Routing", _ => false);
 var postgresConnection = builder.Configuration.GetConnectionString("CloudPostgres")
     ?? "Host=localhost;Port=5432;Database=kandoo;Username=postgres;Password=postgres;Pooling=false";
 var cloudStore = new PostgresCloudStore(postgresConnection);
@@ -12,14 +16,44 @@ builder.Services.AddSingleton(new CustomerAccountService(
     new PostgresCustomerAccountStore(postgresConnection, cloudStore),
     new DeterministicStubSmsProvider(),
     new SystemCloudClock()));
+builder.Services.AddSingleton(new PublicInvoiceRateLimiter(
+    new SystemCloudClock(),
+    builder.Configuration.GetValue("PublicToken:RateLimitPerMinute", 60)));
 
 var app = builder.Build();
 
 app.MapGet("/health", () => Results.Json(new { status = "ok" }, CloudJson.Options));
 
-app.MapGet("/i/{token}", (HttpContext context, string token, IPublicInvoiceStore store, IHostEnvironment environment) =>
+app.MapGet("/i/{token}", (
+    HttpContext context,
+    string token,
+    IPublicInvoiceStore store,
+    IHostEnvironment environment,
+    PublicInvoiceRateLimiter rateLimiter) =>
 {
-    var invoice = store.GetPublicInvoice(token);
+    var rate = rateLimiter.Check(context.Connection.RemoteIpAddress?.ToString());
+    context.Response.Headers.CacheControl = "no-store";
+    context.Response.Headers.Vary = "Accept";
+    if (!rate.Allowed)
+    {
+        context.Response.Headers.RetryAfter = rate.RetryAfterSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        return Results.Json(
+            CloudErrors.Failure(429, "PUBLIC_RATE_LIMITED", "Too many public invoice requests.", "RETRY_AFTER").Body,
+            CloudJson.Options,
+            statusCode: 429);
+    }
+
+    PublicInvoice? invoice;
+    try
+    {
+        invoice = store.GetPublicInvoice(token);
+    }
+    catch (UnauthorizedAccessException)
+    {
+        // Unknown and unauthorized capabilities deliberately collapse here.
+        invoice = null;
+    }
+
     IResult response;
     if (invoice is null)
     {
@@ -48,8 +82,6 @@ app.MapGet("/i/{token}", (HttpContext context, string token, IPublicInvoiceStore
         response = Results.Content(PublicInvoiceHtml.Render(invoice), "text/html", Encoding.UTF8);
     }
 
-    context.Response.Headers.CacheControl = "no-store";
-    context.Response.Headers.Vary = "Accept";
     return response;
 });
 
