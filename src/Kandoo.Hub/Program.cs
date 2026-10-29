@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Kandoo.Capture;
 using Kandoo.Core;
 using Kandoo.Hub;
 
@@ -25,6 +26,15 @@ builder.Services.AddSingleton(provider => new ModeBReviewService(
     provider.GetRequiredService<HubOperationService>(),
     provider.GetRequiredService<IClock>()));
 builder.Services.AddSingleton<HubPairingGrantDisplay>();
+var captureOptions = new PrintCaptureOptions();
+builder.Configuration.GetSection("Hub:Capture").Bind(captureOptions);
+captureOptions.Validate();
+builder.Services.AddSingleton(captureOptions);
+builder.Services.AddSingleton<ICapturedSpoolSink, HubCaptureSink>();
+if (captureOptions.Enabled)
+{
+    builder.Services.AddHostedService<PrintCaptureHostedService>();
+}
 
 var app = builder.Build();
 app.MapHubHostLocalPages();

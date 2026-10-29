@@ -11,5 +11,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Kandoo.Core/Kandoo.Core.csproj" />
+    <ProjectReference Include="../Kandoo.Capture/Kandoo.Capture.csproj" />
   </ItemGroup>
 </Project>
