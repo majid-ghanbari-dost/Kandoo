@@ -1,5 +1,20 @@
 # KANDOO — PARENT PROJECT AGENT HANDOFF
 
+## Window-3 Final Handoff (`H-02`, 2026-10-29)
+
+The ordered Window-3 implementation batch is complete on `arena/23ca21c9-kandoo`; no merge, main push, tag move, or UI work occurred. H-02 is documentation-only and starts from C-19 at `7544f9bbc2de33c9b13eebcf2f1068e8dbb4eb64` / `stable-c-19` (`accc30983f4aef0e55dffde058f727da16286219`). The authoritative publication ledger is:
+
+| Task / candidate | Full commit SHA | Annotated tag / tag object | CI run URL |
+| --- | --- | --- | --- |
+| C-14 v1 (retained, superseded) | `9aa6383ffad88e9544e493ca055fcce4e5308153` | `stable-c-14` / `c3a4a1f87742b2a0200aa907432277f82e4391ec` | `relayed after batch` |
+| **C-14 final v2** | `33ef8209f074f17fd1fe740517318889e1085bdc` | `stable-c-14-v2` / `6985f9b1a192d8c55ade7813fa945b856901a881` | `relayed after batch` |
+| **C-15** | `2bf8614d277366323dd689f43790816eb93223d2` | `stable-c-15` / `454c335c5964e654f537000e6ac3904c0c2ebbe1` | `relayed after batch` |
+| **C-16** | `271730d1bef6f1ee4db174ee3bcdd6b073780bf0` | `stable-c-16` / `441c05dfd7b6e3c745f0ff777b2e903c809ced92` | `relayed after batch` |
+| **C-18** | `4da3cb651499f39b09a99501013d0af3e9906416` | `stable-c-18` / `d5492573ab9a389460d6f4ed63e7a96c17f1ca26` | `relayed after batch` |
+| **C-19** | `7544f9bbc2de33c9b13eebcf2f1068e8dbb4eb64` | `stable-c-19` / `accc30983f4aef0e55dffde058f727da16286219` | `relayed after batch` |
+
+The C-14 self-contained `win-x64` artifact size and smoke metrics are `relayed after batch`; no size or execution result is inferred locally. All C-19 tests that do not need owner captures are implemented, while real SPL and SHD compatibility residue remains concretely BLOCKED by absent owner-provided samples and is marked skipped without fabricated fixtures or compatibility claims. Local .NET/PowerShell execution was unavailable, and Actions were not polled or inferred; PM must relay CI/artifact evidence byte-for-byte after the batch. H-02 targets new annotated tag `stable-h-02`; its CI run URL is `relayed after batch`, and its own pushed commit/tag object plus post-batch relay evidence belong in the consolidated dispatch result, not in a retroactively moved tag.
+
 ## Window-3 Implementation Handoff (`C-19`, 2026-10-29)
 
 C-18 is published at `4da3cb651499f39b09a99501013d0af3e9906416` / `stable-c-18`. C-19 moves the supplied probe's raw spool capture, stable-scan/baseline behavior, OpenXPS Persian glyph reconstruction, and ESC/POS GS-v-0 raster/PNG reconstruction into a new `Kandoo.Capture` .NET 8 library. The Hub registers capture through standard `Hub:Capture` configuration and an opt-in hosted monitor; each stable SPL/SHD file is copied by content hash with an atomic REVIEW-only manifest. Raw captures do not create canonical invoices, customers, sales, or other native effects. Four active synthetic tests cover XPS reconstruction, raster pixels/PNG output, stable hashed spool handoff, and startup-baseline/change detection; a Hub test covers the REVIEW manifest and idempotent sink. Two tests are explicitly BLOCKED/skipped because owner-provided real SPL and SHD capture samples are absent; no captures are fabricated and no real-spool compatibility is claimed. Capture builds and tests run in both CI jobs. Target tag: `stable-c-19`; CI run URL is `relayed after batch`. Local .NET/PowerShell execution remains unavailable, so no local or CI success is claimed.
