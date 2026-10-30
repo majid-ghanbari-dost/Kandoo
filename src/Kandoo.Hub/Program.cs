@@ -26,6 +26,21 @@ builder.Services.AddSingleton(provider => new ModeBReviewService(
     provider.GetRequiredService<HubOperationService>(),
     provider.GetRequiredService<IClock>()));
 builder.Services.AddSingleton<HubPairingGrantDisplay>();
+var operationalLog = new HubOperationalLog(builder.Configuration["Hub:LogDirectory"]);
+builder.Services.AddSingleton(operationalLog);
+var backupOptions = new HubBackupOptions();
+builder.Configuration.GetSection("Hub:Backup").Bind(backupOptions);
+backupOptions.Validate();
+builder.Services.AddSingleton(backupOptions);
+builder.Services.AddSingleton(provider => new SqliteBackupService(
+    hubStore,
+    backupOptions,
+    provider.GetRequiredService<IClock>()));
+if (backupOptions.Enabled)
+{
+    builder.Services.AddHostedService<SqliteBackupHostedService>();
+}
+
 var captureOptions = new PrintCaptureOptions();
 builder.Configuration.GetSection("Hub:Capture").Bind(captureOptions);
 captureOptions.Validate();
@@ -387,9 +402,17 @@ app.MapPost("/v1/stores/{store_id}/operations", async (
     return Results.Json(result.Body, HubJson.Options, statusCode: result.HttpStatus);
 });
 
+app.Lifetime.ApplicationStarted.Register(() => operationalLog.Write("HOST_STARTED"));
 app.Lifetime.ApplicationStopping.Register(() =>
-    Console.WriteLine("Kandoo Hub is stopping; waiting for in-flight requests and SQLite disposal."));
-app.Lifetime.ApplicationStopped.Register(hubStore.Dispose);
+{
+    operationalLog.Write("HOST_STOPPING");
+    Console.WriteLine("Kandoo Hub is stopping; waiting for in-flight requests and SQLite disposal.");
+});
+app.Lifetime.ApplicationStopped.Register(() =>
+{
+    operationalLog.Write("HOST_STOPPED");
+    hubStore.Dispose();
+});
 
 app.Run();
 

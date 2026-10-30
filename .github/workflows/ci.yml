@@ -152,6 +152,24 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Assemble C-22 Windows pilot package
+        shell: pwsh
+        run: scripts/New-HubPilotPackage.ps1 -PublishDirectory artifacts/Kandoo.Hub-win-x64 -PackageDirectory artifacts/Kandoo.Hub-Pilot-win-x64
+
+      - name: Run C-22 replacement, pairing, and backup smoke
+        shell: pwsh
+        run: scripts/Invoke-HubPilotSmoke.ps1 -PackageDirectory artifacts/Kandoo.Hub-Pilot-win-x64 -ArtifactDirectory artifacts
+
+      - name: Upload C-22 Windows pilot artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kandoo-hub-pilot-c22-win-x64
+          path: |
+            artifacts/Kandoo.Hub-Pilot-win-x64/**
+            artifacts/c22-pilot-smoke-result.json
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
