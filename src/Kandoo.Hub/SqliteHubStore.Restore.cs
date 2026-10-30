@@ -45,6 +45,8 @@ public sealed partial class SqliteHubStore
 
         if (state.Devices.Any(value => value.StoreId != storeId) ||
             state.Products.Any(value => value.StoreId != storeId) ||
+            (state.ProductOperatorFields?.Any(value => value.StoreId != storeId ||
+                state.Products.All(product => product.ProductId != value.ProductId)) ?? false) ||
             state.InventoryEvents.Any(value => value.StoreId != storeId) ||
             state.Invoices.Any(value => value.StoreId != storeId) ||
             state.InvoiceItems.Any(value => value.StoreId != storeId) ||
@@ -86,6 +88,25 @@ public sealed partial class SqliteHubStore
                 foreach (var product in state.Products)
                 {
                     transaction.SaveProduct(product);
+                    var fields = state.ProductOperatorFields?
+                        .Where(value => value.ProductId == product.ProductId)
+                        .OrderBy(value => value.Position)
+                        .ToArray() ?? Array.Empty<HubProductOperatorFieldRestore>();
+                    if (fields.Select(value => value.Position).Where((position, index) => position != index).Any() ||
+                        fields.Select(value => value.StoreId).Any(value => value != product.StoreId))
+                    {
+                        throw new InvalidOperationException("RESTORE_STATE_INVALID");
+                    }
+
+                    try
+                    {
+                        transaction.SaveProductOperatorFields(product.StoreId, product.ProductId,
+                            fields.Select(value => new ProductOperatorField(value.Key, value.Value)).ToArray());
+                    }
+                    catch (ArgumentException exception)
+                    {
+                        throw new InvalidOperationException("RESTORE_STATE_INVALID", exception);
+                    }
                 }
 
                 foreach (var invoice in state.Invoices)
@@ -138,11 +159,15 @@ public sealed partial class SqliteHubStore
         var products = transaction.GetProducts().Where(value => value.StoreId == storeId).ToList();
         var invoices = transaction.GetInvoices().Where(value => value.StoreId == storeId).ToList();
         var operations = transaction.GetOperations().Where(value => value.StoreId == storeId).ToList();
+        var operatorFields = products.SelectMany(product => transaction.GetProductOperatorFields(storeId, product.ProductId)
+            .Select((field, position) => new HubProductOperatorFieldRestore(
+                storeId, product.ProductId, position, field.Key, field.Value))).ToList();
         return new HubReplayedState
         {
             Store = new HubStoreRestore { StoreId = storeId },
             Devices = transaction.GetRestoreDevices(storeId).ToList(),
             Products = products,
+            ProductOperatorFields = operatorFields.Count == 0 ? null : operatorFields,
             InventoryEvents = transaction.GetInventoryEvents().Where(value => value.StoreId == storeId).ToList(),
             Invoices = invoices.Select(HubInvoiceRestore.FromInvoice).ToList(),
             InvoiceItems = invoices.SelectMany(invoice => invoice.Items

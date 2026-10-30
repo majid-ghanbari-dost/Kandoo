@@ -2,6 +2,7 @@ using System.Text.Json;
 using Kandoo.Capture;
 using Kandoo.Core;
 using Kandoo.Hub;
+using Microsoft.OpenApi.Models;
 
 // WebApplication uses the standard appsettings.json + environment-variable
 // configuration chain. The executable remains an ordinary console process,
@@ -13,6 +14,11 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
     options.SerializerOptions.PropertyNameCaseInsensitive = false;
 });
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "Kandoo Hub API", Version = "v1" });
+});
 var sqliteConnection = builder.Configuration.GetConnectionString("HubSqlite")
     ?? "Data Source=kandoo-hub.db;Pooling=False";
 var hubStore = new SqliteHubStore(sqliteConnection);
@@ -21,6 +27,8 @@ builder.Services.AddSingleton<IHubAccessStore>(hubStore);
 builder.Services.AddSingleton<IClock, SystemHubClock>();
 builder.Services.AddSingleton<HubOperationService>();
 builder.Services.AddSingleton(new HubProductCatalogService(hubStore));
+builder.Services.AddSingleton<IHubInvoicePrintAdapter, DisabledHubInvoicePrintAdapter>();
+builder.Services.AddSingleton<IHubSmsDeliveryGateway, DisabledHubSmsDeliveryGateway>();
 builder.Services.AddSingleton(provider => new ModeBReviewService(
     hubStore,
     provider.GetRequiredService<HubOperationService>(),
@@ -52,7 +60,9 @@ if (captureOptions.Enabled)
 }
 
 var app = builder.Build();
+app.UseSwagger(options => options.RouteTemplate = "openapi/{documentName}.json");
 app.MapHubHostLocalPages();
+app.MapHubApiFirstEndpoints();
 
 app.MapGet("/health", () => Results.Json(new { status = "ok" }, HubJson.Options));
 
@@ -201,26 +211,32 @@ app.MapPost("/v1/stores/{store_id}/products", (
         return HubHttp.Error(400, "VALIDATION_ERROR", "operation_id and the required product fields are required.");
     }
 
+    if (!string.IsNullOrWhiteSpace(request.Type) && !string.IsNullOrWhiteSpace(request.Category) &&
+        !string.Equals(request.Type.Trim(), request.Category.Trim(), StringComparison.Ordinal))
+    {
+        return HubHttp.Error(400, "VALIDATION_ERROR", "type and legacy category cannot disagree.");
+    }
+
     HubProductRegistrationResult result;
+    ProductRegistrationInput input;
     try
     {
-        result = catalog.Register(
-            store_id,
-            auth.Session!.DeviceId,
-            request.OperationId,
-            new ProductRegistrationInput(
+        input = new ProductRegistrationInput(
                 request.Name,
                 request.UnitPriceRials,
                 request.InitialStockMillis,
                 request.ProductId,
                 request.AcknowledgedCandidateId,
-                request.Category,
+                !string.IsNullOrWhiteSpace(request.Type) ? request.Type : request.Category,
                 request.Color,
                 request.Size,
                 request.Material,
                 request.Brand,
                 request.Barcode,
-                request.Specification));
+                request.Specification,
+                request.ProductTagNumber,
+                request.OperatorFields).Validate();
+        result = catalog.Register(store_id, auth.Session!.DeviceId, request.OperationId, input);
     }
     catch (ArgumentException)
     {
@@ -237,6 +253,7 @@ app.MapPost("/v1/stores/{store_id}/products", (
         ProductRegistrationStatus.DuplicateProductId => "DUPLICATE_PRODUCT_ID",
         ProductRegistrationStatus.ExactDuplicate => "EXACT_DUPLICATE",
         ProductRegistrationStatus.NearDuplicateWarning => "NEAR_DUPLICATE_WARNING",
+        ProductRegistrationStatus.DuplicateProductTag => "DUPLICATE_PRODUCT_TAG",
         _ => "REVIEW"
     };
     var httpStatus = result.Status == ProductRegistrationStatus.Created ? 200 : 409;
@@ -246,6 +263,7 @@ app.MapPost("/v1/stores/{store_id}/products", (
         product = result.Product,
         stock_millis = result.StockMillis,
         candidate_product_id = result.CandidateProductId,
+        operator_fields = input.OperatorFields ?? Array.Empty<ProductOperatorField>(),
         operation_seq = result.OperationSeq,
         idempotent_replay = result.IdempotentReplay
     }, HubJson.Options, statusCode: httpStatus);

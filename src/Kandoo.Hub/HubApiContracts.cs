@@ -49,7 +49,10 @@ public sealed record HubProductRegistrationRequest(
     string? Material = null,
     string? Brand = null,
     string? Barcode = null,
-    string? Specification = null);
+    string? Specification = null,
+    string? Type = null,
+    long? ProductTagNumber = null,
+    IReadOnlyList<ProductOperatorField>? OperatorFields = null);
 
 public sealed record SessionResumeRequest(string? DeviceCredential);
 

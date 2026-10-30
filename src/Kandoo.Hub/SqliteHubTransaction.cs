@@ -84,6 +84,51 @@ internal sealed class SqliteHubTransaction : IHubTransaction
         command.ExecuteNonQuery();
     }
 
+    public IReadOnlyList<ProductOperatorField> GetProductOperatorFields(Guid storeId, string productId)
+    {
+        using var command = Command("""
+            SELECT field_key, field_value FROM product_operator_fields
+            WHERE store_id = $store AND product_id = $product ORDER BY position;
+            """);
+        Add(command, "$store", Uuid(storeId));
+        Add(command, "$product", productId);
+        using var reader = command.ExecuteReader();
+        var fields = new List<ProductOperatorField>();
+        while (reader.Read())
+        {
+            fields.Add(new ProductOperatorField(reader.GetString(0), reader.GetString(1)));
+        }
+
+        return fields;
+    }
+
+    public void SaveProductOperatorFields(Guid storeId, string productId, IReadOnlyList<ProductOperatorField> fields)
+    {
+        var normalized = ProductRegistrationInput.ValidateOperatorFields(fields);
+        using (var delete = Command("""
+            DELETE FROM product_operator_fields WHERE store_id = $store AND product_id = $product;
+            """))
+        {
+            Add(delete, "$store", Uuid(storeId));
+            Add(delete, "$product", productId);
+            delete.ExecuteNonQuery();
+        }
+
+        for (var position = 0; position < normalized.Count; position++)
+        {
+            using var insert = Command("""
+                INSERT INTO product_operator_fields (store_id, product_id, position, field_key, field_value)
+                VALUES ($store, $product, $position, $key, $value);
+                """);
+            Add(insert, "$store", Uuid(storeId));
+            Add(insert, "$product", productId);
+            Add(insert, "$position", position);
+            Add(insert, "$key", normalized[position].Key);
+            Add(insert, "$value", normalized[position].Value);
+            insert.ExecuteNonQuery();
+        }
+    }
+
     public void AppendInventory(InventoryEvent inventoryEvent)
     {
         if (inventoryEvent.QuantityDeltaMillis == 0)
@@ -292,8 +337,13 @@ internal sealed class SqliteHubTransaction : IHubTransaction
         return value is null || value is DBNull ? 0 : Convert.ToInt64(value, CultureInfo.InvariantCulture);
     }
 
-    public long AllocateProductTag(Guid storeId)
+    public long AllocateProductTag(Guid storeId, long? requestedTag = null)
     {
+        if (requestedTag is <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(requestedTag));
+        }
+
         var current = GetProductTagHighWatermark(storeId);
         long maximum;
         using (var command = Command("SELECT COALESCE(MAX(product_tag_number), 0) FROM products WHERE store_id = $store;"))
@@ -305,6 +355,16 @@ internal sealed class SqliteHubTransaction : IHubTransaction
         if (current < maximum)
         {
             throw new InvalidOperationException("PRODUCT_TAG_COUNTER_CONFLICT");
+        }
+
+        if (requestedTag is long requested)
+        {
+            if (requested > current)
+            {
+                SetProductTagHighWatermark(storeId, requested);
+            }
+
+            return requested;
         }
 
         var next = checked(current + 1);

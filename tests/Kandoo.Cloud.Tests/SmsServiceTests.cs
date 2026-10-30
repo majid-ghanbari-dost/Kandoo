@@ -134,6 +134,47 @@ public sealed class SmsServiceTests
         Assert.Null(context.Deliveries.GetCounter(context.StoreId));
     }
 
+    [Fact]
+    public async Task C23_ResendUsesANewOperationAndStatusSurvivesServiceRecreation()
+    {
+        var context = CreateContext(quota: 10, policy: new SmsAbusePolicy(30, 100, 1024));
+        var originalRequest = context.Request("c23-original");
+        Assert.Equal("SENT", (await context.Service.SendAsync(originalRequest)).Status);
+        var originalStatus = context.Service.GetStatus(context.StoreId, "c23-original", context.InvoiceId);
+        Assert.NotNull(originalStatus);
+        Assert.Equal("SENT", originalStatus!.Status);
+        Assert.Equal(originalRequest.InvoiceId, originalStatus!.InvoiceId);
+
+        var resendRequest = new SmsResendRequest(context.StoreId, "c23-resend", "c23-original", context.InvoiceId);
+        var resent = await context.Service.ResendAsync(resendRequest);
+        Assert.Equal("SENT", resent.Status);
+        var resentDelivery = resent.Delivery!;
+        Assert.Equal("c23-resend", resentDelivery.OperationId);
+        Assert.Equal(originalRequest.InvoiceLink, resentDelivery.InvoiceLink);
+        Assert.Equal(originalRequest.RecipientPhone, resentDelivery.RecipientPhone);
+        Assert.Equal(2, context.Provider.CaptureCount);
+        var replay = await context.Service.ResendAsync(resendRequest);
+        Assert.Equal("DUPLICATE", replay.Status);
+        Assert.True(replay.IdempotentReplay);
+        Assert.Equal(2, context.Provider.CaptureCount);
+
+        var recreated = new SmsService(
+            _database.Store,
+            context.Subscriptions,
+            new PostgresSmsDeliveryStore(_database.ConnectionString),
+            new DeterministicStubSmsProvider(),
+            context.Clock);
+        var status = recreated.GetStatus(context.StoreId, "c23-resend", context.InvoiceId);
+        Assert.NotNull(status);
+        Assert.Equal("SENT", status!.Status);
+        Assert.Equal(resentDelivery.ProviderMessageId, status!.ProviderMessageId);
+        Assert.Null(recreated.GetStatus(context.StoreId, "c23-resend", Guid.NewGuid()));
+        Assert.Equal("SMS_DELIVERY_NOT_FOUND", (await recreated.ResendAsync(
+            resendRequest with { InvoiceId = Guid.NewGuid(), OperationId = "c23-wrong-invoice" })).Status);
+        Assert.Equal("VALIDATION_ERROR", (await recreated.ResendAsync(
+            new SmsResendRequest(context.StoreId, "c23-original", "c23-original", context.InvoiceId))).Status);
+    }
+
     private TestContext CreateContext(int quota = 100, SmsAbusePolicy? policy = null)
     {
         var storeId = Guid.NewGuid();

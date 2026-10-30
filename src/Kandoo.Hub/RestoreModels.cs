@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Kandoo.Core;
 
 namespace Kandoo.Hub;
@@ -212,6 +213,13 @@ public sealed class HubDraftLockRestore
     }
 }
 
+public sealed record HubProductOperatorFieldRestore(
+    Guid StoreId,
+    string ProductId,
+    int Position,
+    string Key,
+    string Value);
+
 public sealed class HubReplayedState
 {
     public HubStoreRestore Store { get; set; } = new();
@@ -219,6 +227,9 @@ public sealed class HubReplayedState
     public List<JsonElement> Memberships { get; set; } = new();
     public List<JsonElement> Customers { get; set; } = new();
     public List<Product> Products { get; set; } = new();
+    // Null preserves the pre-C-23 canonical projection byte-for-byte when no operator fields exist.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<HubProductOperatorFieldRestore>? ProductOperatorFields { get; set; }
     public List<InventoryEvent> InventoryEvents { get; set; } = new();
     public List<JsonElement> Sales { get; set; } = new();
     public List<HubInvoiceRestore> Invoices { get; set; } = new();

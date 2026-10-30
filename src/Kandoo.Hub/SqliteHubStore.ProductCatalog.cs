@@ -34,7 +34,13 @@ public sealed partial class SqliteHubStore
                 return Registration(ProductRegistrationStatus.NearDuplicateWarning, CandidateProductId: candidate.ProductId);
             }
 
-            var tag = concrete.AllocateProductTag(request.StoreId);
+            if (input.ProductTagNumber is long requestedTag &&
+                concrete.GetProductByTag(request.StoreId, requestedTag) is not null)
+            {
+                return Registration(ProductRegistrationStatus.DuplicateProductTag);
+            }
+
+            var tag = concrete.AllocateProductTag(request.StoreId, input.ProductTagNumber);
             var product = new Product(
                 request.StoreId,
                 productId,
@@ -53,6 +59,7 @@ public sealed partial class SqliteHubStore
                 input.Brand,
                 input.Barcode);
             concrete.SaveProduct(product);
+            concrete.SaveProductOperatorFields(request.StoreId, productId, input.OperatorFields ?? Array.Empty<ProductOperatorField>());
             var stock = input.InitialStockMillis!.Value;
             if (stock != 0)
             {
@@ -100,6 +107,36 @@ public sealed partial class SqliteHubStore
             ThrowIfDisposed();
             using var transaction = new SqliteHubTransaction(_connection);
             return transaction.GetProductByTag(storeId, productTagNumber);
+        }
+    }
+
+    public IReadOnlyList<Product> ListProducts(Guid storeId)
+    {
+        if (storeId == Guid.Empty)
+        {
+            throw new ArgumentException("A store is required.", nameof(storeId));
+        }
+
+        lock (_gate)
+        {
+            ThrowIfDisposed();
+            using var transaction = new SqliteHubTransaction(_connection);
+            return transaction.GetProducts().Where(product => product.StoreId == storeId).ToArray();
+        }
+    }
+
+    public IReadOnlyList<ProductOperatorField> GetProductOperatorFields(Guid storeId, string productId)
+    {
+        if (storeId == Guid.Empty || string.IsNullOrWhiteSpace(productId))
+        {
+            throw new ArgumentException("A store and product are required.");
+        }
+
+        lock (_gate)
+        {
+            ThrowIfDisposed();
+            using var transaction = new SqliteHubTransaction(_connection);
+            return transaction.GetProductOperatorFields(storeId, productId);
         }
     }
 

@@ -33,6 +33,7 @@ public sealed class HubApiFactory : WebApplicationFactory<Program>
     public ManualHubClock Clock { get; } = new();
     public SqliteHubStore TestStore { get; }
     public SqliteHubStore Store => TestStore;
+    public DeterministicHubSmsGateway TestSms { get; } = new();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -53,10 +54,17 @@ public sealed class HubApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<IHubAccessStore>();
             services.RemoveAll<HubOperationService>();
             services.RemoveAll<HubProductCatalogService>();
+            services.RemoveAll<ModeBReviewService>();
+            services.RemoveAll<IHubSmsDeliveryGateway>();
             services.AddSingleton<IHubStore>(TestStore);
             services.AddSingleton<IHubAccessStore>(TestStore);
+            services.AddSingleton<IHubSmsDeliveryGateway>(TestSms);
             services.AddSingleton<HubOperationService>();
             services.AddSingleton(new HubProductCatalogService(TestStore));
+            services.AddSingleton(provider => new ModeBReviewService(
+                TestStore,
+                provider.GetRequiredService<HubOperationService>(),
+                provider.GetRequiredService<IClock>()));
         });
     }
 
@@ -76,6 +84,70 @@ public sealed class HubApiFactory : WebApplicationFactory<Program>
             }
         }
     }
+}
+
+public sealed class DeterministicHubSmsGateway : IHubSmsDeliveryGateway
+{
+    private readonly object _gate = new();
+    private readonly Dictionary<(Guid StoreId, string OperationId), Entry> _entries = new();
+
+    public int CaptureCount { get; private set; }
+
+    public void Seed(Guid storeId, Guid invoiceId, string operationId)
+    {
+        lock (_gate)
+        {
+            _entries[(storeId, operationId)] = new Entry(invoiceId, operationId, "stub-original", DateTimeOffset.UnixEpoch);
+        }
+    }
+
+    public Task<HubSmsGatewayResult> ResendAsync(
+        Guid storeId,
+        Guid invoiceId,
+        string operationId,
+        string originalOperationId,
+        CancellationToken cancellationToken = default)
+    {
+        lock (_gate)
+        {
+            if (!_entries.TryGetValue((storeId, originalOperationId), out var original) || original.InvoiceId != invoiceId)
+            {
+                return Task.FromResult(new HubSmsGatewayResult("SMS_DELIVERY_NOT_FOUND"));
+            }
+
+            if (_entries.TryGetValue((storeId, operationId), out var existing))
+            {
+                return Task.FromResult(existing.InvoiceId == invoiceId && existing.OriginalOperationId == originalOperationId
+                    ? Result(storeId, operationId, existing, "DUPLICATE", true)
+                    : new HubSmsGatewayResult("OPERATION_ID_CONFLICT"));
+            }
+
+            CaptureCount++;
+            var entry = new Entry(invoiceId, originalOperationId, $"stub-resend-{CaptureCount}", DateTimeOffset.UnixEpoch.AddSeconds(CaptureCount));
+            _entries[(storeId, operationId)] = entry;
+            return Task.FromResult(Result(storeId, operationId, entry, "SENT"));
+        }
+    }
+
+    public Task<HubSmsGatewayResult?> GetStatusAsync(
+        Guid storeId,
+        Guid invoiceId,
+        string operationId,
+        CancellationToken cancellationToken = default)
+    {
+        lock (_gate)
+        {
+            return Task.FromResult<HubSmsGatewayResult?>(
+                _entries.TryGetValue((storeId, operationId), out var entry) && entry.InvoiceId == invoiceId
+                    ? Result(storeId, operationId, entry, "SENT")
+                    : null);
+        }
+    }
+
+    private static HubSmsGatewayResult Result(Guid storeId, string operationId, Entry entry, string status, bool replay = false) =>
+        new(status, operationId, entry.InvoiceId, replay, entry.ProviderMessageId, entry.CreatedAt, entry.CreatedAt);
+
+    private sealed record Entry(Guid InvoiceId, string OriginalOperationId, string ProviderMessageId, DateTimeOffset CreatedAt);
 }
 
 public sealed record ApiResponse(HttpStatusCode StatusCode, JsonElement Body);
@@ -198,6 +270,19 @@ public sealed class HubApiClient : IDisposable
     public async Task<ApiResponse> Post(string path, object? body, string? token = null)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, path);
+        if (token is not null)
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        }
+
+        request.Content = new StringContent(JsonSerializer.Serialize(body, HubJson.Options), Encoding.UTF8, "application/json");
+        using var response = await _client.SendAsync(request);
+        return await Read(response);
+    }
+
+    public async Task<ApiResponse> Patch(string path, object? body, string? token = null)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Patch, path);
         if (token is not null)
         {
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);

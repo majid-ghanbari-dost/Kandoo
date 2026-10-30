@@ -8,6 +8,8 @@ public interface IHubTransaction : IDisposable
     Product? GetProduct(Guid storeId, string productId);
     IReadOnlyList<Product> GetProducts();
     void SaveProduct(Product product);
+    IReadOnlyList<ProductOperatorField> GetProductOperatorFields(Guid storeId, string productId);
+    void SaveProductOperatorFields(Guid storeId, string productId, IReadOnlyList<ProductOperatorField> fields);
     void AppendInventory(InventoryEvent inventoryEvent);
     IReadOnlyList<InventoryEvent> GetInventoryEvents();
     Invoice? GetInvoice(Guid storeId, Guid invoiceId);

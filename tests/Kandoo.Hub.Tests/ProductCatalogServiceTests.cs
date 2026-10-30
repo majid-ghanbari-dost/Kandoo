@@ -104,6 +104,7 @@ public sealed class ProductCatalogServiceTests
             Assert.Equal(1L, retired.Product.ProductTagNumber);
             Assert.Equal(3L, catalog.Register(S1, D1, "create-3", Input("Alpha", "prod-3")).Product!.ProductTagNumber);
             var state = store.ExportRestoreState(S1, 1);
+            Assert.False(state.TryGetProperty("product_operator_fields", out _));
             saved = new JsonElementState(state, CanonicalJson.ReplayedStateHash(state));
             entries = store.ReadBatch(S1, 100, 1_048_576)!.Entries!;
             Assert.Equal(4, entries.Count);
@@ -132,6 +133,88 @@ public sealed class ProductCatalogServiceTests
         Assert.Equal(4L, restored.GetTagHighWatermark(S1));
         var pending = Assert.Single(fresh.ReadBatch(S1, 100, 1_048_576)!.Entries!);
         Assert.Equal(5L, pending.OperationSeq);
+    }
+
+    [Fact]
+    public void C23_SuppliedTagAndOrderedOperatorFieldsSurviveReplayAndRestore()
+    {
+        using var store = new SqliteHubStore("Data Source=:memory:;Pooling=False");
+        var catalog = new HubProductCatalogService(store);
+        var fields = new[]
+        {
+            new ProductOperatorField("z-last-alphabetically", "first-by-operator"),
+            new ProductOperatorField("a-first-alphabetically", "second-by-operator")
+        };
+        var input = new ProductRegistrationInput(
+            "Tagged", 2_000, 0, "tagged", ProductTagNumber: 41, OperatorFields: fields);
+        var created = catalog.Register(S1, D1, "create-tagged", input);
+
+        Assert.Equal(ProductRegistrationStatus.Created, created.Status);
+        Assert.Equal(41L, created.Product!.ProductTagNumber);
+        Assert.Equal(41L, catalog.GetTagHighWatermark(S1));
+        Assert.Equal(fields, catalog.GetOperatorFields(S1, "tagged"));
+        Assert.True(catalog.Register(S1, D1, "create-tagged", input).IdempotentReplay);
+        Assert.Equal(1, store.LoadOperationLog().Count(S1));
+
+        var duplicateTag = catalog.Register(S1, D1, "duplicate-tag", new ProductRegistrationInput(
+            "Other", 2_000, 0, "other", ProductTagNumber: 41));
+        Assert.Equal(ProductRegistrationStatus.DuplicateProductTag, duplicateTag.Status);
+        Assert.Equal(41L, catalog.GetTagHighWatermark(S1));
+        Assert.Equal(42L, catalog.Register(S1, D1, "create-next", Input("Next", "next", 0)).Product!.ProductTagNumber);
+
+        var state = store.ExportRestoreState(S1, 1);
+        var hash = CanonicalJson.ReplayedStateHash(state);
+        var entries = store.ReadBatch(S1, 100, 1_048_576)!.Entries!;
+        Assert.Equal(3, entries.Count);
+        Assert.Equal("z-last-alphabetically", state.GetProperty("product_operator_fields")[0].GetProperty("key").GetString());
+
+        using var fresh = new SqliteHubStore("Data Source=:memory:;Pooling=False");
+        fresh.RestoreReplayedState(state, entries, hash);
+        var restored = new HubProductCatalogService(fresh);
+        Assert.Equal(fields, restored.GetOperatorFields(S1, "tagged"));
+        Assert.Equal(42L, restored.GetTagHighWatermark(S1));
+        Assert.Equal(hash, CanonicalJson.ReplayedStateHash(fresh.ExportRestoreState(S1, 1)));
+    }
+
+    [Fact]
+    public void C23_OperatorFieldsAreBoundedOrderedAndUnique()
+    {
+        using var store = new SqliteHubStore("Data Source=:memory:;Pooling=False");
+        var catalog = new HubProductCatalogService(store);
+        var invalid = new ProductRegistrationInput(
+            "Invalid", 1_000, 0, "invalid",
+            OperatorFields: new[] { new ProductOperatorField("same", "one"), new ProductOperatorField("same", "two") });
+
+        Assert.Throws<ArgumentException>(() => catalog.Register(S1, D1, "invalid-fields", invalid));
+        Assert.Equal(0, store.LoadOperationLog().Count(S1));
+        Assert.Equal(0L, catalog.GetTagHighWatermark(S1));
+    }
+
+    [Fact]
+    public void C23_LegacyCreatePayloadKeepsItsRequestHash()
+    {
+        using var store = new SqliteHubStore("Data Source=:memory:;Pooling=False");
+        var catalog = new HubProductCatalogService(store);
+        catalog.Register(S1, D1, "legacy-create", new ProductRegistrationInput(
+            "Legacy", 1_000, 0, "legacy", Category: "old", Specification: null));
+        var legacyPayload = HubJson.Element(new
+        {
+            product_id = "legacy",
+            name = "Legacy",
+            unit_price_rials = 1_000,
+            initial_stock_millis = 0,
+            acknowledged_candidate_id = (string?)null,
+            category = "old",
+            color = (string?)null,
+            size = (string?)null,
+            material = (string?)null,
+            brand = (string?)null,
+            barcode = (string?)null,
+            specification = (string?)null
+        });
+        var expected = new OperationRequest(S1, D1, "legacy-create", "product.create", null, legacyPayload).RequestHash;
+
+        Assert.Equal(expected, store.LoadOperationLog().Get(S1, "legacy-create")!.RequestHash);
     }
 
     private static ProductRegistrationInput Input(
