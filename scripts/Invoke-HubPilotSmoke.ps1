@@ -11,6 +11,7 @@ $installA = Join-Path $work 'install-a'
 $installB = Join-Path $work 'install-b'
 $data = Join-Path $work 'data'
 $null = New-Item -ItemType Directory -Path $work
+$null = New-Item -ItemType Directory -Path $data
 $script:baseUrl = $null
 $process = $null
 $dumpLogs = @()
