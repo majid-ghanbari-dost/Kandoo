@@ -8,7 +8,17 @@ $ErrorActionPreference = 'Stop'
 $log = Join-Path $env:RUNNER_TEMP ("kandoo-ci-step-" + [guid]::NewGuid().ToString('N') + '.log')
 $exitCode = 1
 try {
-    & $ScriptPath @ScriptArguments *>&1 | Tee-Object -FilePath $log
+    # Array splatting is positional in PowerShell. The workflow supplies named
+    # argument pairs, so bind them by name before invoking the gated script.
+    $namedArguments = @{}
+    for ($index = 0; $index -lt $ScriptArguments.Count; $index += 2) {
+        $name = $ScriptArguments[$index]
+        if ($name -notmatch '^-[A-Za-z][A-Za-z0-9-]*$' -or $index + 1 -ge $ScriptArguments.Count) {
+            throw 'ScriptArguments must contain named parameter/value pairs.'
+        }
+        $namedArguments[$name.Substring(1)] = $ScriptArguments[$index + 1]
+    }
+    & $ScriptPath @namedArguments *>&1 | Tee-Object -FilePath $log
     $exitCode = ($null -eq $LASTEXITCODE) ? 0 : $LASTEXITCODE
 }
 catch {
