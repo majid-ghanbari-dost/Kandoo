@@ -133,13 +133,23 @@ public sealed class CustomerAccountService
         }
 
         var body = SmsMessageTemplates.RenderOtp(code);
-        var providerResult = await _sms.SendAsync(new SmsProviderRequest(
-            Guid.Empty,
-            operationId,
-            challengeId,
-            phone,
-            body,
-            fingerprint), cancellationToken);
+        SmsProviderResult providerResult;
+        try
+        {
+            providerResult = await _sms.SendAsync(new SmsProviderRequest(
+                Guid.Empty,
+                operationId,
+                challengeId,
+                phone,
+                body,
+                fingerprint), cancellationToken);
+        }
+        catch (SmsProviderUnavailableException exception)
+        {
+            return CustomerAccountResult.Failure(
+                503, exception.Code, "The SMS provider is unavailable.", "CONFIGURE_SMS_PROVIDER");
+        }
+
         _store.CompleteOtpIssue(challengeId, providerResult.ProviderMessageId, _clock.UtcNow);
         return CustomerAccountResult.Success(201, new
         {

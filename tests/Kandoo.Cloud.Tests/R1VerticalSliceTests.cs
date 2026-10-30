@@ -131,6 +131,48 @@ public sealed class R1VerticalSliceTests : IDisposable
     }
 
     [Fact]
+    public async Task C24_OfflineIssueThenSyncReplayAndReissueStayDuplicateFree()
+    {
+        var slice = await CreateIssuedSlice();
+        var issueReplay = await Submit(
+            slice.StoreId, slice.Device.Session, "r1-issue-1", "invoice.issue", new { invoice_id = slice.InvoiceId });
+        Assert.Equal(HttpStatusCode.OK, issueReplay.StatusCode);
+        Assert.True(issueReplay.Body.IdempotentReplay);
+        Assert.Equal(slice.Issue.Body.OperationSeq, issueReplay.Body.OperationSeq);
+        Assert.Equal(1, issueReplay.Body.Response.GetProperty("invoice").GetProperty("display_number").GetInt64());
+        Assert.Equal(4, _hubStore.LoadOperationLog().Count(slice.StoreId));
+        Assert.Equal(4, _hubStore.GetOutboxDepth(slice.StoreId));
+
+        var offline = new HubCloudReplicationClient(
+            _hubStore, new OfflineTransport(), ReplicationOptions());
+        var disconnected = await offline.ReplicateAsync(slice.StoreId);
+        Assert.Equal("RETRY_REQUIRED", disconnected.Status);
+        Assert.Equal("NETWORK_ERROR", disconnected.ErrorCode);
+        Assert.Equal(4, disconnected.OutboxDepth);
+
+        _database.Store.Seed(CloudSeed(slice.StoreId, _writerDeviceId));
+        var recovered = new HubCloudReplicationClient(
+            _hubStore,
+            new LostFirstResponseTransport(new HttpCloudReplicationTransport(_cloud)),
+            ReplicationOptions(attempts: 2));
+        var replayed = await recovered.ReplicateAsync(slice.StoreId);
+        Assert.Equal("DUPLICATE", replayed.Status);
+        Assert.Equal(2, replayed.Attempts);
+        Assert.Equal(0, replayed.OutboxDepth);
+        Assert.Equal("IDLE", (await recovered.ReplicateAsync(slice.StoreId)).Status);
+
+        var snapshot = _database.Store.GetSnapshot(slice.StoreId)!;
+        Assert.Equal(4, snapshot.OperationIdCount);
+        Assert.Equal(4, snapshot.EntryCount);
+        var token = _database.Store.GetPublicToken(slice.StoreId, slice.InvoiceId);
+        Assert.NotNull(token);
+        var publicInvoice = _database.Store.GetPublicInvoice(token!);
+        Assert.NotNull(publicInvoice);
+        Assert.Equal(1, publicInvoice!.View.DisplayNumber);
+        Assert.Single(publicInvoice.LineItems);
+    }
+
+    [Fact]
     public async Task C15_R1_StoreACannotReadStoreB()
     {
         var storeA = Guid.NewGuid();
@@ -274,9 +316,9 @@ public sealed class R1VerticalSliceTests : IDisposable
         ProjectionVersion = 0
     };
 
-    private static HubReplicationOptions ReplicationOptions() => new()
+    private static HubReplicationOptions ReplicationOptions(int attempts = 1) => new()
     {
-        MaxAttempts = 1,
+        MaxAttempts = attempts,
         DelayAsync = (_, _) => Task.CompletedTask
     };
 
@@ -328,6 +370,32 @@ public sealed class R1VerticalSliceTests : IDisposable
     private sealed class R1Clock : IClock
     {
         public DateTimeOffset UtcNow { get; set; }
+    }
+
+    private sealed class OfflineTransport : ICloudReplicationTransport
+    {
+        public Task<CloudTransportResponse> SendAsync(ReplicationBatch batch, CancellationToken cancellationToken) =>
+            throw new HttpRequestException("C-24 simulated WAN outage before Cloud receipt.");
+    }
+
+    private sealed class LostFirstResponseTransport : ICloudReplicationTransport
+    {
+        private readonly ICloudReplicationTransport _inner;
+        private int _calls;
+
+        public LostFirstResponseTransport(ICloudReplicationTransport inner) => _inner = inner;
+
+        public async Task<CloudTransportResponse> SendAsync(ReplicationBatch batch, CancellationToken cancellationToken)
+        {
+            var response = await _inner.SendAsync(batch, cancellationToken);
+            _calls++;
+            if (_calls == 1)
+            {
+                throw new HttpRequestException("C-24 simulated lost response after Cloud commit.");
+            }
+
+            return response;
+        }
     }
 
     private sealed class R1Subscriptions : ISmsSubscriptionMetadata
