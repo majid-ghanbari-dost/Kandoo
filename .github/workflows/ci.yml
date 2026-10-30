@@ -37,16 +37,43 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Check out pinned E-30 contract read-only
+        uses: actions/checkout@v4
+        with:
+          repository: majid-ghanbari-dost/Kandoo-Digital-Invoice
+          ref: 29d842178cd39d3f54f14f3716c44c585911467b
+          path: .e30/Kandoo-Digital-Invoice
+          fetch-depth: 1
+          persist-credentials: false
+
       - name: Set up .NET 8
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
+
+      - name: Set up Python 3.11 for C-21
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
 
       - name: Restore
         run: dotnet restore Kandoo.sln
 
       - name: Build
         run: dotnet build Kandoo.sln --configuration Release --no-restore
+
+      - name: Run C-21 pinned extraction bridge golden probe
+        shell: pwsh
+        run: scripts/Invoke-CiStep.ps1 -StepName 'Run C-21 pinned extraction bridge golden probe' -ScriptPath scripts/Invoke-C21ExtractionBridge.ps1 -ScriptArguments @('-PythonRepository', '.e30/Kandoo-Digital-Invoice', '-ArtifactPath', 'artifacts/c21-extraction-bridge-ubuntu-latest.json')
+
+      - name: Upload C-21 extraction bridge evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: c21-extraction-bridge-ubuntu-latest
+          path: artifacts/c21-extraction-bridge-ubuntu-latest.json
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Generate and validate C-23 OpenAPI
         env:
@@ -108,16 +135,43 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Check out pinned E-30 contract read-only
+        uses: actions/checkout@v4
+        with:
+          repository: majid-ghanbari-dost/Kandoo-Digital-Invoice
+          ref: 29d842178cd39d3f54f14f3716c44c585911467b
+          path: .e30/Kandoo-Digital-Invoice
+          fetch-depth: 1
+          persist-credentials: false
+
       - name: Set up .NET 8
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
+
+      - name: Set up Python 3.11 for C-21
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
 
       - name: Restore
         run: dotnet restore Kandoo.sln
 
       - name: Build
         run: dotnet build Kandoo.sln --configuration Release --no-restore
+
+      - name: Run C-21 pinned extraction bridge golden probe
+        shell: pwsh
+        run: scripts/Invoke-CiStep.ps1 -StepName 'Run C-21 pinned extraction bridge golden probe' -ScriptPath scripts/Invoke-C21ExtractionBridge.ps1 -ScriptArguments @('-PythonRepository', '.e30/Kandoo-Digital-Invoice', '-ArtifactPath', 'artifacts/c21-extraction-bridge-windows-latest.json')
+
+      - name: Upload C-21 extraction bridge evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: c21-extraction-bridge-windows-latest
+          path: artifacts/c21-extraction-bridge-windows-latest.json
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Test Core and write TRX
         run: dotnet test tests/Kandoo.Core.Tests/Kandoo.Core.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Core.Tests/TestResults --logger "trx;LogFileName=test-results.trx"

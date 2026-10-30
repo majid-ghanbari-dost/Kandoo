@@ -29,6 +29,12 @@ builder.Services.AddSingleton<HubOperationService>();
 builder.Services.AddSingleton(new HubProductCatalogService(hubStore));
 builder.Services.AddSingleton<IHubInvoicePrintAdapter, DisabledHubInvoicePrintAdapter>();
 builder.Services.AddSingleton<IHubSmsDeliveryGateway, DisabledHubSmsDeliveryGateway>();
+builder.Services.AddSingleton(new ExtractorBridgeOptions
+{
+    ExecutablePath = builder.Configuration["Hub:PythonExtractorPath"] ?? string.Empty
+});
+builder.Services.AddSingleton<IExtractorProcessRunner, ExtractorProcessRunner>();
+builder.Services.AddSingleton<CaptureFolderExtractionBridge>();
 builder.Services.AddSingleton(provider => new ModeBReviewService(
     hubStore,
     provider.GetRequiredService<HubOperationService>(),

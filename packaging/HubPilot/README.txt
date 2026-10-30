@@ -22,5 +22,8 @@ change that external data directory.
 
 Extractor boundary
 ------------------
-Hub:PythonExtractorPath is an empty configuration location only. No extractor
-executable or interface is included before the separately gated C-21 task.
+Hub:PythonExtractorPath is empty and disables the C-21 bridge by default. Set it
+only to a fully qualified kandoo-extract.exe path from the pinned E-30 bundle;
+the executable is not bundled here. Capture-folder extraction uses the frozen
+stdout JSON contract and fails closed to REVIEW on timeout. Extraction alone
+creates no customer, sale, stock movement, or native invoice.
