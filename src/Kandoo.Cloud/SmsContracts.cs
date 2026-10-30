@@ -12,6 +12,23 @@ public sealed record SmsSendRequest(
     string RecipientPhone,
     string InvoiceLink);
 
+public sealed record SmsResendRequest(
+    Guid StoreId,
+    string OperationId,
+    string OriginalOperationId,
+    Guid InvoiceId);
+
+public sealed record SmsDeliveryStatus(
+    Guid StoreId,
+    string OperationId,
+    Guid InvoiceId,
+    string Status,
+    string? ProviderMessageId,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? SentAt,
+    int QuotaRemaining,
+    int RateRemaining);
+
 public sealed record SmsSubscriptionMetadata(
     Guid StoreId,
     bool IsActive,
@@ -93,6 +110,10 @@ public interface ISmsDeliveryStore
         DateTimeOffset now);
 
     SmsStoreCounter? GetCounter(Guid storeId);
+
+    SmsDeliveryStatus? Get(Guid storeId, string operationId);
+
+    SmsSendRequest? GetSource(Guid storeId, string operationId);
 }
 
 public static class SmsMessageTemplates

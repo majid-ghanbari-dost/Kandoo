@@ -12,9 +12,14 @@ var postgresConnection = builder.Configuration.GetConnectionString("CloudPostgre
 var cloudStore = new PostgresCloudStore(postgresConnection);
 builder.Services.AddSingleton<ICloudStore>(cloudStore);
 builder.Services.AddSingleton<IPublicInvoiceStore>(cloudStore);
-builder.Services.AddSingleton(new CustomerAccountService(
+var farazOptions = builder.Configuration.GetSection("FarazSms").Get<FarazSmsOptions>() ?? new FarazSmsOptions();
+builder.Services.AddSingleton(farazOptions);
+builder.Services.AddSingleton<ISmsProvider>(builder.Environment.IsEnvironment("Testing")
+    ? (ISmsProvider)new DeterministicStubSmsProvider()
+    : new FarazSmsProvider(farazOptions));
+builder.Services.AddSingleton(serviceProvider => new CustomerAccountService(
     new PostgresCustomerAccountStore(postgresConnection, cloudStore),
-    new DeterministicStubSmsProvider(),
+    serviceProvider.GetRequiredService<ISmsProvider>(),
     new SystemCloudClock()));
 builder.Services.AddSingleton(new PublicInvoiceRateLimiter(
     new SystemCloudClock(),

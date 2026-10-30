@@ -70,6 +70,12 @@ public sealed class ModeBReviewService
 
     public IReadOnlyList<ModeBReviewRecord> List(Guid nativeStoreId) => _store.ListModeBReviews(nativeStoreId);
 
+    public ModeBReviewRecord? Get(Guid nativeStoreId, string reviewId)
+    {
+        var review = _store.GetModeBReview(reviewId);
+        return review?.NativeStoreId == nativeStoreId ? review : null;
+    }
+
     public IReadOnlyList<ModeBAttentionCell> ListAttention(string reviewId)
     {
         var review = RequireReview(reviewId);

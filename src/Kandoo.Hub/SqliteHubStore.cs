@@ -447,6 +447,29 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore, IHubRep
         }
     }
 
+    public void BackupTo(string destinationPath)
+    {
+        if (string.IsNullOrWhiteSpace(destinationPath))
+        {
+            throw new ArgumentException("A backup destination is required.", nameof(destinationPath));
+        }
+
+        lock (_gate)
+        {
+            ThrowIfDisposed();
+            var fullPath = Path.GetFullPath(destinationPath);
+            var directory = Path.GetDirectoryName(fullPath);
+            if (!string.IsNullOrEmpty(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            using var destination = new SqliteConnection($"Data Source={fullPath};Pooling=False");
+            destination.Open();
+            _connection.BackupDatabase(destination);
+        }
+    }
+
     public void Dispose()
     {
         lock (_gate)
@@ -662,6 +685,16 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore, IHubRep
         EnsureColumn("store_counters", "product_tag_high_watermark", "INTEGER NOT NULL DEFAULT 0");
         using var tagCommand = _connection.CreateCommand();
         tagCommand.CommandText = """
+            CREATE TABLE IF NOT EXISTS product_operator_fields (
+                store_id TEXT NOT NULL,
+                product_id TEXT NOT NULL,
+                position INTEGER NOT NULL,
+                field_key TEXT NOT NULL,
+                field_value TEXT NOT NULL,
+                PRIMARY KEY (store_id, product_id, position),
+                UNIQUE (store_id, product_id, field_key),
+                FOREIGN KEY (store_id, product_id) REFERENCES products(store_id, product_id)
+            );
             CREATE UNIQUE INDEX IF NOT EXISTS ux_products_store_tag
                 ON products(store_id, product_tag_number) WHERE product_tag_number IS NOT NULL;
             CREATE TRIGGER IF NOT EXISTS product_tag_regression_forbidden

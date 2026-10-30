@@ -236,6 +236,38 @@ public sealed class PostgresSmsDeliveryStore : ISmsDeliveryStore
             : null;
     }
 
+    public SmsDeliveryStatus? Get(Guid storeId, string operationId)
+    {
+        using var connection = Open();
+        using var command = new NpgsqlCommand(
+            DeliverySelect + " WHERE store_id = @store AND operation_id = @operation", connection);
+        command.Parameters.AddWithValue("store", storeId);
+        command.Parameters.AddWithValue("operation", operationId);
+        using var reader = command.ExecuteReader();
+        return !reader.Read()
+            ? null
+            : new SmsDeliveryStatus(
+                reader.GetGuid(0), reader.GetString(1), reader.GetGuid(2), reader.GetString(8),
+                reader.IsDBNull(9) ? null : reader.GetString(9),
+                reader.GetFieldValue<DateTimeOffset>(10),
+                reader.IsDBNull(11) ? null : reader.GetFieldValue<DateTimeOffset>(11),
+                reader.GetInt32(12), reader.GetInt32(13));
+    }
+
+    public SmsSendRequest? GetSource(Guid storeId, string operationId)
+    {
+        using var connection = Open();
+        using var command = new NpgsqlCommand(
+            DeliverySelect + " WHERE store_id = @store AND operation_id = @operation", connection);
+        command.Parameters.AddWithValue("store", storeId);
+        command.Parameters.AddWithValue("operation", operationId);
+        using var reader = command.ExecuteReader();
+        return !reader.Read()
+            ? null
+            : new SmsSendRequest(
+                reader.GetGuid(0), reader.GetString(1), reader.GetGuid(2), reader.GetString(3), reader.GetString(4));
+    }
+
     private NpgsqlConnection Open()
     {
         EnsureSchema();

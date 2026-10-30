@@ -147,6 +147,52 @@ public sealed class HubOperationService
             });
         }
 
+        var name = current.Name;
+        var normalizedName = current.NormalizedName;
+        var similarityKey = current.SimilarityKey;
+        if (request.Payload.TryGetProperty("name", out _))
+        {
+            name = RequiredString(request.Payload, "name").Trim();
+            normalizedName = ProductNameNormalizer.Normalize(name);
+            similarityKey = ProductNameNormalizer.SimilarityKey(name);
+            var conflict = transaction.GetProducts().FirstOrDefault(product =>
+                product.StoreId == request.StoreId && product.IsActive && product.ProductId != productId &&
+                product.NormalizedName == normalizedName);
+            if (conflict is not null)
+            {
+                return Rejected("PRODUCT_NAME_CONFLICT", new
+                {
+                    conflicting_product_id = conflict.ProductId,
+                    product = ProductProjection(conflict)
+                });
+            }
+        }
+
+        var category = current.Category;
+        var hasType = request.Payload.TryGetProperty("type", out _);
+        var hasCategory = request.Payload.TryGetProperty("category", out _);
+        if (hasType && hasCategory)
+        {
+            var type = OptionalString(request.Payload, "type");
+            if (type != OptionalString(request.Payload, "category"))
+            {
+                throw new DomainException("VALIDATION_ERROR");
+            }
+
+            category = type;
+        }
+        else if (hasType)
+        {
+            category = OptionalString(request.Payload, "type");
+        }
+        else if (hasCategory)
+        {
+            category = OptionalString(request.Payload, "category");
+        }
+
+        var color = request.Payload.TryGetProperty("color", out _)
+            ? OptionalString(request.Payload, "color")
+            : current.Color;
         var price = current.UnitPriceRials;
         if (request.Payload.TryGetProperty("unit_price_rials", out var priceElement))
         {
@@ -164,14 +210,70 @@ public sealed class HubOperationService
                 : specificationElement.GetString() ?? throw new DomainException("VALIDATION_ERROR");
         }
 
+        IReadOnlyList<ProductOperatorField>? operatorFields = null;
+        if (request.Payload.TryGetProperty("operator_fields", out var fieldsElement))
+        {
+            if (fieldsElement.ValueKind != JsonValueKind.Array)
+            {
+                throw new DomainException("VALIDATION_ERROR");
+            }
+
+            try
+            {
+                var fields = JsonSerializer.Deserialize<ProductOperatorField[]>(fieldsElement.GetRawText(), HubJson.Options)
+                    ?? throw new DomainException("VALIDATION_ERROR");
+                operatorFields = ProductRegistrationInput.ValidateOperatorFields(fields);
+            }
+            catch (Exception exception) when (exception is JsonException or ArgumentException)
+            {
+                throw new DomainException("VALIDATION_ERROR");
+            }
+        }
+
+        var currentStock = transaction.GetInventoryEvents()
+            .Where(value => value.StoreId == request.StoreId && value.ProductId == productId)
+            .Aggregate(0L, (stock, value) => checked(stock + value.QuantityDeltaMillis));
+        var nextStock = currentStock;
+        if (request.Payload.TryGetProperty("stock_millis", out var stockElement))
+        {
+            if (stockElement.ValueKind != JsonValueKind.Number || !stockElement.TryGetInt64(out nextStock) || nextStock < 0)
+            {
+                throw new DomainException("VALIDATION_ERROR");
+            }
+        }
+
         var updated = current with
         {
+            Name = name,
+            NormalizedName = normalizedName,
+            SimilarityKey = similarityKey,
             UnitPriceRials = price,
             Specification = specification,
+            Category = category,
+            Color = color,
             Version = checked(current.Version + 1)
         };
         transaction.SaveProduct(updated);
-        return Accepted(new { product = ProductProjection(updated), version = updated.Version });
+        if (operatorFields is not null)
+        {
+            transaction.SaveProductOperatorFields(request.StoreId, productId, operatorFields);
+        }
+
+        var delta = checked(nextStock - currentStock);
+        if (delta != 0)
+        {
+            transaction.AppendInventory(new InventoryEvent(
+                Guid.NewGuid(), request.StoreId, productId, delta, InventoryEventType.Adjustment,
+                request.OperationId, request.DeviceId, Reason: "PRODUCT_STOCK_EDIT"));
+        }
+
+        return Accepted(new
+        {
+            product = ProductProjection(updated),
+            version = updated.Version,
+            stock_millis = nextStock,
+            operator_fields = operatorFields ?? transaction.GetProductOperatorFields(request.StoreId, productId)
+        });
     }
 
     private string CreateDraft(OperationRequest request, IHubTransaction transaction)
@@ -380,17 +482,30 @@ public sealed class HubOperationService
     {
         "SUCCEEDED" => 200,
         "PRODUCT_NOT_FOUND" or "INVOICE_NOT_FOUND" => 404,
-        "VERSION_CONFLICT" or "DRAFT_LOCK_CONFLICT" or "DRAFT_ALREADY_ACTIVE" or
+        "VERSION_CONFLICT" or "PRODUCT_NAME_CONFLICT" or "DRAFT_LOCK_CONFLICT" or "DRAFT_ALREADY_ACTIVE" or
             "LOCK_NOT_OWNED" or "INVOICE_NOT_ISSUABLE" => 409,
         _ => 400
     };
 
     private static object ProductProjection(Product product) => new
     {
+        store_id = product.StoreId,
         product_id = product.ProductId,
+        name = product.Name,
+        normalized_name = product.NormalizedName,
+        similarity_key = product.SimilarityKey,
         unit_price_rials = product.UnitPriceRials,
         version = product.Version,
-        specification = product.Specification
+        is_active = product.IsActive,
+        specification = product.Specification,
+        product_tag_number = product.ProductTagNumber,
+        type = product.Category,
+        category = product.Category,
+        color = product.Color,
+        size = product.Size,
+        material = product.Material,
+        brand = product.Brand,
+        barcode = product.Barcode
     };
 
     private static object InvoiceProjection(Invoice invoice) => new
@@ -441,6 +556,23 @@ public sealed class HubOperationService
         state = draftLock.State.ToString().ToUpperInvariant(),
         release_reason = draftLock.ReleaseReason?.ToString().ToUpperInvariant()
     };
+
+    private static string? OptionalString(JsonElement payload, string name)
+    {
+        var value = payload.GetProperty(name);
+        if (value.ValueKind == JsonValueKind.Null)
+        {
+            return null;
+        }
+
+        if (value.ValueKind != JsonValueKind.String)
+        {
+            throw new DomainException("VALIDATION_ERROR");
+        }
+
+        var text = value.GetString();
+        return string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+    }
 
     private static string RequiredString(JsonElement payload, string name)
     {

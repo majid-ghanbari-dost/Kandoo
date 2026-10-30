@@ -2,6 +2,7 @@ using System.Text.Json;
 using Kandoo.Capture;
 using Kandoo.Core;
 using Kandoo.Hub;
+using Microsoft.OpenApi.Models;
 
 // WebApplication uses the standard appsettings.json + environment-variable
 // configuration chain. The executable remains an ordinary console process,
@@ -13,6 +14,11 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
     options.SerializerOptions.PropertyNameCaseInsensitive = false;
 });
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "Kandoo Hub API", Version = "v1" });
+});
 var sqliteConnection = builder.Configuration.GetConnectionString("HubSqlite")
     ?? "Data Source=kandoo-hub.db;Pooling=False";
 var hubStore = new SqliteHubStore(sqliteConnection);
@@ -21,11 +27,34 @@ builder.Services.AddSingleton<IHubAccessStore>(hubStore);
 builder.Services.AddSingleton<IClock, SystemHubClock>();
 builder.Services.AddSingleton<HubOperationService>();
 builder.Services.AddSingleton(new HubProductCatalogService(hubStore));
+builder.Services.AddSingleton<IHubInvoicePrintAdapter, DisabledHubInvoicePrintAdapter>();
+builder.Services.AddSingleton<IHubSmsDeliveryGateway, DisabledHubSmsDeliveryGateway>();
+builder.Services.AddSingleton(new ExtractorBridgeOptions
+{
+    ExecutablePath = builder.Configuration["Hub:PythonExtractorPath"] ?? string.Empty
+});
+builder.Services.AddSingleton<IExtractorProcessRunner, ExtractorProcessRunner>();
+builder.Services.AddSingleton<CaptureFolderExtractionBridge>();
 builder.Services.AddSingleton(provider => new ModeBReviewService(
     hubStore,
     provider.GetRequiredService<HubOperationService>(),
     provider.GetRequiredService<IClock>()));
 builder.Services.AddSingleton<HubPairingGrantDisplay>();
+var operationalLog = new HubOperationalLog(builder.Configuration["Hub:LogDirectory"]);
+builder.Services.AddSingleton(operationalLog);
+var backupOptions = new HubBackupOptions();
+builder.Configuration.GetSection("Hub:Backup").Bind(backupOptions);
+backupOptions.Validate();
+builder.Services.AddSingleton(backupOptions);
+builder.Services.AddSingleton(provider => new SqliteBackupService(
+    hubStore,
+    backupOptions,
+    provider.GetRequiredService<IClock>()));
+if (backupOptions.Enabled)
+{
+    builder.Services.AddHostedService<SqliteBackupHostedService>();
+}
+
 var captureOptions = new PrintCaptureOptions();
 builder.Configuration.GetSection("Hub:Capture").Bind(captureOptions);
 captureOptions.Validate();
@@ -37,7 +66,9 @@ if (captureOptions.Enabled)
 }
 
 var app = builder.Build();
+app.UseSwagger(options => options.RouteTemplate = "openapi/{documentName}.json");
 app.MapHubHostLocalPages();
+app.MapHubApiFirstEndpoints();
 
 app.MapGet("/health", () => Results.Json(new { status = "ok" }, HubJson.Options));
 
@@ -62,9 +93,22 @@ app.MapPost("/v1/stores/{store_id}/owner-sessions", (
     }
 
     var now = clock.UtcNow;
-    var issued = access.IssueOwnerSession(
-        store_id, request.HubDeviceId, request.OwnerUserId,
-        Guid.NewGuid().ToString("D"), now, now.AddHours(1));
+    HubSessionIssued issued;
+    try
+    {
+        issued = access.IssueOwnerSession(
+            store_id, request.HubDeviceId, request.OwnerUserId,
+            Guid.NewGuid().ToString("D"), now, now.AddHours(1));
+    }
+    catch (InvalidOperationException exception) when (exception.Message == "OWNER_HUB_MISMATCH")
+    {
+        return HubHttp.Error(403, "OWNER_BOOTSTRAP_INVALID", "The requested Hub, owner, and store binding is invalid.");
+    }
+    catch (InvalidOperationException exception) when (exception.Message == "HUB_ALREADY_ACTIVE")
+    {
+        return HubHttp.Error(409, "HUB_ALREADY_ACTIVE", "The store already has an active Hub; replacement requires authorized restore.", "REVIEW");
+    }
+
     return Results.Json(new
     {
         status = "SESSION_ACTIVE",
@@ -186,26 +230,32 @@ app.MapPost("/v1/stores/{store_id}/products", (
         return HubHttp.Error(400, "VALIDATION_ERROR", "operation_id and the required product fields are required.");
     }
 
+    if (!string.IsNullOrWhiteSpace(request.Type) && !string.IsNullOrWhiteSpace(request.Category) &&
+        !string.Equals(request.Type.Trim(), request.Category.Trim(), StringComparison.Ordinal))
+    {
+        return HubHttp.Error(400, "VALIDATION_ERROR", "type and legacy category cannot disagree.");
+    }
+
     HubProductRegistrationResult result;
+    ProductRegistrationInput input;
     try
     {
-        result = catalog.Register(
-            store_id,
-            auth.Session!.DeviceId,
-            request.OperationId,
-            new ProductRegistrationInput(
+        input = new ProductRegistrationInput(
                 request.Name,
                 request.UnitPriceRials,
                 request.InitialStockMillis,
                 request.ProductId,
                 request.AcknowledgedCandidateId,
-                request.Category,
+                !string.IsNullOrWhiteSpace(request.Type) ? request.Type : request.Category,
                 request.Color,
                 request.Size,
                 request.Material,
                 request.Brand,
                 request.Barcode,
-                request.Specification));
+                request.Specification,
+                request.ProductTagNumber,
+                request.OperatorFields).Validate();
+        result = catalog.Register(store_id, auth.Session!.DeviceId, request.OperationId, input);
     }
     catch (ArgumentException)
     {
@@ -222,6 +272,7 @@ app.MapPost("/v1/stores/{store_id}/products", (
         ProductRegistrationStatus.DuplicateProductId => "DUPLICATE_PRODUCT_ID",
         ProductRegistrationStatus.ExactDuplicate => "EXACT_DUPLICATE",
         ProductRegistrationStatus.NearDuplicateWarning => "NEAR_DUPLICATE_WARNING",
+        ProductRegistrationStatus.DuplicateProductTag => "DUPLICATE_PRODUCT_TAG",
         _ => "REVIEW"
     };
     var httpStatus = result.Status == ProductRegistrationStatus.Created ? 200 : 409;
@@ -231,6 +282,7 @@ app.MapPost("/v1/stores/{store_id}/products", (
         product = result.Product,
         stock_millis = result.StockMillis,
         candidate_product_id = result.CandidateProductId,
+        operator_fields = input.OperatorFields ?? Array.Empty<ProductOperatorField>(),
         operation_seq = result.OperationSeq,
         idempotent_replay = result.IdempotentReplay
     }, HubJson.Options, statusCode: httpStatus);
@@ -387,9 +439,17 @@ app.MapPost("/v1/stores/{store_id}/operations", async (
     return Results.Json(result.Body, HubJson.Options, statusCode: result.HttpStatus);
 });
 
+app.Lifetime.ApplicationStarted.Register(() => operationalLog.Write("HOST_STARTED"));
 app.Lifetime.ApplicationStopping.Register(() =>
-    Console.WriteLine("Kandoo Hub is stopping; waiting for in-flight requests and SQLite disposal."));
-app.Lifetime.ApplicationStopped.Register(hubStore.Dispose);
+{
+    operationalLog.Write("HOST_STOPPING");
+    Console.WriteLine("Kandoo Hub is stopping; waiting for in-flight requests and SQLite disposal.");
+});
+app.Lifetime.ApplicationStopped.Register(() =>
+{
+    operationalLog.Write("HOST_STOPPED");
+    hubStore.Dispose();
+});
 
 app.Run();
 

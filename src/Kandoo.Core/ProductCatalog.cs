@@ -5,7 +5,8 @@ public enum ProductRegistrationStatus
     Created,
     DuplicateProductId,
     ExactDuplicate,
-    NearDuplicateWarning
+    NearDuplicateWarning,
+    DuplicateProductTag
 }
 
 public sealed record Product(
@@ -25,6 +26,9 @@ public sealed record Product(
     string? Material = null,
     string? Brand = null,
     string? Barcode = null);
+
+/// <summary>An operator-defined value whose array position is significant and store-private.</summary>
+public sealed record ProductOperatorField(string Key, string Value);
 
 public sealed record ProductRegistrationResult(
     ProductRegistrationStatus Status,

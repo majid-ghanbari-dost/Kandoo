@@ -103,6 +103,47 @@ public sealed class SmsService
         return _deliveries.CompleteSend(normalized, body, fingerprint, providerResult, _clock.UtcNow);
     }
 
+    public async Task<SmsSendResult> ResendAsync(SmsResendRequest request, CancellationToken cancellationToken = default)
+    {
+        if (request.StoreId == Guid.Empty || request.InvoiceId == Guid.Empty ||
+            !ValidOperationId(request.OperationId) || !ValidOperationId(request.OriginalOperationId) ||
+            request.OperationId == request.OriginalOperationId)
+        {
+            return new SmsSendResult("VALIDATION_ERROR");
+        }
+
+        var status = _deliveries.Get(request.StoreId, request.OriginalOperationId);
+        var source = _deliveries.GetSource(request.StoreId, request.OriginalOperationId);
+        if (status is null || source is null || status.InvoiceId != request.InvoiceId || source.InvoiceId != request.InvoiceId)
+        {
+            return new SmsSendResult("SMS_DELIVERY_NOT_FOUND");
+        }
+
+        if (status.Status == "PENDING")
+        {
+            return new SmsSendResult("SMS_SEND_IN_PROGRESS", RetryAfterMs: 1000);
+        }
+
+        if (status.Status != "SENT")
+        {
+            return new SmsSendResult("SMS_DELIVERY_NOT_RESENDABLE");
+        }
+
+        return await SendAsync(new SmsSendRequest(
+            request.StoreId, request.OperationId, request.InvoiceId, source.RecipientPhone, source.InvoiceLink), cancellationToken);
+    }
+
+    public SmsDeliveryStatus? GetStatus(Guid storeId, string operationId, Guid invoiceId)
+    {
+        if (storeId == Guid.Empty || invoiceId == Guid.Empty || !ValidOperationId(operationId))
+        {
+            return null;
+        }
+
+        var status = _deliveries.Get(storeId, operationId);
+        return status?.InvoiceId == invoiceId ? status : null;
+    }
+
     private static bool ValidOperationId(string? value)
     {
         if (string.IsNullOrWhiteSpace(value) || value.Length > 128)
