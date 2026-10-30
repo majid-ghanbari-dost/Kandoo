@@ -21,7 +21,7 @@ public sealed class ExtractionBridgeTests
         Assert.Equal("EXTRACTION_REVIEW", result.Code);
         Assert.Equal(10, result.ExitCode);
         Assert.NotNull(result.Document);
-        var invocation = Assert.NotNull(runner.Invocation);
+        var invocation = runner.Invocation ?? throw new InvalidOperationException("The fake runner was not invoked.");
         Assert.Equal(options.ExecutablePath, invocation.FileName);
         Assert.Equal(new[]
         {
