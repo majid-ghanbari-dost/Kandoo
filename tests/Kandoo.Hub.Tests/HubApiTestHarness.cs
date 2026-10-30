@@ -52,9 +52,11 @@ public sealed class HubApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<IHubStore>();
             services.RemoveAll<IHubAccessStore>();
             services.RemoveAll<HubOperationService>();
+            services.RemoveAll<HubProductCatalogService>();
             services.AddSingleton<IHubStore>(TestStore);
             services.AddSingleton<IHubAccessStore>(TestStore);
             services.AddSingleton<HubOperationService>();
+            services.AddSingleton(new HubProductCatalogService(TestStore));
         });
     }
 

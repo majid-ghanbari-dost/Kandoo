@@ -1,6 +1,11 @@
 using System.Text.Json;
+using Kandoo.Capture;
 using Kandoo.Core;
 using Kandoo.Hub;
+
+// WebApplication uses the standard appsettings.json + environment-variable
+// configuration chain. The executable remains an ordinary console process,
+// so a Windows-service adapter can host the same application later.
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.ConfigureHttpJsonOptions(options =>
@@ -15,8 +20,24 @@ builder.Services.AddSingleton<IHubStore>(hubStore);
 builder.Services.AddSingleton<IHubAccessStore>(hubStore);
 builder.Services.AddSingleton<IClock, SystemHubClock>();
 builder.Services.AddSingleton<HubOperationService>();
+builder.Services.AddSingleton(new HubProductCatalogService(hubStore));
+builder.Services.AddSingleton(provider => new ModeBReviewService(
+    hubStore,
+    provider.GetRequiredService<HubOperationService>(),
+    provider.GetRequiredService<IClock>()));
+builder.Services.AddSingleton<HubPairingGrantDisplay>();
+var captureOptions = new PrintCaptureOptions();
+builder.Configuration.GetSection("Hub:Capture").Bind(captureOptions);
+captureOptions.Validate();
+builder.Services.AddSingleton(captureOptions);
+builder.Services.AddSingleton<ICapturedSpoolSink, HubCaptureSink>();
+if (captureOptions.Enabled)
+{
+    builder.Services.AddHostedService<PrintCaptureHostedService>();
+}
 
 var app = builder.Build();
+app.MapHubHostLocalPages();
 
 app.MapGet("/health", () => Results.Json(new { status = "ok" }, HubJson.Options));
 
@@ -57,7 +78,8 @@ app.MapPost("/v1/stores/{store_id}/pairing-grants", (
     PairingGrantRequest? request,
     HttpContext context,
     IHubAccessStore access,
-    IClock clock) =>
+    IClock clock,
+    HubPairingGrantDisplay display) =>
 {
     var auth = Authenticate(context, store_id, access, clock);
     if (!auth.IsAuthenticated)
@@ -84,22 +106,24 @@ app.MapPost("/v1/stores/{store_id}/pairing-grants", (
     var grant = access.CreatePairingGrant(
         store_id, request.HubDeviceId, auth.Session.OwnerUserId!.Value,
         request.HubEndpoint!, $"pair-{Guid.NewGuid():N}", HubToken.Hash(nonce), now, now.AddMinutes(5));
+    var qr = HubJson.Element(new
+    {
+        protocol_version = "0",
+        pairing_id = grant.PairingId,
+        store_id = grant.StoreId,
+        hub_device_id = grant.HubDeviceId,
+        device_role = "COMPANION",
+        hub_endpoint = grant.HubEndpoint,
+        nonce,
+        issued_at = grant.IssuedAt,
+        expires_at = grant.ExpiresAt,
+        single_use = true
+    });
+    display.Publish(qr);
     return Results.Json(new
     {
         status = "PAIRING_QR_ISSUED",
-        qr = new
-        {
-            protocol_version = "0",
-            pairing_id = grant.PairingId,
-            store_id = grant.StoreId,
-            hub_device_id = grant.HubDeviceId,
-            device_role = "COMPANION",
-            hub_endpoint = grant.HubEndpoint,
-            nonce,
-            issued_at = grant.IssuedAt,
-            expires_at = grant.ExpiresAt,
-            single_use = true
-        }
+        qr
     }, HubJson.Options);
 });
 
@@ -141,6 +165,75 @@ app.MapPost("/v1/pairing-grants/consume", (
         qr_consumed = true,
         hub_role_granted = false
     }, HubJson.Options);
+});
+
+app.MapPost("/v1/stores/{store_id}/products", (
+    Guid store_id,
+    HubProductRegistrationRequest? request,
+    HttpContext context,
+    IHubAccessStore access,
+    IClock clock,
+    HubProductCatalogService catalog) =>
+{
+    var auth = Authenticate(context, store_id, access, clock);
+    if (!auth.IsAuthenticated)
+    {
+        return AuthError(auth.Code);
+    }
+
+    if (request is null || string.IsNullOrWhiteSpace(request.OperationId))
+    {
+        return HubHttp.Error(400, "VALIDATION_ERROR", "operation_id and the required product fields are required.");
+    }
+
+    HubProductRegistrationResult result;
+    try
+    {
+        result = catalog.Register(
+            store_id,
+            auth.Session!.DeviceId,
+            request.OperationId,
+            new ProductRegistrationInput(
+                request.Name,
+                request.UnitPriceRials,
+                request.InitialStockMillis,
+                request.ProductId,
+                request.AcknowledgedCandidateId,
+                request.Category,
+                request.Color,
+                request.Size,
+                request.Material,
+                request.Brand,
+                request.Barcode,
+                request.Specification));
+    }
+    catch (ArgumentException)
+    {
+        return HubHttp.Error(400, "VALIDATION_ERROR", "Name, a non-negative Rial price, and non-negative initial stock are required.");
+    }
+    catch (InvalidOperationException exception) when (exception.Message == "OPERATION_ID_CONFLICT")
+    {
+        return HubHttp.Error(409, "OPERATION_ID_CONFLICT", "The operation ID was already used for different content.");
+    }
+
+    var status = result.Status switch
+    {
+        ProductRegistrationStatus.Created => "CREATED",
+        ProductRegistrationStatus.DuplicateProductId => "DUPLICATE_PRODUCT_ID",
+        ProductRegistrationStatus.ExactDuplicate => "EXACT_DUPLICATE",
+        ProductRegistrationStatus.NearDuplicateWarning => "NEAR_DUPLICATE_WARNING",
+        _ => "REVIEW"
+    };
+    var httpStatus = result.Status == ProductRegistrationStatus.Created ? 200 : 409;
+    return Results.Json(new
+    {
+        status,
+        product = result.Product,
+        stock_millis = result.StockMillis,
+        candidate_product_id = result.CandidateProductId,
+        operation_seq = result.OperationSeq,
+        idempotent_replay = result.IdempotentReplay
+    }, HubJson.Options, statusCode: httpStatus);
 });
 
 app.MapPost("/v1/stores/{store_id}/devices/{device_id}/sessions", (
@@ -293,6 +386,10 @@ app.MapPost("/v1/stores/{store_id}/operations", async (
     var result = operations.Submit(store_id, auth.Session!, request);
     return Results.Json(result.Body, HubJson.Options, statusCode: result.HttpStatus);
 });
+
+app.Lifetime.ApplicationStopping.Register(() =>
+    Console.WriteLine("Kandoo Hub is stopping; waiting for in-flight requests and SQLite disposal."));
+app.Lifetime.ApplicationStopped.Register(hubStore.Dispose);
 
 app.Run();
 

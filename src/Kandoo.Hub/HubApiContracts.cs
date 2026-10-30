@@ -36,6 +36,21 @@ public sealed record PairingConsumeRequest(
     string? Platform,
     string? DevicePublicKey);
 
+public sealed record HubProductRegistrationRequest(
+    string? OperationId,
+    string? Name,
+    long? UnitPriceRials,
+    long? InitialStockMillis,
+    string? ProductId = null,
+    string? AcknowledgedCandidateId = null,
+    string? Category = null,
+    string? Color = null,
+    string? Size = null,
+    string? Material = null,
+    string? Brand = null,
+    string? Barcode = null,
+    string? Specification = null);
+
 public sealed record SessionResumeRequest(string? DeviceCredential);
 
 public sealed record HubOperationRequest(

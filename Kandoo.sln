@@ -14,6 +14,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kandoo.Hub", "src\Kandoo.Hu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kandoo.Hub.Tests", "tests\Kandoo.Hub.Tests\Kandoo.Hub.Tests.csproj", "{8E2A30E6-4FB4-4B0C-9F4F-7A0C3E1A1006}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kandoo.Capture", "src\Kandoo.Capture\Kandoo.Capture.csproj", "{8E2A30E6-4FB4-4B0C-9F4F-7A0C3E1A1007}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kandoo.Capture.Tests", "tests\Kandoo.Capture.Tests\Kandoo.Capture.Tests.csproj", "{8E2A30E6-4FB4-4B0C-9F4F-7A0C3E1A1008}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -44,6 +48,14 @@ Global
 		{8E2A30E6-4FB4-4B0C-9F4F-7A0C3E1A1006}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8E2A30E6-4FB4-4B0C-9F4F-7A0C3E1A1006}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8E2A30E6-4FB4-4B0C-9F4F-7A0C3E1A1006}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8E2A30E6-4FB4-4B0C-9F4F-7A0C3E1A1007}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8E2A30E6-4FB4-4B0C-9F4F-7A0C3E1A1007}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8E2A30E6-4FB4-4B0C-9F4F-7A0C3E1A1007}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8E2A30E6-4FB4-4B0C-9F4F-7A0C3E1A1007}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8E2A30E6-4FB4-4B0C-9F4F-7A0C3E1A1008}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8E2A30E6-4FB4-4B0C-9F4F-7A0C3E1A1008}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8E2A30E6-4FB4-4B0C-9F4F-7A0C3E1A1008}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8E2A30E6-4FB4-4B0C-9F4F-7A0C3E1A1008}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

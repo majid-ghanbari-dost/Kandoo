@@ -59,7 +59,7 @@ public static class CanonicalInvoiceConsumer
 
     private static readonly string[] RootAllowed = RootRequired.Concat(new[] { "issued_content_sha256" }).ToArray();
     private static readonly string[] States = { "DRAFT", "EXTRACTED", "VALIDATED", "ISSUED", "REVOKED", "SUPERSEDED" };
-    private static readonly string[] ProvenanceLabels = { "native", "captured", "derived", "untrusted", "unavailable" };
+    private static readonly string[] ProvenanceLabels = { "native", "captured", "derived", "untrusted", "unavailable", "operator_confirmed" };
 
     public static ReviewQueueEntity ConsumeForReview(string json)
     {

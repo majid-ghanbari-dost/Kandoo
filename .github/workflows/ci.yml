@@ -73,6 +73,9 @@ jobs:
             }
           }
 
+      - name: Test Capture and write TRX
+        run: dotnet test tests/Kandoo.Capture.Tests/Kandoo.Capture.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Capture.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -82,6 +85,7 @@ jobs:
             tests/Kandoo.Core.Tests/TestResults/*.trx
             tests/Kandoo.Cloud.Tests/TestResults/*.trx
             tests/Kandoo.Hub.Tests/TestResults/*.trx
+            tests/Kandoo.Capture.Tests/TestResults/*.trx
           if-no-files-found: error
 
   build-and-test-windows:
@@ -126,6 +130,27 @@ jobs:
               }
             }
           }
+
+      - name: Test Capture and write TRX
+        run: dotnet test tests/Kandoo.Capture.Tests/Kandoo.Capture.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Capture.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
+
+      - name: Publish self-contained win-x64 Hub host
+        run: dotnet publish src/Kandoo.Hub/Kandoo.Hub.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts/Kandoo.Hub-win-x64
+
+      - name: Start Hub, run C-14 smoke, stop it, and measure the publish
+        shell: pwsh
+        run: scripts/Invoke-HubSmoke.ps1 -PublishDirectory artifacts/Kandoo.Hub-win-x64 -ArtifactDirectory artifacts
+
+      - name: Upload C-14 self-contained Hub artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kandoo-hub-c14-win-x64
+          path: |
+            artifacts/Kandoo.Hub-win-x64/**
+            artifacts/c14-artifact-size.txt
+            artifacts/c14-smoke-result.json
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Upload test results
         if: always()
