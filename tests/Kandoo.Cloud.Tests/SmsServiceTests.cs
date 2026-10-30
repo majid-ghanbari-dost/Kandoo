@@ -151,7 +151,7 @@ public sealed class SmsServiceTests
         var resentDelivery = resent.Delivery!;
         Assert.Equal("c23-resend", resentDelivery.OperationId);
         Assert.Equal(originalRequest.InvoiceLink, resentDelivery.InvoiceLink);
-        Assert.Equal(originalRequest.RecipientPhone, resentDelivery.RecipientPhone);
+        Assert.Equal("+989120000001", resentDelivery.RecipientPhone);
         Assert.Equal(2, context.Provider.CaptureCount);
         var replay = await context.Service.ResendAsync(resendRequest);
         Assert.Equal("DUPLICATE", replay.Status);

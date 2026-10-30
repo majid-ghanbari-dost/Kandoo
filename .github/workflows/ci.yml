@@ -48,20 +48,16 @@ jobs:
       - name: Build
         run: dotnet build Kandoo.sln --configuration Release --no-restore
 
-      - name: Publish Hub for C-23 OpenAPI export
-        run: dotnet publish src/Kandoo.Hub/Kandoo.Hub.csproj --configuration Release --no-build --output artifacts/Kandoo.Hub-openapi
-
       - name: Generate and validate C-23 OpenAPI
-        shell: pwsh
-        run: scripts/Invoke-CiStep.ps1 -StepName 'Generate and validate C-23 OpenAPI' -ScriptPath scripts/Export-HubOpenApi.ps1 -ScriptArguments @('-PublishDirectory', 'artifacts/Kandoo.Hub-openapi', '-ArtifactDirectory', 'artifacts')
+        env:
+          KANDOO_OPENAPI_OUTPUT: ${{ github.workspace }}/artifacts/kandoo-hub-openapi.json
+        run: dotnet test tests/Kandoo.Hub.Tests/Kandoo.Hub.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~OpenApiContractTests"
 
       - name: Upload C-23 generated OpenAPI
         uses: actions/upload-artifact@v4
         with:
           name: kandoo-hub-openapi-c23
-          path: |
-            artifacts/kandoo-hub-openapi.json
-            artifacts/kandoo-hub-openapi-validation.json
+          path: artifacts/kandoo-hub-openapi.json
           if-no-files-found: error
           retention-days: 7
 

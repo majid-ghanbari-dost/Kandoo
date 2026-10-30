@@ -13,7 +13,8 @@ public sealed class OpenApiContractTests
         using var client = factory.CreateClient();
         using var response = await client.GetAsync("/openapi/v1.json");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var raw = await response.Content.ReadAsStringAsync();
+        using var document = JsonDocument.Parse(raw);
         Assert.StartsWith("3.", document.RootElement.GetProperty("openapi").GetString());
         var paths = document.RootElement.GetProperty("paths");
         foreach (var path in new[]
@@ -32,6 +33,13 @@ public sealed class OpenApiContractTests
                  })
         {
             Assert.True(paths.TryGetProperty(path, out _), $"Missing generated OpenAPI path: {path}");
+        }
+
+        var output = Environment.GetEnvironmentVariable("KANDOO_OPENAPI_OUTPUT");
+        if (!string.IsNullOrWhiteSpace(output))
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(output))!);
+            await File.WriteAllTextAsync(output, raw);
         }
     }
 }
