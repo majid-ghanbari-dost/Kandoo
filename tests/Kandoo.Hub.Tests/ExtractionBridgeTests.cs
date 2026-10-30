@@ -135,7 +135,9 @@ public sealed class ExtractionBridgeTests
     private static ExtractorProcessRun Run(int exitCode, byte[] stdout, byte[]? stderr = null) =>
         new(exitCode, stdout, stderr ?? Array.Empty<byte>());
 
-    private static byte[] ValidJson(string status, string verdict) => Encoding.UTF8.GetBytes($$"""
+    private static byte[] ValidJson(string status, string verdict)
+    {
+        var json = $$"""
         {
           "result_version": "capture-folder-result-v1",
           "status": "{{status}}",
@@ -156,7 +158,9 @@ public sealed class ExtractionBridgeTests
           "errors": []
         }
 
-        """);
+        """;
+        return Encoding.UTF8.GetBytes(json.Replace("\r\n", "\n", StringComparison.Ordinal));
+    }
 
     private static System.Text.Json.Nodes.JsonObject JsonNodeObject(JsonElement element) =>
         System.Text.Json.Nodes.JsonNode.Parse(element.GetRawText())!.AsObject();
