@@ -154,13 +154,14 @@ jobs:
 
       - name: Assemble C-22 Windows pilot package
         shell: pwsh
-        run: scripts/New-HubPilotPackage.ps1 -PublishDirectory artifacts/Kandoo.Hub-win-x64 -PackageDirectory artifacts/Kandoo.Hub-Pilot-win-x64
+        run: scripts/Invoke-CiStep.ps1 -StepName 'Assemble C-22 Windows pilot package' -ScriptPath scripts/New-HubPilotPackage.ps1 -ScriptArguments @('-PublishDirectory', 'artifacts/Kandoo.Hub-win-x64', '-PackageDirectory', 'artifacts/Kandoo.Hub-Pilot-win-x64')
 
       - name: Run C-22 replacement, pairing, and backup smoke
         shell: pwsh
-        run: scripts/Invoke-HubPilotSmoke.ps1 -PackageDirectory artifacts/Kandoo.Hub-Pilot-win-x64 -ArtifactDirectory artifacts
+        run: scripts/Invoke-CiStep.ps1 -StepName 'Run C-22 replacement, pairing, and backup smoke' -ScriptPath scripts/Invoke-HubPilotSmoke.ps1 -ScriptArguments @('-PackageDirectory', 'artifacts/Kandoo.Hub-Pilot-win-x64', '-ArtifactDirectory', 'artifacts')
 
       - name: Upload C-22 Windows pilot artifact
+        id: c22_pilot_upload
         uses: actions/upload-artifact@v4
         with:
           name: kandoo-hub-pilot-c22-win-x64
@@ -169,6 +170,36 @@ jobs:
             artifacts/c22-pilot-smoke-result.json
           if-no-files-found: error
           retention-days: 7
+
+      - name: Diagnose C-22 pilot artifact upload failure
+        if: always() && steps.c22_pilot_upload.outcome == 'failure'
+        shell: pwsh
+        run: |
+          $stepName = 'Upload C-22 Windows pilot artifact'
+          $exitCode = 1
+          $lines = [System.Collections.Generic.List[string]]::new()
+          foreach ($path in @('artifacts/Kandoo.Hub-Pilot-win-x64', 'artifacts/c22-pilot-smoke-result.json')) {
+            $lines.Add("$path : $(if (Test-Path -LiteralPath $path) { 'present' } else { 'MISSING' })")
+          }
+          if (Test-Path -LiteralPath artifacts) {
+            Get-ChildItem -LiteralPath artifacts -Recurse -File |
+              Select-Object -First 17 |
+              ForEach-Object { $lines.Add("ARTIFACT_FILE $($_.FullName)") }
+          }
+          $diagnostic = @("CI_STEP_FAILURE step=$stepName exit_code=$exitCode") + $lines.ToArray()
+          $diagnostic | ForEach-Object { Write-Host $_ }
+          if ($env:GITHUB_STEP_SUMMARY) {
+            $summary = [System.Collections.Generic.List[string]]::new()
+            $summary.Add("## $stepName")
+            $summary.Add('')
+            $summary.Add("Exit code: $exitCode")
+            $summary.Add('')
+            $summary.Add('```text')
+            foreach ($line in $diagnostic) { $summary.Add($line) }
+            $summary.Add('```')
+            $summary | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY
+          }
+          exit $exitCode
 
       - name: Upload test results
         if: always()
