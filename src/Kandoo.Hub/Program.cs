@@ -93,9 +93,22 @@ app.MapPost("/v1/stores/{store_id}/owner-sessions", (
     }
 
     var now = clock.UtcNow;
-    var issued = access.IssueOwnerSession(
-        store_id, request.HubDeviceId, request.OwnerUserId,
-        Guid.NewGuid().ToString("D"), now, now.AddHours(1));
+    HubSessionIssued issued;
+    try
+    {
+        issued = access.IssueOwnerSession(
+            store_id, request.HubDeviceId, request.OwnerUserId,
+            Guid.NewGuid().ToString("D"), now, now.AddHours(1));
+    }
+    catch (InvalidOperationException exception) when (exception.Message == "OWNER_HUB_MISMATCH")
+    {
+        return HubHttp.Error(403, "OWNER_BOOTSTRAP_INVALID", "The requested Hub, owner, and store binding is invalid.");
+    }
+    catch (InvalidOperationException exception) when (exception.Message == "HUB_ALREADY_ACTIVE")
+    {
+        return HubHttp.Error(409, "HUB_ALREADY_ACTIVE", "The store already has an active Hub; replacement requires authorized restore.", "REVIEW");
+    }
+
     return Results.Json(new
     {
         status = "SESSION_ACTIVE",

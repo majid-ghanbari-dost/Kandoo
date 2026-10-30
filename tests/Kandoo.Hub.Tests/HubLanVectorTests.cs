@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Kandoo.Core;
+using Microsoft.Data.Sqlite;
 using Xunit;
 
 namespace Kandoo.Hub.Tests;
@@ -409,6 +410,92 @@ public sealed class HubLanVectorTests : IDisposable
         Assert.Equal(0, _api.Store.GetOutboxDepth(S1));
     }
 
+    [Fact]
+    public async Task C25_CompanionCannotBootstrapOrUseOwnerOnlyRoutes()
+    {
+        var owner = await _api.Owner(S1, Hub, OwnerId);
+        var paired = await _api.Pair(owner, S1, D1);
+        var sessionCount = CountSessions();
+
+        var escalation = await OwnerSession(S1, D1, OwnerId);
+        Assert.Equal(HttpStatusCode.Forbidden, escalation.StatusCode);
+        Assert.Equal("OWNER_BOOTSTRAP_INVALID", Code(escalation));
+        Assert.False(escalation.Body.TryGetProperty("session_token", out _));
+        Assert.Equal(sessionCount, CountSessions());
+
+        var grant = await _api.IssueGrant(paired.Session, S1);
+        Assert.Equal(HttpStatusCode.Forbidden, grant.StatusCode);
+        Assert.Equal("OWNER_REQUIRED", Code(grant));
+        var devices = await _api.Get($"/v1/stores/{S1}/devices", paired.Session.Token);
+        Assert.Equal(HttpStatusCode.Forbidden, devices.StatusCode);
+        Assert.Equal("OWNER_REQUIRED", Code(devices));
+        var revoke = await _api.Post($"/v1/stores/{S1}/devices/{D1}/revoke", new { }, paired.Session.Token);
+        Assert.Equal(HttpStatusCode.Forbidden, revoke.StatusCode);
+        Assert.Equal("OWNER_REQUIRED", Code(revoke));
+        Assert.Equal(sessionCount, CountSessions());
+
+        var current = await _api.Get($"/v1/stores/{S1}/devices", owner.Token);
+        Assert.Equal(2, current.Body.GetArrayLength());
+        Assert.Contains(current.Body.EnumerateArray(), device =>
+            device.GetProperty("device_id").GetGuid() == D1 &&
+            device.GetProperty("device_role").GetString() == "COMPANION" &&
+            device.GetProperty("pairing_status").GetString() == "ACTIVE");
+    }
+
+    [Fact]
+    public async Task C25_BootstrapRejectsSecondHubOwnerRebindAndCrossStoreReuse()
+    {
+        var owner = await _api.Owner(S1, Hub, OwnerId);
+        var sessionCount = CountSessions();
+
+        var secondHub = await OwnerSession(S1, D1, OwnerId);
+        Assert.Equal(HttpStatusCode.Conflict, secondHub.StatusCode);
+        Assert.Equal("HUB_ALREADY_ACTIVE", Code(secondHub));
+        var rebind = await OwnerSession(S1, Hub, Guid.NewGuid());
+        Assert.Equal(HttpStatusCode.Forbidden, rebind.StatusCode);
+        Assert.Equal("OWNER_BOOTSTRAP_INVALID", Code(rebind));
+        var otherStore = Guid.Parse("77777777-7777-4777-8777-777777777777");
+        var crossStore = await OwnerSession(otherStore, Hub, OwnerId);
+        Assert.Equal(HttpStatusCode.Forbidden, crossStore.StatusCode);
+        Assert.Equal("OWNER_BOOTSTRAP_INVALID", Code(crossStore));
+        Assert.Equal(sessionCount, CountSessions());
+
+        var renewed = await OwnerSession(S1, Hub, OwnerId);
+        Assert.Equal("SESSION_ACTIVE", Status(renewed));
+        Assert.Equal("HUB", renewed.Body.GetProperty("session").GetProperty("device_role").GetString());
+        Assert.Equal(OwnerId, renewed.Body.GetProperty("session").GetProperty("owner_user_id").GetGuid());
+        Assert.Equal(sessionCount + 1, CountSessions());
+        var devices = await _api.Get($"/v1/stores/{S1}/devices", owner.Token);
+        Assert.Single(devices.Body.EnumerateArray());
+        Assert.Equal(Hub, devices.Body[0].GetProperty("device_id").GetGuid());
+    }
+
+    [Fact]
+    public async Task C25_AuthenticationRejectsSessionDeviceRoleDrift()
+    {
+        var owner = await _api.Owner(S1, Hub, OwnerId);
+        using (var connection = new SqliteConnection(_factory.ConnectionString))
+        {
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = """
+                UPDATE devices SET device_role = $companion, owner_user_id = NULL
+                WHERE store_id = $store AND device_id = $device;
+                """;
+            command.Parameters.AddWithValue("$companion", (int)HubDeviceRole.Companion);
+            command.Parameters.AddWithValue("$store", S1.ToString("D"));
+            command.Parameters.AddWithValue("$device", Hub.ToString("D"));
+            Assert.Equal(1, command.ExecuteNonQuery());
+        }
+
+        var authentication = _api.Store.Authenticate(owner.Token, T0);
+        Assert.Equal("SESSION_INVALID", authentication.Code);
+        Assert.False(authentication.IsAuthenticated);
+        var response = await _api.Get($"/v1/stores/{S1}/devices", owner.Token);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal("SESSION_INVALID", Code(response));
+    }
+
     public void Dispose()
     {
         _api.Dispose();
@@ -420,6 +507,23 @@ public sealed class HubLanVectorTests : IDisposable
 
     private void SeedProduct(int version, long price) => _api.Store.SaveProduct(
         new Product(S1, "prod-0001", "Sample", "sample", "sample", price, version));
+
+    private Task<ApiResponse> OwnerSession(Guid storeId, Guid hubDeviceId, Guid ownerUserId) =>
+        _api.Post($"/v1/stores/{storeId}/owner-sessions", new
+        {
+            hub_device_id = hubDeviceId,
+            owner_user_id = ownerUserId,
+            bootstrap_proof = "test-only-owner-bootstrap"
+        });
+
+    private int CountSessions()
+    {
+        using var connection = new SqliteConnection(_factory.ConnectionString);
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM sessions;";
+        return Convert.ToInt32(command.ExecuteScalar());
+    }
 
     private static string Status(ApiResponse response) => response.Body.GetProperty("status").GetString()!;
     private static string Code(ApiResponse response) => response.Body.GetProperty("code").GetString()!;

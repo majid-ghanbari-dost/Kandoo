@@ -197,14 +197,55 @@ public sealed partial class SqliteHubStore
             using var transaction = _connection.BeginTransaction();
             try
             {
+                HubDevice? existing = null;
                 using (var device = AccessCommand(transaction, """
-                    INSERT INTO devices
-                        (store_id, device_id, device_role, pairing_status, owner_user_id,
-                         label, platform, device_public_key, credential_hash, paired_at)
-                    VALUES ($store, $device, $role, $status, $owner, 'Store Hub', 'HUB', NULL, '', $now)
-                    ON CONFLICT(store_id, device_id) DO NOTHING;
+                    SELECT store_id, device_id, device_role, pairing_status, owner_user_id,
+                           label, platform, device_public_key
+                    FROM devices WHERE device_id = $device;
                     """))
                 {
+                    AddAccess(device, "$device", AccessUuid(hubDeviceId));
+                    using var reader = device.ExecuteReader();
+                    if (reader.Read())
+                    {
+                        existing = ReadAccessDevice(reader);
+                    }
+                }
+
+                // A valid bootstrap proof does not promote a companion, rebind an
+                // owner, move a device between stores, or activate a second Hub.
+                // Repeating bootstrap for the identical active Hub only renews its session.
+                if (existing is not null)
+                {
+                    if (existing.StoreId != storeId || existing.DeviceRole != HubDeviceRole.Hub ||
+                        existing.PairingStatus != HubPairingStatus.Active || existing.OwnerUserId != ownerUserId)
+                    {
+                        throw new InvalidOperationException("OWNER_HUB_MISMATCH");
+                    }
+                }
+                else
+                {
+                    using (var activeHub = AccessCommand(transaction, """
+                        SELECT 1 FROM devices
+                        WHERE store_id = $store AND device_role = $role AND pairing_status = $status
+                        LIMIT 1;
+                        """))
+                    {
+                        AddAccess(activeHub, "$store", AccessUuid(storeId));
+                        AddAccess(activeHub, "$role", (int)HubDeviceRole.Hub);
+                        AddAccess(activeHub, "$status", (int)HubPairingStatus.Active);
+                        if (activeHub.ExecuteScalar() is not null)
+                        {
+                            throw new InvalidOperationException("HUB_ALREADY_ACTIVE");
+                        }
+                    }
+
+                    using var device = AccessCommand(transaction, """
+                        INSERT INTO devices
+                            (store_id, device_id, device_role, pairing_status, owner_user_id,
+                             label, platform, device_public_key, credential_hash, paired_at)
+                        VALUES ($store, $device, $role, $status, $owner, 'Store Hub', 'HUB', NULL, '', $now);
+                        """);
                     AddAccess(device, "$store", AccessUuid(storeId));
                     AddAccess(device, "$device", AccessUuid(hubDeviceId));
                     AddAccess(device, "$role", (int)HubDeviceRole.Hub);
@@ -350,6 +391,11 @@ public sealed partial class SqliteHubStore
             if (device.PairingStatus == HubPairingStatus.Revoked)
             {
                 return new HubAuthenticationResult("DEVICE_REVOKED");
+            }
+
+            if (device.DeviceRole != row.DeviceRole || device.OwnerUserId != row.OwnerUserId)
+            {
+                return new HubAuthenticationResult("SESSION_INVALID");
             }
 
             if (row.Status == HubSessionStatus.Revoked)
