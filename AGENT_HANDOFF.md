@@ -1,5 +1,28 @@
 # KANDOO — PARENT PROJECT AGENT HANDOFF
 
+## Revised-Sequence Final Handoff (`H-03`, 2026-10-30)
+
+The revised sequence `C-21 → C-25 → H-03` is complete on `arena/b18303e5-kandoo`. H-02 v3 and the owner-decisions record below remain closed GREEN and unchanged. C-22, C-23 and C-24 are executive-CERTIFIED; C-21 and C-25 have agent-observed green final runs and await executive verification. All existing tags are immutable. No `main` push, merge, PR, UI work, or write to the Python repository occurred.
+
+### Full-SHA tag and CI ledger
+
+| Task / candidate | Full commit SHA | Annotated tag / full tag-object SHA | CI evidence | Executive status |
+| --- | --- | --- | --- | --- |
+| **C-21 final** | `0533fa68c8ae5300a1643ee0f18119fa86cb80e7` | `stable-c-21` / `b3f60894bd2d6262223ac0583034dd9432f923bd` | [41093395355](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/41093395355) — agent-observed GREEN on Ubuntu and Windows; real E-30 golden probe passed on both | awaiting executive verification |
+| C-22 original (retained RED) | `d081d09a78d49b2953f098c8f9bd27a7b5f0e784` | `stable-c-22` / `3ad0ea650267f48b0f3189796e69f0285a84e570` | [41042524261](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/41042524261) — RED; immutable audit history | retained; not the final behavior tip |
+| C-22 fix1 (retained RED) | `c7abc2afce04c45fdb596213911d5f5796406915` | `stable-c-22-fix1` / `64a1c994e9ca74d50fdf49c6f32ab5dd8f6eb3de` | [41053767524](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/41053767524) — RED; immutable audit history | retained; not the final behavior tip |
+| **C-23 final + certified C-22 behavior** | `fba230f25435747686e2ec208209f64351e3ee16` | `stable-c-23` / `e43aa9495457190099fcca32b200f36902bea4e4` | [41058125481](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/41058125481) — GREEN on Ubuntu and Windows | C-22 and C-23 CERTIFIED at this tip |
+| **C-24 final** | `3f58bcdb6973f0655637eb7f308946c9eb63fb10` | `stable-c-24` / `f40bbfea2ef23deeeb4ff6f6817945354c456326` | [41058983964](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/41058983964) — GREEN on Ubuntu and Windows | CERTIFIED |
+| **C-25 final** | `05d576874ab13a00a9516925e88ba5daac33a5c1` | `stable-c-25` / `7613fadf0645c3a7ae6350afd46d993eaf8aa491` | [41094388690](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/41094388690) — agent-observed GREEN on Ubuntu and Windows | awaiting executive verification |
+| **H-03 (this documentation-only publication)** | Full commit SHA published in the final execution result; a commit cannot contain its own SHA | `stable-h-03` / full tag-object SHA published after tagging | Publication run observed in the final execution result | awaiting executive verification |
+
+### Delivery and operating boundaries
+
+- **C-21:** the C# capture-folder bridge invokes the final E-30 CLI without a shell, validates pinned `capture-folder-result-v1`, enforces the 180-second process-tree timeout, and fails closed without native invoice/customer/sale/stock effects. CI checks out read-only Python commit `29d842178cd39d3f54f14f3716c44c585911467b`, verifies schema/golden hashes, and compares all 14,075 golden stdout bytes on both OSes. No fixtures or Python source were copied. Golden evidence is synthetic mechanics only, not real SPL/SHD compatibility or production accuracy.
+- **C-25:** contract-led review found and closed Hub bootstrap role escalation, owner rebinding and second-Hub creation. Session authentication now checks role/owner consistency with the paired device; three regression tests prove companion denial, no hidden session effects, valid same-Hub renewal, and fail-closed persisted drift. No new membership roles, ownership-transfer policy, or Cloud contract was invented.
+- **Final verification model:** local .NET/Python execution remains unavailable in the sandbox. Static checks and observed GitHub Actions are distinguished throughout; C-21/C-25 reports retain `awaiting executive verification`. Artifact upload succeeded, but sandbox artifact download was blocked by the outbound host boundary and is not claimed as independent local evidence.
+- **Next gate:** executive review of C-21, C-25 and H-03. The revised implementation sequence has no remaining task. Production extractor enablement still requires the external pinned E-30 executable and explicit configuration; live Faraz transport, authentic capture samples and production accuracy remain outside this handoff.
+
 ## Window-3 Final Handoff (`H-02 v3`, 2026-10-30)
 
 This final documentation-only ledger starts from H-02 v2 at `f6d6ac22bef22e14e7295cde9ef13985d7124a9b` / `stable-h-02-v2` (`73b69702eb41c11c6d081b49a504ee61817321dc`). C-15 is certified GREEN by the executive's live read; the former inferred qualification is obsolete.
