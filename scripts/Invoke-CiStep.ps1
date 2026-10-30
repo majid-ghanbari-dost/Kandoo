@@ -29,6 +29,8 @@ if ($exitCode -ne 0) {
     $header = "CI_STEP_FAILURE step=$StepName exit_code=$exitCode"
     $diagnostic = @($header) + $errorLines
     $diagnostic | ForEach-Object { Write-Host $_ }
+    Write-Host "::error::$header"
+    $errorLines | Select-Object -First 5 | ForEach-Object { Write-Host "::error::$($_)" }
     if ($env:GITHUB_STEP_SUMMARY) {
         $summary = [System.Collections.Generic.List[string]]::new()
         $summary.Add("## $StepName")
