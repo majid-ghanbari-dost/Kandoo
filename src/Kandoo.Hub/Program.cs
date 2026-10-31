@@ -254,7 +254,8 @@ app.MapPost("/v1/stores/{store_id}/products", (
                 request.Barcode,
                 request.Specification,
                 request.ProductTagNumber,
-                request.OperatorFields).Validate();
+                request.OperatorFields,
+                request.PurchasePriceRials).Validate();
         result = catalog.Register(store_id, auth.Session!.DeviceId, request.OperationId, input);
     }
     catch (ArgumentException)
@@ -279,7 +280,7 @@ app.MapPost("/v1/stores/{store_id}/products", (
     return Results.Json(new
     {
         status,
-        product = result.Product,
+        product = result.Product is null ? null : HubApiFirstEndpoints.ProductBody(result.Product),
         stock_millis = result.StockMillis,
         candidate_product_id = result.CandidateProductId,
         operator_fields = input.OperatorFields ?? Array.Empty<ProductOperatorField>(),

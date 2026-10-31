@@ -191,6 +191,40 @@ public sealed class ProductCatalogServiceTests
     }
 
     [Fact]
+    public void C32_PurchasePriceIsOptionalExplicitAndRestoreSafe()
+    {
+        using var store = new SqliteHubStore("Data Source=:memory:;Pooling=False");
+        var catalog = new HubProductCatalogService(store);
+        var missing = catalog.Register(S1, D1, "c32-missing", new ProductRegistrationInput(
+            "Missing", 1_000, 0, "missing"));
+        Assert.Null(missing.Product!.PurchasePriceRials);
+        Assert.Null(missing.Product.ProfitRials);
+
+        var zeroInput = new ProductRegistrationInput("Zero", 1_000, 0, "zero", PurchasePriceRials: 0);
+        var zero = catalog.Register(S1, D1, "c32-zero", zeroInput);
+        Assert.Equal(0L, zero.Product!.PurchasePriceRials);
+        Assert.Equal(1_000L, zero.Product.ProfitRials);
+        Assert.True(catalog.Register(S1, D1, "c32-zero", zeroInput).IdempotentReplay);
+
+        var costed = catalog.Register(S1, D1, "c32-costed", new ProductRegistrationInput(
+            "Costed", 1_000, 0, "costed", PurchasePriceRials: 400));
+        Assert.Equal(400L, costed.Product!.PurchasePriceRials);
+        Assert.Equal(600L, costed.Product.ProfitRials);
+        Assert.Throws<ArgumentException>(() => catalog.Register(S1, D1, "c32-negative", new ProductRegistrationInput(
+            "Negative", 1_000, 0, "negative", PurchasePriceRials: -1)));
+        Assert.Equal(3, store.LoadOperationLog().Count(S1));
+
+        var state = store.ExportRestoreState(S1, 1);
+        var products = state.GetProperty("products").EnumerateArray().ToArray();
+        var missingJson = products.Single(value => value.GetProperty("product_id").GetString() == "missing");
+        Assert.False(missingJson.TryGetProperty("purchase_price_rials", out _));
+        Assert.False(missingJson.TryGetProperty("profit_rials", out _));
+        var zeroJson = products.Single(value => value.GetProperty("product_id").GetString() == "zero");
+        Assert.Equal(0L, zeroJson.GetProperty("purchase_price_rials").GetInt64());
+        Assert.False(zeroJson.TryGetProperty("profit_rials", out _));
+    }
+
+    [Fact]
     public void C23_LegacyCreatePayloadKeepsItsRequestHash()
     {
         using var store = new SqliteHubStore("Data Source=:memory:;Pooling=False");

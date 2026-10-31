@@ -52,7 +52,8 @@ public sealed record HubProductRegistrationRequest(
     string? Specification = null,
     string? Type = null,
     long? ProductTagNumber = null,
-    IReadOnlyList<ProductOperatorField>? OperatorFields = null);
+    IReadOnlyList<ProductOperatorField>? OperatorFields = null,
+    long? PurchasePriceRials = null);
 
 public sealed record SessionResumeRequest(string? DeviceCredential);
 

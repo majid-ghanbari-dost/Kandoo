@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Kandoo.Core;
 using Kandoo.Hub;
+using Microsoft.Data.Sqlite;
 using Xunit;
 
 namespace Kandoo.Hub.Tests;
@@ -191,6 +192,63 @@ public sealed class SqliteHubStoreTests
             Assert.Equal(1L, invoices.Get(S1, invoiceId)!.DisplayNumber);
             Assert.Null(invoices.Get(S2, invoiceId));
             Assert.Equal(2, reopened.LoadOperationLog().Count(S1));
+        }
+    }
+
+    [Fact]
+    public void C32_LegacyProductsMigrateWithNullAndExplicitZeroSurvivesRestart()
+    {
+        using var database = new TempDatabase();
+        using (var connection = new SqliteConnection(database.ConnectionString))
+        {
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = """
+                CREATE TABLE products (
+                    store_id TEXT NOT NULL,
+                    product_id TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    normalized_name TEXT NOT NULL,
+                    similarity_key TEXT NOT NULL,
+                    unit_price_rials INTEGER NOT NULL,
+                    version INTEGER NOT NULL,
+                    is_active INTEGER NOT NULL,
+                    specification TEXT NULL,
+                    product_tag_number INTEGER NULL,
+                    category TEXT NULL,
+                    color TEXT NULL,
+                    size TEXT NULL,
+                    material TEXT NULL,
+                    brand TEXT NULL,
+                    barcode TEXT NULL,
+                    PRIMARY KEY (store_id, product_id)
+                );
+                INSERT INTO products
+                    (store_id, product_id, name, normalized_name, similarity_key,
+                     unit_price_rials, version, is_active, specification, product_tag_number,
+                     category, color, size, material, brand, barcode)
+                VALUES
+                    ($store, 'legacy', 'Legacy', 'legacy', 'legacy',
+                     1250, 1, 1, NULL, 7, NULL, NULL, NULL, NULL, NULL, NULL);
+                """;
+            command.Parameters.AddWithValue("$store", S1.ToString("D"));
+            command.ExecuteNonQuery();
+        }
+
+        using (var migrated = new SqliteHubStore(database.ConnectionString))
+        {
+            var product = Assert.IsType<Product>(migrated.LoadProductCatalog().Get(S1, "legacy"));
+            Assert.Equal(1_250L, product.UnitPriceRials);
+            Assert.Null(product.PurchasePriceRials);
+            Assert.Null(product.ProfitRials);
+            migrated.SaveProduct(product with { PurchasePriceRials = 0 });
+        }
+
+        using (var reopened = new SqliteHubStore(database.ConnectionString))
+        {
+            var product = Assert.IsType<Product>(reopened.LoadProductCatalog().Get(S1, "legacy"));
+            Assert.Equal(0L, product.PurchasePriceRials);
+            Assert.Equal(1_250L, product.ProfitRials);
         }
     }
 

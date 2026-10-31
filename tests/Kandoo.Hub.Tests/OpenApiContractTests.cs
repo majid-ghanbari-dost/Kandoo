@@ -35,6 +35,13 @@ public sealed class OpenApiContractTests
             Assert.True(paths.TryGetProperty(path, out _), $"Missing generated OpenAPI path: {path}");
         }
 
+        var registrationSchema = document.RootElement.GetProperty("components").GetProperty("schemas")
+            .GetProperty("HubProductRegistrationRequest");
+        var purchasePrice = registrationSchema.GetProperty("properties").GetProperty("purchase_price_rials");
+        Assert.Equal("integer", purchasePrice.GetProperty("type").GetString());
+        Assert.Equal("int64", purchasePrice.GetProperty("format").GetString());
+        Assert.True(purchasePrice.GetProperty("nullable").GetBoolean());
+
         var output = Environment.GetEnvironmentVariable("KANDOO_OPENAPI_OUTPUT");
         if (!string.IsNullOrWhiteSpace(output))
         {

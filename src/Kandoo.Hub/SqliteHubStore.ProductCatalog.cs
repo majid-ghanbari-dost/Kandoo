@@ -57,7 +57,8 @@ public sealed partial class SqliteHubStore
                 input.Size,
                 input.Material,
                 input.Brand,
-                input.Barcode);
+                input.Barcode,
+                input.PurchasePriceRials);
             concrete.SaveProduct(product);
             concrete.SaveProductOperatorFields(request.StoreId, productId, input.OperatorFields ?? Array.Empty<ProductOperatorField>());
             var stock = input.InitialStockMillis!.Value;
