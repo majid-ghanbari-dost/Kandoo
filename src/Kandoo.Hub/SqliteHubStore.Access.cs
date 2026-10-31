@@ -14,8 +14,14 @@ public sealed partial class SqliteHubStore
         string pairingId,
         string proofHash,
         DateTimeOffset issuedAt,
-        DateTimeOffset expiresAt)
+        DateTimeOffset expiresAt,
+        string operatorLevel = HubOperatorLevel.Operator)
     {
+        if (!HubOperatorLevel.IsSupported(operatorLevel))
+        {
+            throw new ArgumentException("Unsupported operator level.", nameof(operatorLevel));
+        }
+
         lock (_gate)
         {
             ThrowIfDisposed();
@@ -37,8 +43,8 @@ public sealed partial class SqliteHubStore
                 using (var command = AccessCommand(transaction, """
                     INSERT INTO pairing_grants
                         (pairing_id, store_id, hub_device_id, owner_user_id, hub_endpoint,
-                         proof_hash, issued_at, expires_at, consumed)
-                    VALUES ($id, $store, $hub, $owner, $endpoint, $proof, $issued, $expires, 0);
+                         proof_hash, issued_at, expires_at, consumed, operator_level)
+                    VALUES ($id, $store, $hub, $owner, $endpoint, $proof, $issued, $expires, 0, $level);
                     """))
                 {
                     AddAccess(command, "$id", pairingId);
@@ -49,12 +55,14 @@ public sealed partial class SqliteHubStore
                     AddAccess(command, "$proof", proofHash);
                     AddAccess(command, "$issued", AccessDate(issuedAt));
                     AddAccess(command, "$expires", AccessDate(expiresAt));
+                    AddAccess(command, "$level", operatorLevel);
                     command.ExecuteNonQuery();
                 }
 
                 InsertAudit(transaction, storeId, "PAIRING_GRANT_ISSUED", ownerUserId, hubDeviceId, issuedAt);
                 transaction.Commit();
-                return new HubPairingGrant(pairingId, storeId, hubDeviceId, hubEndpoint, proofHash, issuedAt, expiresAt, false);
+                return new HubPairingGrant(
+                    pairingId, storeId, hubDeviceId, hubEndpoint, proofHash, issuedAt, expiresAt, false, operatorLevel);
             }
             catch
             {
@@ -85,7 +93,7 @@ public sealed partial class SqliteHubStore
                 GrantRow? grant;
                 using (var command = AccessCommand(transaction, """
                     SELECT pairing_id, store_id, hub_device_id, hub_endpoint, proof_hash,
-                           issued_at, expires_at, consumed
+                           issued_at, expires_at, consumed, operator_level
                     FROM pairing_grants WHERE pairing_id = $id;
                     """))
                 {
@@ -95,7 +103,8 @@ public sealed partial class SqliteHubStore
                         ? new GrantRow(
                             reader.GetString(0), Guid.Parse(reader.GetString(1)), Guid.Parse(reader.GetString(2)),
                             reader.GetString(3), reader.GetString(4), AccessParseDate(reader.GetString(5)),
-                            AccessParseDate(reader.GetString(6)), reader.GetInt64(7) != 0)
+                            AccessParseDate(reader.GetString(6)), reader.GetInt64(7) != 0,
+                            reader.IsDBNull(8) ? null : reader.GetString(8))
                         : null;
                 }
 
@@ -148,8 +157,8 @@ public sealed partial class SqliteHubStore
                 using (var device = AccessCommand(transaction, """
                     INSERT INTO devices
                         (store_id, device_id, device_role, pairing_status, owner_user_id,
-                         label, platform, device_public_key, credential_hash, paired_at)
-                    VALUES ($store, $device, $role, $status, NULL, $label, $platform, $key, $credential, $now);
+                         label, platform, device_public_key, credential_hash, paired_at, operator_level)
+                    VALUES ($store, $device, $role, $status, NULL, $label, $platform, $key, $credential, $now, $level);
                     """))
                 {
                     AddAccess(device, "$store", AccessUuid(grant.StoreId));
@@ -161,6 +170,7 @@ public sealed partial class SqliteHubStore
                     AddAccess(device, "$key", devicePublicKey);
                     AddAccess(device, "$credential", credentialHash);
                     AddAccess(device, "$now", AccessDate(now));
+                    AddAccess(device, "$level", grant.OperatorLevel ?? HubOperatorLevel.Operator);
                     device.ExecuteNonQuery();
                 }
 
@@ -171,7 +181,7 @@ public sealed partial class SqliteHubStore
                 transaction.Commit();
                 var resultDevice = new HubDevice(
                     grant.StoreId, deviceId, HubDeviceRole.Companion, HubPairingStatus.Active,
-                    null, label, platform, devicePublicKey);
+                    null, label, platform, devicePublicKey, grant.OperatorLevel ?? HubOperatorLevel.Operator);
                 return new HubPairingConsumeResult(
                     "DEVICE_PAIRED", resultDevice, new HubSessionIssued(issued, token), deviceCredential);
             }
@@ -200,7 +210,7 @@ public sealed partial class SqliteHubStore
                 HubDevice? existing = null;
                 using (var device = AccessCommand(transaction, """
                     SELECT store_id, device_id, device_role, pairing_status, owner_user_id,
-                           label, platform, device_public_key
+                           label, platform, device_public_key, credential_hash, operator_level
                     FROM devices WHERE device_id = $device;
                     """))
                 {
@@ -289,7 +299,7 @@ public sealed partial class SqliteHubStore
                 HubDevice? device = null;
                 using (var command = AccessCommand(transaction, """
                     SELECT store_id, device_id, device_role, pairing_status, owner_user_id,
-                           label, platform, device_public_key, credential_hash
+                           label, platform, device_public_key, credential_hash, operator_level
                     FROM devices WHERE store_id = $store AND device_id = $device;
                     """))
                 {
@@ -370,7 +380,7 @@ public sealed partial class SqliteHubStore
             HubDevice? device = null;
             using (var command = AccessCommand(transaction, """
                 SELECT store_id, device_id, device_role, pairing_status, owner_user_id,
-                       label, platform, device_public_key, credential_hash
+                       label, platform, device_public_key, credential_hash, operator_level
                 FROM devices WHERE store_id = $store AND device_id = $device;
                 """))
             {
@@ -430,7 +440,7 @@ public sealed partial class SqliteHubStore
             using var command = _connection.CreateCommand();
             command.CommandText = """
                 SELECT store_id, device_id, device_role, pairing_status, owner_user_id,
-                       label, platform, device_public_key, credential_hash
+                       label, platform, device_public_key, credential_hash, operator_level
                 FROM devices WHERE store_id = $store ORDER BY device_id;
                 """;
             AddAccess(command, "$store", AccessUuid(storeId));
@@ -442,6 +452,78 @@ public sealed partial class SqliteHubStore
             }
 
             return devices;
+        }
+    }
+
+    public HubDeviceLevelChangeResult ChangeDeviceLevel(
+        Guid storeId, Guid deviceId, Guid ownerUserId, string operatorLevel, DateTimeOffset now)
+    {
+        if (!HubOperatorLevel.IsSupported(operatorLevel))
+        {
+            throw new ArgumentException("Unsupported operator level.", nameof(operatorLevel));
+        }
+
+        lock (_gate)
+        {
+            ThrowIfDisposed();
+            using var transaction = _connection.BeginTransaction();
+            try
+            {
+                HubDevice? device;
+                using (var command = AccessCommand(transaction, """
+                    SELECT store_id, device_id, device_role, pairing_status, owner_user_id,
+                           label, platform, device_public_key, credential_hash, operator_level
+                    FROM devices WHERE store_id = $store AND device_id = $device;
+                    """))
+                {
+                    AddAccess(command, "$store", AccessUuid(storeId));
+                    AddAccess(command, "$device", AccessUuid(deviceId));
+                    using var reader = command.ExecuteReader();
+                    device = reader.Read() ? ReadAccessDevice(reader) : null;
+                }
+
+                if (device is null)
+                {
+                    return new HubDeviceLevelChangeResult("DEVICE_NOT_PAIRED");
+                }
+
+                if (device.DeviceRole != HubDeviceRole.Companion)
+                {
+                    return new HubDeviceLevelChangeResult("DEVICE_LEVEL_NOT_APPLICABLE");
+                }
+
+                if (device.PairingStatus == HubPairingStatus.Revoked)
+                {
+                    return new HubDeviceLevelChangeResult("DEVICE_REVOKED");
+                }
+
+                using (var update = AccessCommand(transaction, """
+                    UPDATE devices SET operator_level = $level
+                    WHERE store_id = $store AND device_id = $device
+                      AND device_role = $companion AND pairing_status = $active;
+                    """))
+                {
+                    AddAccess(update, "$level", operatorLevel);
+                    AddAccess(update, "$store", AccessUuid(storeId));
+                    AddAccess(update, "$device", AccessUuid(deviceId));
+                    AddAccess(update, "$companion", (int)HubDeviceRole.Companion);
+                    AddAccess(update, "$active", (int)HubPairingStatus.Active);
+                    if (update.ExecuteNonQuery() != 1)
+                    {
+                        return new HubDeviceLevelChangeResult("DEVICE_NOT_PAIRED");
+                    }
+                }
+
+                InsertAudit(transaction, storeId, "DEVICE_LEVEL_CHANGED", ownerUserId, deviceId, now);
+                transaction.Commit();
+                return new HubDeviceLevelChangeResult(
+                    "DEVICE_LEVEL_CHANGED", device with { OperatorLevel = operatorLevel });
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
         }
     }
 
@@ -530,6 +612,7 @@ public sealed partial class SqliteHubStore
                 credential_hash TEXT NOT NULL,
                 paired_at TEXT NOT NULL,
                 revoked_at TEXT NULL,
+                operator_level TEXT NULL,
                 PRIMARY KEY (store_id, device_id),
                 UNIQUE (device_id)
             );
@@ -544,7 +627,8 @@ public sealed partial class SqliteHubStore
                 expires_at TEXT NOT NULL,
                 consumed INTEGER NOT NULL,
                 consumed_device_id TEXT NULL,
-                consumed_at TEXT NULL
+                consumed_at TEXT NULL,
+                operator_level TEXT NULL
             );
             CREATE TABLE IF NOT EXISTS sessions (
                 session_id TEXT PRIMARY KEY,
@@ -568,6 +652,8 @@ public sealed partial class SqliteHubStore
             );
             """;
         command.ExecuteNonQuery();
+        EnsureColumn("devices", "operator_level", "TEXT NULL");
+        EnsureColumn("pairing_grants", "operator_level", "TEXT NULL");
     }
 
     private static HubSession InsertSession(
@@ -643,7 +729,8 @@ public sealed partial class SqliteHubStore
         reader.IsDBNull(4) ? null : Guid.Parse(reader.GetString(4)),
         reader.GetString(5),
         reader.GetString(6),
-        reader.IsDBNull(7) ? null : reader.GetString(7));
+        reader.IsDBNull(7) ? null : reader.GetString(7),
+        reader.IsDBNull(9) ? null : reader.GetString(9));
 
     private static SqliteCommand AccessCommand(SqliteTransaction transaction, string sql)
     {
@@ -669,7 +756,8 @@ public sealed partial class SqliteHubStore
         string ProofHash,
         DateTimeOffset IssuedAt,
         DateTimeOffset ExpiresAt,
-        bool Consumed);
+        bool Consumed,
+        string? OperatorLevel);
 
     private sealed record SessionRow(
         string SessionId,

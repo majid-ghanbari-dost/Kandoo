@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Kandoo.Core;
 
 public enum ProductRegistrationStatus
@@ -25,7 +27,15 @@ public sealed record Product(
     string? Size = null,
     string? Material = null,
     string? Brand = null,
-    string? Barcode = null);
+    string? Barcode = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? PurchasePriceRials = null)
+{
+    /// <summary>Derived display value only; never persisted or inferred without a purchase price.</summary>
+    [JsonIgnore]
+    public long? ProfitRials => PurchasePriceRials is long purchasePrice
+        ? checked(UnitPriceRials - purchasePrice)
+        : null;
+}
 
 /// <summary>An operator-defined value whose array position is significant and store-private.</summary>
 public sealed record ProductOperatorField(string Key, string Value);
@@ -55,9 +65,10 @@ public sealed class ProductCatalog
         string productId,
         string name,
         long unitPriceRials,
-        string? acknowledgedCandidateId = null)
+        string? acknowledgedCandidateId = null,
+        long? purchasePriceRials = null)
     {
-        if (storeId == Guid.Empty || string.IsNullOrWhiteSpace(productId) || unitPriceRials < 0)
+        if (storeId == Guid.Empty || string.IsNullOrWhiteSpace(productId) || unitPriceRials < 0 || purchasePriceRials < 0)
         {
             throw new ArgumentException("Store, product ID, and a non-negative integer Rial price are required.");
         }
@@ -84,7 +95,9 @@ public sealed class ProductCatalog
                 return new(ProductRegistrationStatus.NearDuplicateWarning, CandidateProductId: candidate.ProductId);
             }
 
-            var product = new Product(storeId, productId, name, normalized, similarity, unitPriceRials, 1);
+            var product = new Product(
+                storeId, productId, name, normalized, similarity, unitPriceRials, 1,
+                PurchasePriceRials: purchasePriceRials);
             _products.Add(key, product);
             return new(ProductRegistrationStatus.Created, product);
         }

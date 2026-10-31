@@ -26,7 +26,8 @@ public sealed record OwnerSessionRequest(
 public sealed record PairingGrantRequest(
     Guid HubDeviceId,
     string? HubEndpoint,
-    string? RequestedDeviceRole);
+    string? RequestedDeviceRole,
+    string? RequestedLevel = null);
 
 public sealed record PairingConsumeRequest(
     string? PairingId,
@@ -52,9 +53,12 @@ public sealed record HubProductRegistrationRequest(
     string? Specification = null,
     string? Type = null,
     long? ProductTagNumber = null,
-    IReadOnlyList<ProductOperatorField>? OperatorFields = null);
+    IReadOnlyList<ProductOperatorField>? OperatorFields = null,
+    long? PurchasePriceRials = null);
 
 public sealed record SessionResumeRequest(string? DeviceCredential);
+
+public sealed record HubDeviceLevelRequest(string? OperatorLevel);
 
 public sealed record HubOperationRequest(
     string? ProtocolVersion,

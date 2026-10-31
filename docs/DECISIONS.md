@@ -2,7 +2,7 @@
 
 **Repository:** `majid-ghanbari-dost/Kandoo` (Parent Platform Repository)  
 **Baseline:** Board v4 + Amendment v4.1 + Amendment v4.2 (`R-0`)  
-**Last updated:** `2026-10-29` (PM Record — Owner decisions)
+**Last updated:** `2026-10-30` (PM Record — Owner decisions)
 
 > **Governance Rule:** Frozen decisions are not reopened without direct contradictory evidence or explicit Product Owner revision. Where Amendments `v4.1` or `v4.2` modify an earlier `Board v4` clause, the latest amendment governs. Whenever a detail is unspecified and the PM is unavailable, take the conservative fail-closed option (`REVIEW` / feature gate) and record it under [Assumptions](#assumptions).
 
@@ -221,6 +221,34 @@ Other decisions:
 - "Beside other software" path has two phases: (a) digital invoice + customer data collection from print capture; (b) shadow store built from the other software's data with manager permission. Phase (b) is blocked on Holoo data access and legal review.
 - Customer side needs only mobile-number verification.
 - Roles for phone operators: seller, operator, manager. Android is NOT in the first MVP.
+
+---
+
+## PM Record — Owner Decisions (`2026-10-30`)
+
+PM RECORD - Owner decisions, 30 Oct 2026 (recorded verbatim;
+do not change any code)
+1. Tax: Kandoo does NOT integrate with any tax or judicial
+   authority. Tax is only a ready-made export produced by the
+   accounting module. Responsibility belongs to the store
+   manager. Product Owner's decision; no agent writes any
+   legal claim about it (lawyer reviews wording later).
+2. Accounting is the top-quality module. Principle: zero
+   jargon by default (no "debit/credit" unless the user turns
+   on professional view), most work automatic, each invoice
+   creates its entries automatically.
+3. Placement: light management accounting (read-only,
+   derived from Hub events) belongs to MVP-2 (Kandoo as the
+   store's primary software). It is NOT part of MVP-1 (beside
+   other software). Full double-entry accounting comes after.
+4. Product form: add an OPTIONAL "purchase price" field.
+   Profit is shown only for products that have it; never
+   guessed.
+5. Hub must keep every monetary fact as an immutable event
+   with time and actor; cancellations and returns are new
+   events, never edits. Every invoice has a unique id.
+6. Do not start accounting code yet. Design first (PM),
+   accountant interviews (owner).
 
 ---
 

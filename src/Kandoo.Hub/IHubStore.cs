@@ -41,6 +41,7 @@ public interface IHubStore : IDisposable
     void AppendInventory(InventoryEvent inventoryEvent);
     void SaveInvoice(Invoice invoice);
     Invoice? GetInvoice(Guid storeId, Guid invoiceId);
+    IReadOnlyList<ReplicationLogEntry> ReadReplicationEntries(Guid storeId);
     long GetDisplayNumberHighWatermark(Guid storeId);
     IReadOnlyList<DraftLock> GetDraftLocks();
     void CompleteTimeout(DraftLock draftLock);

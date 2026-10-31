@@ -202,6 +202,24 @@ public sealed class HubOperationService
             }
         }
 
+        var purchasePrice = current.PurchasePriceRials;
+        if (request.Payload.TryGetProperty("purchase_price_rials", out var purchasePriceElement))
+        {
+            if (purchasePriceElement.ValueKind == JsonValueKind.Null)
+            {
+                purchasePrice = null;
+            }
+            else if (purchasePriceElement.ValueKind != JsonValueKind.Number ||
+                     !purchasePriceElement.TryGetInt64(out var suppliedPurchasePrice) || suppliedPurchasePrice < 0)
+            {
+                throw new DomainException("VALIDATION_ERROR");
+            }
+            else
+            {
+                purchasePrice = suppliedPurchasePrice;
+            }
+        }
+
         var specification = current.Specification;
         if (request.Payload.TryGetProperty("specification", out var specificationElement))
         {
@@ -248,6 +266,7 @@ public sealed class HubOperationService
             NormalizedName = normalizedName,
             SimilarityKey = similarityKey,
             UnitPriceRials = price,
+            PurchasePriceRials = purchasePrice,
             Specification = specification,
             Category = category,
             Color = color,
@@ -495,6 +514,8 @@ public sealed class HubOperationService
         normalized_name = product.NormalizedName,
         similarity_key = product.SimilarityKey,
         unit_price_rials = product.UnitPriceRials,
+        purchase_price_rials = product.PurchasePriceRials,
+        profit_rials = product.ProfitRials,
         version = product.Version,
         is_active = product.IsActive,
         specification = product.Specification,

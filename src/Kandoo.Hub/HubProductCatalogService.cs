@@ -72,6 +72,11 @@ public sealed class HubProductCatalogService
             values["product_tag_number"] = input.ProductTagNumber;
         }
 
+        if (input.PurchasePriceRials is not null)
+        {
+            values["purchase_price_rials"] = input.PurchasePriceRials;
+        }
+
         if (input.OperatorFields is { Count: > 0 })
         {
             values["operator_fields"] = input.OperatorFields;

@@ -23,6 +23,8 @@ public sealed class OpenApiContractTests
                      "/v1/stores/{store_id}/products/cascade-options",
                      "/v1/stores/{store_id}/products/{product_id}",
                      "/v1/stores/{store_id}/service-types",
+                     "/v1/stores/{store_id}/stats/v0",
+                     "/v1/stores/{store_id}/devices/{device_id}/level",
                      "/v1/stores/{store_id}/invoices/drafts",
                      "/v1/stores/{store_id}/invoices/{invoice_id}/items",
                      "/v1/stores/{store_id}/invoices/{invoice_id}/issue",
@@ -34,6 +36,15 @@ public sealed class OpenApiContractTests
         {
             Assert.True(paths.TryGetProperty(path, out _), $"Missing generated OpenAPI path: {path}");
         }
+
+        var schemas = document.RootElement.GetProperty("components").GetProperty("schemas");
+        Assert.True(schemas.TryGetProperty("HubProductRegistrationRequest", out var registrationSchema), schemas.GetRawText());
+        Assert.True(registrationSchema.TryGetProperty("properties", out var registrationProperties), registrationSchema.GetRawText());
+        Assert.True(registrationProperties.TryGetProperty("purchase_price_rials", out var purchasePrice), registrationProperties.GetRawText());
+        Assert.Equal("integer", purchasePrice.GetProperty("type").GetString());
+        Assert.Equal("int64", purchasePrice.GetProperty("format").GetString());
+        Assert.True(purchasePrice.TryGetProperty("nullable", out var nullable), purchasePrice.GetRawText());
+        Assert.True(nullable.GetBoolean());
 
         var output = Environment.GetEnvironmentVariable("KANDOO_OPENAPI_OUTPUT");
         if (!string.IsNullOrWhiteSpace(output))

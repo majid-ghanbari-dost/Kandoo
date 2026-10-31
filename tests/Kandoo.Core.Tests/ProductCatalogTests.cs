@@ -83,4 +83,34 @@ public sealed class ProductCatalogTests
         Assert.Equal(1100, catalog.Get(TestData.S1, "prod-1")!.UnitPriceRials);
         Assert.Null(catalog.Get(TestData.S1, "prod-1")!.Specification);
     }
+
+    [Fact]
+    public void C32_ProfitRequiresExplicitPurchasePriceAndIsNeverPersisted()
+    {
+        var catalog = new ProductCatalog();
+        var registered = catalog.Register(
+            TestData.S1, "prod-catalog-cost", "Catalog cost", 1_000, purchasePriceRials: 400);
+        Assert.Equal(600L, registered.Product!.ProfitRials);
+        Assert.Throws<ArgumentException>(() => catalog.Register(
+            TestData.S1, "prod-invalid-cost", "Invalid cost", 1_000, purchasePriceRials: -1));
+
+        var missing = new Product(TestData.S1, "prod-profit", "Profit", "profit", "profit", 1_000, 1);
+        Assert.Null(missing.PurchasePriceRials);
+        Assert.Null(missing.ProfitRials);
+
+        var zero = missing with { PurchasePriceRials = 0 };
+        Assert.Equal(0L, zero.PurchasePriceRials);
+        Assert.Equal(1_000L, zero.ProfitRials);
+        var costed = missing with { PurchasePriceRials = 400 };
+        Assert.Equal(600L, costed.ProfitRials);
+        var loss = missing with { PurchasePriceRials = 1_200 };
+        Assert.Equal(-200L, loss.ProfitRials);
+
+        var missingJson = System.Text.Json.JsonSerializer.Serialize(missing);
+        Assert.DoesNotContain("PurchasePriceRials", missingJson, StringComparison.Ordinal);
+        Assert.DoesNotContain("ProfitRials", missingJson, StringComparison.Ordinal);
+        var zeroJson = System.Text.Json.JsonSerializer.Serialize(zero);
+        Assert.Contains("PurchasePriceRials", zeroJson, StringComparison.Ordinal);
+        Assert.DoesNotContain("ProfitRials", zeroJson, StringComparison.Ordinal);
+    }
 }

@@ -22,7 +22,7 @@ internal sealed class SqliteHubTransaction : IHubTransaction
         using var command = Command("""
             SELECT store_id, product_id, name, normalized_name, similarity_key,
                    unit_price_rials, version, is_active, specification, product_tag_number,
-                   category, color, size, material, brand, barcode
+                   category, color, size, material, brand, barcode, purchase_price_rials
             FROM products WHERE store_id = $store AND product_id = $product;
             """);
         Add(command, "$store", Uuid(storeId));
@@ -36,7 +36,7 @@ internal sealed class SqliteHubTransaction : IHubTransaction
         using var command = Command("""
             SELECT store_id, product_id, name, normalized_name, similarity_key,
                    unit_price_rials, version, is_active, specification, product_tag_number,
-                   category, color, size, material, brand, barcode
+                   category, color, size, material, brand, barcode, purchase_price_rials
             FROM products ORDER BY store_id, product_id;
             """);
         using var reader = command.ExecuteReader();
@@ -55,15 +55,16 @@ internal sealed class SqliteHubTransaction : IHubTransaction
             INSERT INTO products
                 (store_id, product_id, name, normalized_name, similarity_key,
                  unit_price_rials, version, is_active, specification, product_tag_number,
-                 category, color, size, material, brand, barcode)
+                 category, color, size, material, brand, barcode, purchase_price_rials)
             VALUES ($store, $product, $name, $normalized, $similarity, $price, $version, $active, $specification,
-                    $tag, $category, $color, $size, $material, $brand, $barcode)
+                    $tag, $category, $color, $size, $material, $brand, $barcode, $purchasePrice)
             ON CONFLICT(store_id, product_id) DO UPDATE SET
                 name = excluded.name, normalized_name = excluded.normalized_name,
                 similarity_key = excluded.similarity_key, unit_price_rials = excluded.unit_price_rials,
                 version = excluded.version, is_active = excluded.is_active, specification = excluded.specification,
                 category = excluded.category, color = excluded.color, size = excluded.size,
-                material = excluded.material, brand = excluded.brand, barcode = excluded.barcode;
+                material = excluded.material, brand = excluded.brand, barcode = excluded.barcode,
+                purchase_price_rials = excluded.purchase_price_rials;
             """);
         Add(command, "$store", Uuid(product.StoreId));
         Add(command, "$product", product.ProductId);
@@ -81,6 +82,7 @@ internal sealed class SqliteHubTransaction : IHubTransaction
         Add(command, "$material", product.Material);
         Add(command, "$brand", product.Brand);
         Add(command, "$barcode", product.Barcode);
+        Add(command, "$purchasePrice", product.PurchasePriceRials);
         command.ExecuteNonQuery();
     }
 
@@ -403,7 +405,7 @@ internal sealed class SqliteHubTransaction : IHubTransaction
         using var command = Command("""
             SELECT store_id, product_id, name, normalized_name, similarity_key,
                    unit_price_rials, version, is_active, specification, product_tag_number,
-                   category, color, size, material, brand, barcode
+                   category, color, size, material, brand, barcode, purchase_price_rials
             FROM products WHERE store_id = $store AND product_tag_number = $tag;
             """);
         Add(command, "$store", Uuid(storeId));
@@ -808,7 +810,8 @@ internal sealed class SqliteHubTransaction : IHubTransaction
         reader.IsDBNull(12) ? null : reader.GetString(12),
         reader.IsDBNull(13) ? null : reader.GetString(13),
         reader.IsDBNull(14) ? null : reader.GetString(14),
-        reader.IsDBNull(15) ? null : reader.GetString(15));
+        reader.IsDBNull(15) ? null : reader.GetString(15),
+        reader.IsDBNull(16) ? null : reader.GetInt64(16));
 
     private static OperationRecord ReadOperation(SqliteDataReader reader) => new(
         Guid.Parse(reader.GetString(0)),

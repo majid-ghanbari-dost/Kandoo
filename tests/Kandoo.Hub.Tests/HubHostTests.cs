@@ -179,6 +179,84 @@ public sealed class HubHostTests : IDisposable
         Assert.Equal("STORE_ACCESS_DENIED", wrongStore.Body.GetProperty("code").GetString());
     }
 
+    [Fact]
+    public async Task C32_ProductApiPreservesNullZeroAndDerivedProfitThroughCreateListAndPatch()
+    {
+        var storeId = Guid.NewGuid();
+        var owner = await _api.Owner(storeId, Guid.NewGuid(), Guid.NewGuid());
+        var paired = await _api.Pair(owner, storeId, Guid.NewGuid());
+
+        var missing = await _api.Post($"/v1/stores/{storeId:D}/products", new
+        {
+            operation_id = "c32-missing",
+            name = "Missing cost",
+            unit_price_rials = 1_500,
+            initial_stock_millis = 0
+        }, paired.Session.Token);
+        Assert.Equal(HttpStatusCode.OK, missing.StatusCode);
+        var missingProduct = missing.Body.GetProperty("product");
+        Assert.Equal(JsonValueKind.Null, missingProduct.GetProperty("purchase_price_rials").ValueKind);
+        Assert.Equal(JsonValueKind.Null, missingProduct.GetProperty("profit_rials").ValueKind);
+
+        var zero = await _api.Post($"/v1/stores/{storeId:D}/products", new
+        {
+            operation_id = "c32-zero",
+            name = "Explicit zero cost",
+            unit_price_rials = 1_000,
+            purchase_price_rials = 0,
+            initial_stock_millis = 0
+        }, paired.Session.Token);
+        Assert.Equal(HttpStatusCode.OK, zero.StatusCode);
+        var productId = zero.Body.GetProperty("product").GetProperty("product_id").GetString()!;
+        Assert.Equal(0L, zero.Body.GetProperty("product").GetProperty("purchase_price_rials").GetInt64());
+        Assert.Equal(1_000L, zero.Body.GetProperty("product").GetProperty("profit_rials").GetInt64());
+
+        var costed = await _api.Patch($"/v1/stores/{storeId:D}/products/{productId}", new
+        {
+            operation_id = "c32-set-cost",
+            base_version = 1,
+            payload = new { purchase_price_rials = 400 }
+        }, paired.Session.Token);
+        Assert.Equal(HttpStatusCode.OK, costed.StatusCode);
+        var costedProduct = costed.Body.GetProperty("response").GetProperty("product");
+        Assert.Equal(400L, costedProduct.GetProperty("purchase_price_rials").GetInt64());
+        Assert.Equal(600L, costedProduct.GetProperty("profit_rials").GetInt64());
+
+        var listed = await _api.Get($"/v1/stores/{storeId:D}/products?limit=100", paired.Session.Token);
+        Assert.Equal(HttpStatusCode.OK, listed.StatusCode);
+        var listedProduct = listed.Body.GetProperty("items").EnumerateArray()
+            .Single(value => value.GetProperty("product_id").GetString() == productId);
+        Assert.Equal(400L, listedProduct.GetProperty("purchase_price_rials").GetInt64());
+        Assert.Equal(600L, listedProduct.GetProperty("profit_rials").GetInt64());
+        var listedMissing = listed.Body.GetProperty("items").EnumerateArray()
+            .Single(value => value.GetProperty("name").GetString() == "Missing cost");
+        Assert.Equal(JsonValueKind.Null, listedMissing.GetProperty("purchase_price_rials").ValueKind);
+        Assert.Equal(JsonValueKind.Null, listedMissing.GetProperty("profit_rials").ValueKind);
+
+        var cleared = await _api.Patch($"/v1/stores/{storeId:D}/products/{productId}", new
+        {
+            operation_id = "c32-clear-cost",
+            base_version = 2,
+            payload = new { purchase_price_rials = (long?)null }
+        }, paired.Session.Token);
+        Assert.Equal(HttpStatusCode.OK, cleared.StatusCode);
+        var clearedProduct = cleared.Body.GetProperty("response").GetProperty("product");
+        Assert.Equal(JsonValueKind.Null, clearedProduct.GetProperty("purchase_price_rials").ValueKind);
+        Assert.Equal(JsonValueKind.Null, clearedProduct.GetProperty("profit_rials").ValueKind);
+
+        var negative = await _api.Patch($"/v1/stores/{storeId:D}/products/{productId}", new
+        {
+            operation_id = "c32-negative-cost",
+            base_version = 3,
+            payload = new { purchase_price_rials = -1 }
+        }, paired.Session.Token);
+        Assert.Equal(HttpStatusCode.BadRequest, negative.StatusCode);
+        var persisted = Assert.IsType<Product>(_factory.Store.LoadProductCatalog().Get(storeId, productId));
+        Assert.Equal(3, persisted.Version);
+        Assert.Null(persisted.PurchasePriceRials);
+        Assert.Null(persisted.ProfitRials);
+    }
+
     public void Dispose()
     {
         _http.Dispose();
