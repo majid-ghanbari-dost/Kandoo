@@ -15,6 +15,7 @@ public static partial class HubApiFirstEndpoints
     {
         MapProductApi(app);
         MapInvoiceApi(app);
+        MapStatsApi(app);
         MapReviewApi(app);
         MapSmsApi(app);
     }

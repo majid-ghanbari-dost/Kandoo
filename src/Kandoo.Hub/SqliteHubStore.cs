@@ -141,6 +141,31 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore, IHubRep
         }
     }
 
+    public IReadOnlyList<ReplicationLogEntry> ReadReplicationEntries(Guid storeId)
+    {
+        if (storeId == Guid.Empty)
+        {
+            throw new ArgumentException("A store is required.", nameof(storeId));
+        }
+
+        lock (_gate)
+        {
+            ThrowIfDisposed();
+            using var command = _connection.CreateCommand();
+            command.CommandText = "SELECT entry_json FROM replication_log WHERE store_id = $store ORDER BY operation_seq;";
+            command.Parameters.AddWithValue("$store", storeId.ToString("D"));
+            using var reader = command.ExecuteReader();
+            var entries = new List<ReplicationLogEntry>();
+            while (reader.Read())
+            {
+                entries.Add(JsonSerializer.Deserialize<ReplicationLogEntry>(reader.GetString(0), HubJson.Options)
+                    ?? throw new InvalidOperationException("Invalid durable replication entry."));
+            }
+
+            return entries;
+        }
+    }
+
     public long GetDisplayNumberHighWatermark(Guid storeId)
     {
         lock (_gate)

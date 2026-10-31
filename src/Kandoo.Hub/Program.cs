@@ -31,6 +31,8 @@ var sqliteConnection = builder.Configuration.GetConnectionString("HubSqlite")
 var hubStore = new SqliteHubStore(sqliteConnection);
 builder.Services.AddSingleton<IHubStore>(hubStore);
 builder.Services.AddSingleton<IHubAccessStore>(hubStore);
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<HubStatsService>();
 builder.Services.AddSingleton<IClock, SystemHubClock>();
 builder.Services.AddSingleton<HubOperationService>();
 builder.Services.AddSingleton(new HubProductCatalogService(hubStore));

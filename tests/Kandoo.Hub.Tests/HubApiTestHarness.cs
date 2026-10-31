@@ -18,6 +18,13 @@ public sealed class ManualHubClock : IClock
     public DateTimeOffset UtcNow { get; set; } = new(2026, 10, 22, 8, 0, 0, TimeSpan.Zero);
 }
 
+public sealed class ManualHubTimeProvider : TimeProvider
+{
+    public DateTimeOffset UtcNow { get; set; } = new(2026, 10, 22, 8, 0, 0, TimeSpan.Zero);
+
+    public override DateTimeOffset GetUtcNow() => UtcNow;
+}
+
 public sealed class HubApiFactory : WebApplicationFactory<Program>
 {
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "kandoo-hub-api", Guid.NewGuid().ToString("N"));
@@ -31,6 +38,7 @@ public sealed class HubApiFactory : WebApplicationFactory<Program>
 
     public string ConnectionString { get; }
     public ManualHubClock Clock { get; } = new();
+    public ManualHubTimeProvider StatsTime { get; } = new();
     public SqliteHubStore TestStore { get; }
     public SqliteHubStore Store => TestStore;
     public DeterministicHubSmsGateway TestSms { get; } = new();
@@ -48,6 +56,8 @@ public sealed class HubApiFactory : WebApplicationFactory<Program>
         {
             services.RemoveAll<IClock>();
             services.AddSingleton<IClock>(Clock);
+            services.RemoveAll<TimeProvider>();
+            services.AddSingleton<TimeProvider>(StatsTime);
             // Replace both interfaces and the operation service together. The
             // top-level default store must never be shared by parallel vectors.
             services.RemoveAll<IHubStore>();
