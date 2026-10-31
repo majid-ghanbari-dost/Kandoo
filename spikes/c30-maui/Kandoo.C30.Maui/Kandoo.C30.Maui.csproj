@@ -9,6 +9,7 @@
     <Nullable>enable</Nullable>
     <WindowsPackageType>None</WindowsPackageType>
     <ApplicationId>ir.kandoo.c30.maui</ApplicationId>
+    <AndroidManifest>Platforms/Android/AndroidManifest.xml</AndroidManifest>
     <ApplicationTitle>Kandoo C30 MAUI Throwaway Spike</ApplicationTitle>
     <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
     <ApplicationVersion>1</ApplicationVersion>
