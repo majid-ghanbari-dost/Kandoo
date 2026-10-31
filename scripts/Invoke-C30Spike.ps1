@@ -7,7 +7,14 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-New-Item -ItemType Directory -Force -Path $ArtifactDirectory | Out-Null
+$repoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
+$artifactRoot = if ([System.IO.Path]::IsPathRooted($ArtifactDirectory)) {
+    [System.IO.Path]::GetFullPath($ArtifactDirectory)
+}
+else {
+    [System.IO.Path]::GetFullPath((Join-Path $repoRoot $ArtifactDirectory))
+}
+New-Item -ItemType Directory -Force -Path $artifactRoot | Out-Null
 
 function Invoke-DotNet {
     param([Parameter(Mandatory = $true)][string[]]$Arguments)
@@ -49,24 +56,23 @@ function Write-BuildEvidence {
         total_bytes = ($files | Measure-Object -Property Length -Sum).Sum
         sample_outputs = $outputs
     }
-    $path = Join-Path (Resolve-Path -LiteralPath $ArtifactDirectory).Path "c30-$($Technology.ToLowerInvariant())-$($Target.ToLowerInvariant())-build.json"
+    $path = Join-Path $artifactRoot "c30-$($Technology.ToLowerInvariant())-$($Target.ToLowerInvariant())-build.json"
     $evidence | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $path -Encoding utf8NoBOM
     Write-Host "C30_BUILD PASS technology=$Technology target=$Target files=$($files.Count) bytes=$($evidence.total_bytes) evidence=$path"
 }
 
 function Invoke-HubProbe {
     param([Parameter(Mandatory = $true)][string]$Technology)
-    $artifactRoot = (Resolve-Path -LiteralPath $ArtifactDirectory).Path
     $hubDirectory = Join-Path $artifactRoot "c30-$($Technology.ToLowerInvariant())-hub"
-    Invoke-DotNet @('publish', 'src/Kandoo.Hub/Kandoo.Hub.csproj', '--configuration', 'Release', '--output', $hubDirectory)
+    Invoke-DotNet @('publish', '../src/Kandoo.Hub/Kandoo.Hub.csproj', '--configuration', 'Release', '--output', $hubDirectory)
 
     if ($Technology -eq 'MAUI') {
-        Invoke-DotNet @('build', 'spikes/c30-maui/Kandoo.C30.MauiProbe/Kandoo.C30.MauiProbe.csproj', '--configuration', 'Release')
-        $probeDll = (Resolve-Path -LiteralPath 'spikes/c30-maui/Kandoo.C30.MauiProbe/bin/Release/net8.0/Kandoo.C30.MauiProbe.dll').Path
+        Invoke-DotNet @('build', 'c30-maui/Kandoo.C30.MauiProbe/Kandoo.C30.MauiProbe.csproj', '--configuration', 'Release')
+        $probeDll = (Resolve-Path -LiteralPath 'c30-maui/Kandoo.C30.MauiProbe/bin/Release/net8.0/Kandoo.C30.MauiProbe.dll').Path
         $probePrefix = @()
     }
     else {
-        $probeDll = (Resolve-Path -LiteralPath 'spikes/c30-avalonia/Kandoo.C30.Avalonia.Desktop/bin/Release/net8.0/Kandoo.C30.Avalonia.Desktop.dll').Path
+        $probeDll = (Resolve-Path -LiteralPath 'c30-avalonia/Kandoo.C30.Avalonia.Desktop/bin/Release/net8.0/Kandoo.C30.Avalonia.Desktop.dll').Path
         $probePrefix = @('--probe')
     }
 
@@ -125,25 +131,31 @@ function Invoke-HubProbe {
     }
 }
 
+Push-Location -LiteralPath (Join-Path $repoRoot 'spikes')
+try {
 switch ($Mode) {
-    'MauiWorkload' { Invoke-DotNet @('workload', 'install', 'maui') }
+    'MauiWorkload' { Invoke-DotNet @('--version'); Invoke-DotNet @('workload', 'install', 'maui') }
     'MauiWindows' {
-        Invoke-DotNet @('build', 'spikes/c30-maui/Kandoo.C30.Maui/Kandoo.C30.Maui.csproj', '--configuration', 'Release', '--framework', 'net8.0-windows10.0.19041.0')
-        Write-BuildEvidence -Technology 'MAUI' -Target 'Windows' -OutputDirectory 'spikes/c30-maui/Kandoo.C30.Maui/bin/Release/net8.0-windows10.0.19041.0'
+        Invoke-DotNet @('build', 'c30-maui/Kandoo.C30.Maui/Kandoo.C30.Maui.csproj', '--configuration', 'Release', '--framework', 'net8.0-windows10.0.19041.0')
+        Write-BuildEvidence -Technology 'MAUI' -Target 'Windows' -OutputDirectory 'c30-maui/Kandoo.C30.Maui/bin/Release/net8.0-windows10.0.19041.0'
     }
     'MauiAndroid' {
-        Invoke-DotNet @('build', 'spikes/c30-maui/Kandoo.C30.Maui/Kandoo.C30.Maui.csproj', '--configuration', 'Release', '--framework', 'net8.0-android')
-        Write-BuildEvidence -Technology 'MAUI' -Target 'Android' -OutputDirectory 'spikes/c30-maui/Kandoo.C30.Maui/bin/Release/net8.0-android'
+        Invoke-DotNet @('build', 'c30-maui/Kandoo.C30.Maui/Kandoo.C30.Maui.csproj', '--configuration', 'Release', '--framework', 'net8.0-android')
+        Write-BuildEvidence -Technology 'MAUI' -Target 'Android' -OutputDirectory 'c30-maui/Kandoo.C30.Maui/bin/Release/net8.0-android'
     }
     'MauiProbe' { Invoke-HubProbe -Technology 'MAUI' }
-    'AvaloniaWorkload' { Invoke-DotNet @('workload', 'install', 'android') }
+    'AvaloniaWorkload' { Invoke-DotNet @('--version'); Invoke-DotNet @('workload', 'install', 'android') }
     'AvaloniaWindows' {
-        Invoke-DotNet @('build', 'spikes/c30-avalonia/Kandoo.C30.Avalonia.Desktop/Kandoo.C30.Avalonia.Desktop.csproj', '--configuration', 'Release')
-        Write-BuildEvidence -Technology 'Avalonia' -Target 'Windows' -OutputDirectory 'spikes/c30-avalonia/Kandoo.C30.Avalonia.Desktop/bin/Release/net8.0'
+        Invoke-DotNet @('build', 'c30-avalonia/Kandoo.C30.Avalonia.Desktop/Kandoo.C30.Avalonia.Desktop.csproj', '--configuration', 'Release')
+        Write-BuildEvidence -Technology 'Avalonia' -Target 'Windows' -OutputDirectory 'c30-avalonia/Kandoo.C30.Avalonia.Desktop/bin/Release/net8.0'
     }
     'AvaloniaAndroid' {
-        Invoke-DotNet @('build', 'spikes/c30-avalonia/Kandoo.C30.Avalonia.Android/Kandoo.C30.Avalonia.Android.csproj', '--configuration', 'Release')
-        Write-BuildEvidence -Technology 'Avalonia' -Target 'Android' -OutputDirectory 'spikes/c30-avalonia/Kandoo.C30.Avalonia.Android/bin/Release/net8.0-android'
+        Invoke-DotNet @('build', 'c30-avalonia/Kandoo.C30.Avalonia.Android/Kandoo.C30.Avalonia.Android.csproj', '--configuration', 'Release')
+        Write-BuildEvidence -Technology 'Avalonia' -Target 'Android' -OutputDirectory 'c30-avalonia/Kandoo.C30.Avalonia.Android/bin/Release/net8.0-android'
     }
     'AvaloniaProbe' { Invoke-HubProbe -Technology 'Avalonia' }
+}
+}
+finally {
+    Pop-Location
 }
