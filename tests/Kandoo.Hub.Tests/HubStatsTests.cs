@@ -138,7 +138,7 @@ public sealed class HubStatsApiTests : IDisposable
 
         var isolated = await _api.Get($"/v1/stores/{otherStoreId:D}/stats/v0", paired.Session.Token);
         Assert.Equal(HttpStatusCode.Forbidden, isolated.StatusCode);
-        Assert.Equal("STORE_ISOLATION", isolated.Body.GetProperty("code").GetString());
+        Assert.Equal("STORE_ACCESS_DENIED", isolated.Body.GetProperty("code").GetString());
     }
 
     public void Dispose()

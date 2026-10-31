@@ -1,6 +1,4 @@
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Routing;
 
 namespace Kandoo.Hub;
 
@@ -9,34 +7,19 @@ public static partial class HubApiFirstEndpoints
     public static void MapStatsApi(WebApplication app)
     {
         app.MapGet("/v1/stores/{store_id}/stats/v0", (
+            Guid store_id,
             HttpContext context,
-            [FromRoute(Name = "store_id")] string storeId,
             IHubAccessStore access,
+            IClock clock,
             HubStatsService stats) =>
         {
-            if (!context.Request.Headers.TryGetValue("Authorization", out var header) ||
-                !header.ToString().StartsWith("Bearer ", StringComparison.Ordinal))
+            var auth = Authenticate(context, store_id, access, clock);
+            if (!auth.IsAuthenticated)
             {
-                return Results.Json(new { code = "AUTH_REQUIRED" }, HubJson.Options, statusCode: 401);
+                return AuthError(auth.Code);
             }
 
-            var session = access.Authenticate(header.ToString()["Bearer ".Length..]);
-            if (session is null)
-            {
-                return Results.Json(new { code = "AUTH_INVALID" }, HubJson.Options, statusCode: 401);
-            }
-
-            if (!Guid.TryParse(storeId, out var parsedStoreId))
-            {
-                return Results.Json(new { code = "STORE_ID_INVALID" }, HubJson.Options, statusCode: 400);
-            }
-
-            if (session.StoreId != parsedStoreId)
-            {
-                return Results.Json(new { code = "STORE_ISOLATION" }, HubJson.Options, statusCode: 403);
-            }
-
-            var value = stats.Get(parsedStoreId);
+            var value = stats.Get(store_id);
             return Results.Json(new
             {
                 status = "OK",
