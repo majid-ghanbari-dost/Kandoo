@@ -1,3 +1,4 @@
+using Kandoo.Core;
 using Microsoft.AspNetCore.Http;
 
 namespace Kandoo.Hub;
