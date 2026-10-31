@@ -24,6 +24,7 @@ public sealed class OpenApiContractTests
                      "/v1/stores/{store_id}/products/{product_id}",
                      "/v1/stores/{store_id}/service-types",
                      "/v1/stores/{store_id}/stats/v0",
+                     "/v1/stores/{store_id}/devices/{device_id}/level",
                      "/v1/stores/{store_id}/invoices/drafts",
                      "/v1/stores/{store_id}/invoices/{invoice_id}/items",
                      "/v1/stores/{store_id}/invoices/{invoice_id}/issue",

@@ -148,6 +148,7 @@ app.MapPost("/v1/stores/{store_id}/pairing-grants", (
     if (request is null || request.HubDeviceId == Guid.Empty ||
         request.HubDeviceId != auth.Session!.DeviceId ||
         !string.Equals(request.RequestedDeviceRole, "COMPANION", StringComparison.Ordinal) ||
+        !HubOperatorLevel.IsSupported(request.RequestedLevel ?? HubOperatorLevel.Operator) ||
         !Uri.TryCreate(request.HubEndpoint, UriKind.Absolute, out var endpoint) ||
         endpoint.Scheme != Uri.UriSchemeHttps || endpoint.IsLoopback)
     {
@@ -158,7 +159,8 @@ app.MapPost("/v1/stores/{store_id}/pairing-grants", (
     var nonce = HubToken.NewToken(16);
     var grant = access.CreatePairingGrant(
         store_id, request.HubDeviceId, auth.Session.OwnerUserId!.Value,
-        request.HubEndpoint!, $"pair-{Guid.NewGuid():N}", HubToken.Hash(nonce), now, now.AddMinutes(5));
+        request.HubEndpoint!, $"pair-{Guid.NewGuid():N}", HubToken.Hash(nonce), now, now.AddMinutes(5),
+        request.RequestedLevel ?? HubOperatorLevel.Operator);
     var qr = HubJson.Element(new
     {
         protocol_version = "0",
@@ -166,6 +168,7 @@ app.MapPost("/v1/stores/{store_id}/pairing-grants", (
         store_id = grant.StoreId,
         hub_device_id = grant.HubDeviceId,
         device_role = "COMPANION",
+        operator_level = grant.OperatorLevel,
         hub_endpoint = grant.HubEndpoint,
         nonce,
         issued_at = grant.IssuedAt,
@@ -341,6 +344,42 @@ app.MapGet("/v1/stores/{store_id}/devices", (
         : Results.Json(access.GetDevices(store_id).Select(DeviceBody), HubJson.Options);
 });
 
+app.MapPatch("/v1/stores/{store_id}/devices/{device_id}/level", (
+    Guid store_id,
+    Guid device_id,
+    HubDeviceLevelRequest? request,
+    HttpContext context,
+    IHubAccessStore access,
+    IClock clock) =>
+{
+    var auth = Authenticate(context, store_id, access, clock);
+    if (!auth.IsAuthenticated)
+    {
+        return AuthError(auth.Code);
+    }
+
+    if (!IsOwner(auth))
+    {
+        return HubHttp.Error(403, "OWNER_REQUIRED", "An active owner session is required.");
+    }
+
+    if (device_id == Guid.Empty || !HubOperatorLevel.IsSupported(request?.OperatorLevel))
+    {
+        return HubHttp.Error(400, "DEVICE_LEVEL_INVALID", "Operator level must be SELLER, OPERATOR, or MANAGER.");
+    }
+
+    var result = access.ChangeDeviceLevel(
+        store_id, device_id, auth.Session!.OwnerUserId!.Value, request!.OperatorLevel!, clock.UtcNow);
+    return result.Code switch
+    {
+        "DEVICE_LEVEL_CHANGED" => Results.Json(
+            new { status = result.Code, device = DeviceBody(result.Device!) }, HubJson.Options),
+        "DEVICE_REVOKED" => HubHttp.Error(409, result.Code, "A revoked device cannot change level."),
+        "DEVICE_LEVEL_NOT_APPLICABLE" => HubHttp.Error(409, result.Code, "Operator levels apply only to companion devices."),
+        _ => HubHttp.Error(404, "DEVICE_NOT_PAIRED", "The companion device is not registered.")
+    };
+});
+
 app.MapPost("/v1/stores/{store_id}/devices/{device_id}/revoke", (
     Guid store_id,
     Guid device_id,
@@ -503,6 +542,7 @@ static object DeviceBody(HubDevice device) => new
     store_id = device.StoreId,
     device_id = device.DeviceId,
     device_role = device.DeviceRole.ToString().ToUpperInvariant(),
+    operator_level = device.OperatorLevel,
     pairing_status = device.PairingStatus.ToString().ToUpperInvariant(),
     owner_user_id = device.OwnerUserId,
     label = device.Label,

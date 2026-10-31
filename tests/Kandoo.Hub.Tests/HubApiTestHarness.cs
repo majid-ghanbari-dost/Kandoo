@@ -200,12 +200,13 @@ public sealed class HubApiClient : IDisposable
             ownerUserId);
     }
 
-    public Task<ApiResponse> IssueGrant(TestSession owner, Guid storeId, string role = "COMPANION") =>
+    public Task<ApiResponse> IssueGrant(TestSession owner, Guid storeId, string role = "COMPANION", string? level = null) =>
         Post($"/v1/stores/{store_id(storeId)}/pairing-grants", new
         {
             hub_device_id = owner.DeviceId,
             hub_endpoint = "https://hub.lan",
-            requested_device_role = role
+            requested_device_role = role,
+            requested_level = level
         }, owner.Token);
 
     public async Task<PairedDevice> Pair(TestSession owner, Guid storeId, Guid deviceId, string label = "Counter")
@@ -225,14 +226,15 @@ public sealed class HubApiClient : IDisposable
         return new PairedDevice(session, consume.Body.GetProperty("device_credential").GetString()!, pairingId, nonce, qr, consume.Body);
     }
 
-    public Task<ApiResponse> Consume(string pairingId, string nonce, Guid deviceId, string label = "Counter") =>
+    public Task<ApiResponse> Consume(
+        string pairingId, string nonce, Guid deviceId, string label = "Counter", string platform = "WINDOWS") =>
         Post("/v1/pairing-grants/consume", new
         {
             pairing_id = pairingId,
             nonce,
             device_id = deviceId,
             label,
-            platform = "WINDOWS",
+            platform,
             device_public_key = "test-only-public-key"
         });
 

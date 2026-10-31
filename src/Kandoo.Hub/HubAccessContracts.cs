@@ -16,6 +16,16 @@ public enum HubPairingStatus
     Revoked
 }
 
+public static class HubOperatorLevel
+{
+    public const string Seller = "SELLER";
+    public const string Operator = "OPERATOR";
+    public const string Manager = "MANAGER";
+
+    public static bool IsSupported(string? value) =>
+        value is Seller or Operator or Manager;
+}
+
 public enum HubSessionStatus
 {
     Active,
@@ -31,7 +41,8 @@ public sealed record HubDevice(
     Guid? OwnerUserId,
     string Label,
     string Platform,
-    string? DevicePublicKey);
+    string? DevicePublicKey,
+    string? OperatorLevel = null);
 
 public sealed record HubSession(
     string SessionId,
@@ -53,7 +64,8 @@ public sealed record HubPairingGrant(
     string ProofHash,
     DateTimeOffset IssuedAt,
     DateTimeOffset ExpiresAt,
-    bool Consumed);
+    bool Consumed,
+    string OperatorLevel = HubOperatorLevel.Operator);
 
 public sealed record HubPairingConsumeResult(
     string Code,
@@ -62,6 +74,8 @@ public sealed record HubPairingConsumeResult(
     string? DeviceCredential = null);
 
 public sealed record HubSessionResumeResult(string Code, HubSessionIssued? Session = null);
+
+public sealed record HubDeviceLevelChangeResult(string Code, HubDevice? Device = null);
 
 public sealed record HubAuthenticationResult(
     string Code,
@@ -81,7 +95,8 @@ public interface IHubAccessStore
         string pairingId,
         string proofHash,
         DateTimeOffset issuedAt,
-        DateTimeOffset expiresAt);
+        DateTimeOffset expiresAt,
+        string operatorLevel = HubOperatorLevel.Operator);
 
     HubPairingConsumeResult ConsumePairingGrant(
         string pairingId,
@@ -113,6 +128,8 @@ public interface IHubAccessStore
 
     HubAuthenticationResult Authenticate(string sessionToken, DateTimeOffset now);
     IReadOnlyList<HubDevice> GetDevices(Guid storeId);
+    HubDeviceLevelChangeResult ChangeDeviceLevel(
+        Guid storeId, Guid deviceId, Guid ownerUserId, string operatorLevel, DateTimeOffset now);
     bool RevokeDevice(Guid storeId, Guid deviceId, Guid ownerUserId, DateTimeOffset now);
     int DisconnectDevice(Guid storeId, Guid deviceId, DateTimeOffset now);
 }
