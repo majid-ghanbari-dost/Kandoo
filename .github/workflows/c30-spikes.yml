@@ -1,0 +1,100 @@
+name: C-30 UI technology spikes
+
+on:
+  push:
+    paths:
+      - 'spikes/c30-*/**'
+      - 'scripts/Invoke-C30Spike.ps1'
+      - '.github/workflows/c30-spikes.yml'
+  pull_request:
+    paths:
+      - 'spikes/c30-*/**'
+      - 'scripts/Invoke-C30Spike.ps1'
+      - '.github/workflows/c30-spikes.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: 'true'
+
+jobs:
+  maui:
+    name: MAUI Windows + Android
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Install MAUI workloads
+        shell: pwsh
+        run: scripts/Invoke-CiStep.ps1 -StepName 'Install MAUI workloads' -ScriptPath scripts/Invoke-C30Spike.ps1 -ScriptArguments @('-Mode', 'MauiWorkload', '-ArtifactDirectory', 'artifacts')
+
+      - name: Build MAUI Windows
+        shell: pwsh
+        run: scripts/Invoke-CiStep.ps1 -StepName 'Build MAUI Windows' -ScriptPath scripts/Invoke-C30Spike.ps1 -ScriptArguments @('-Mode', 'MauiWindows', '-ArtifactDirectory', 'artifacts')
+
+      - name: Build MAUI Android
+        shell: pwsh
+        run: scripts/Invoke-CiStep.ps1 -StepName 'Build MAUI Android' -ScriptPath scripts/Invoke-C30Spike.ps1 -ScriptArguments @('-Mode', 'MauiAndroid', '-ArtifactDirectory', 'artifacts')
+
+      - name: Call real Hub OpenAPI from MAUI spike
+        shell: pwsh
+        run: scripts/Invoke-CiStep.ps1 -StepName 'Call real Hub OpenAPI from MAUI spike' -ScriptPath scripts/Invoke-C30Spike.ps1 -ScriptArguments @('-Mode', 'MauiProbe', '-ArtifactDirectory', 'artifacts')
+
+      - name: Upload MAUI spike evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: c30-maui-spike-evidence
+          path: |
+            artifacts/c30-maui-*.json
+            artifacts/c30-maui-*.log
+          if-no-files-found: warn
+          retention-days: 7
+
+  avalonia:
+    name: Avalonia Windows + Android
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Install Android workload
+        shell: pwsh
+        run: scripts/Invoke-CiStep.ps1 -StepName 'Install Android workload' -ScriptPath scripts/Invoke-C30Spike.ps1 -ScriptArguments @('-Mode', 'AvaloniaWorkload', '-ArtifactDirectory', 'artifacts')
+
+      - name: Build Avalonia Windows
+        shell: pwsh
+        run: scripts/Invoke-CiStep.ps1 -StepName 'Build Avalonia Windows' -ScriptPath scripts/Invoke-C30Spike.ps1 -ScriptArguments @('-Mode', 'AvaloniaWindows', '-ArtifactDirectory', 'artifacts')
+
+      - name: Build Avalonia Android
+        shell: pwsh
+        run: scripts/Invoke-CiStep.ps1 -StepName 'Build Avalonia Android' -ScriptPath scripts/Invoke-C30Spike.ps1 -ScriptArguments @('-Mode', 'AvaloniaAndroid', '-ArtifactDirectory', 'artifacts')
+
+      - name: Call real Hub OpenAPI from Avalonia spike
+        shell: pwsh
+        run: scripts/Invoke-CiStep.ps1 -StepName 'Call real Hub OpenAPI from Avalonia spike' -ScriptPath scripts/Invoke-C30Spike.ps1 -ScriptArguments @('-Mode', 'AvaloniaProbe', '-ArtifactDirectory', 'artifacts')
+
+      - name: Upload Avalonia spike evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: c30-avalonia-spike-evidence
+          path: |
+            artifacts/c30-avalonia-*.json
+            artifacts/c30-avalonia-*.log
+          if-no-files-found: warn
+          retention-days: 7
