@@ -14,7 +14,8 @@ public sealed record ProductRegistrationInput(
     string? Barcode = null,
     string? Specification = null,
     long? ProductTagNumber = null,
-    IReadOnlyList<ProductOperatorField>? OperatorFields = null)
+    IReadOnlyList<ProductOperatorField>? OperatorFields = null,
+    long? PurchasePriceRials = null)
 {
     public ProductRegistrationInput Validate()
     {
@@ -36,6 +37,11 @@ public sealed record ProductRegistrationInput(
         if (ProductTagNumber is <= 0)
         {
             throw new ArgumentException("A supplied product tag must be a positive integer.", nameof(ProductTagNumber));
+        }
+
+        if (PurchasePriceRials is < 0)
+        {
+            throw new ArgumentException("Purchase price must be a non-negative integer number of Rials when supplied.", nameof(PurchasePriceRials));
         }
 
         ProductNameNormalizer.Normalize(Name);

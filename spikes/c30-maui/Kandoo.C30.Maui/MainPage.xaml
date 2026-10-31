@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Kandoo.C30.Maui.MainPage"
+             Title="فاکتور دیجیتال کندو"
+             FlowDirection="RightToLeft">
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="16" FlowDirection="RightToLeft">
+            <Label Text="فاکتور دیجیتال کندو"
+                   FontSize="28"
+                   FontAttributes="Bold"
+                   SemanticProperties.Description="عنوان صفحه فاکتور دیجیتال کندو" />
+            <Label Text="نمونه موقت برای بررسی راست‌به‌چپ و فراخوانی واقعی قرارداد Hub"
+                   FontSize="16"
+                   SemanticProperties.Description="توضیح نمونه آزمایشی" />
+            <Entry x:Name="Endpoint"
+                   Text="http://127.0.0.1:5187/openapi/v1.json"
+                   Keyboard="Url"
+                   FlowDirection="LeftToRight"
+                   SemanticProperties.Description="نشانی قرارداد OpenAPI هاب" />
+            <Button Text="بررسی اتصال"
+                    Clicked="OnProbeClicked"
+                    SemanticProperties.Description="فراخوانی قرارداد OpenAPI از هاب" />
+            <Label x:Name="ProbeResult"
+                   Text="هنوز اتصال بررسی نشده است."
+                   FontSize="16"
+                   SemanticProperties.Description="نتیجه فراخوانی هاب" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

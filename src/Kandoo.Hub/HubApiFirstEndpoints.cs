@@ -15,6 +15,7 @@ public static partial class HubApiFirstEndpoints
     {
         MapProductApi(app);
         MapInvoiceApi(app);
+        MapStatsApi(app);
         MapReviewApi(app);
         MapSmsApi(app);
     }
@@ -126,6 +127,29 @@ public static partial class HubApiFirstEndpoints
         });
     }
 
+    internal static object ProductBody(Product product) => new
+    {
+        store_id = product.StoreId,
+        product_id = product.ProductId,
+        name = product.Name,
+        normalized_name = product.NormalizedName,
+        similarity_key = product.SimilarityKey,
+        unit_price_rials = product.UnitPriceRials,
+        purchase_price_rials = product.PurchasePriceRials,
+        profit_rials = product.ProfitRials,
+        version = product.Version,
+        is_active = product.IsActive,
+        specification = product.Specification,
+        product_tag_number = product.ProductTagNumber,
+        type = product.Category,
+        category = product.Category,
+        color = product.Color,
+        size = product.Size,
+        material = product.Material,
+        brand = product.Brand,
+        barcode = product.Barcode
+    };
+
     private static object ProductBody(HubProductView view)
     {
         var product = view.Product;
@@ -139,6 +163,8 @@ public static partial class HubApiFirstEndpoints
             category = product.Category,
             color = product.Color,
             unit_price_rials = product.UnitPriceRials,
+            purchase_price_rials = product.PurchasePriceRials,
+            profit_rials = product.ProfitRials,
             product_tag_number = product.ProductTagNumber,
             stock_millis = view.StockMillis,
             version = product.Version,
@@ -160,6 +186,8 @@ public static partial class HubApiFirstEndpoints
                 type = product.Category,
                 color = product.Color,
                 unit_price_rials = product.UnitPriceRials,
+                purchase_price_rials = product.PurchasePriceRials,
+                profit_rials = product.ProfitRials,
                 product_tag_number = product.ProductTagNumber,
                 stock_millis = view.StockMillis
             },

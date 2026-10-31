@@ -141,6 +141,31 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore, IHubRep
         }
     }
 
+    public IReadOnlyList<ReplicationLogEntry> ReadReplicationEntries(Guid storeId)
+    {
+        if (storeId == Guid.Empty)
+        {
+            throw new ArgumentException("A store is required.", nameof(storeId));
+        }
+
+        lock (_gate)
+        {
+            ThrowIfDisposed();
+            using var command = _connection.CreateCommand();
+            command.CommandText = "SELECT entry_json FROM replication_log WHERE store_id = $store ORDER BY operation_seq;";
+            command.Parameters.AddWithValue("$store", storeId.ToString("D"));
+            using var reader = command.ExecuteReader();
+            var entries = new List<ReplicationLogEntry>();
+            while (reader.Read())
+            {
+                entries.Add(JsonSerializer.Deserialize<ReplicationLogEntry>(reader.GetString(0), HubJson.Options)
+                    ?? throw new InvalidOperationException("Invalid durable replication entry."));
+            }
+
+            return entries;
+        }
+    }
+
     public long GetDisplayNumberHighWatermark(Guid storeId)
     {
         lock (_gate)
@@ -527,6 +552,7 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore, IHubRep
                 material TEXT NULL,
                 brand TEXT NULL,
                 barcode TEXT NULL,
+                purchase_price_rials INTEGER NULL,
                 PRIMARY KEY (store_id, product_id)
             );
             CREATE TABLE IF NOT EXISTS inventory_events (
@@ -682,6 +708,7 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore, IHubRep
         EnsureColumn("products", "material", "TEXT NULL");
         EnsureColumn("products", "brand", "TEXT NULL");
         EnsureColumn("products", "barcode", "TEXT NULL");
+        EnsureColumn("products", "purchase_price_rials", "INTEGER NULL");
         EnsureColumn("store_counters", "product_tag_high_watermark", "INTEGER NOT NULL DEFAULT 0");
         using var tagCommand = _connection.CreateCommand();
         tagCommand.CommandText = """

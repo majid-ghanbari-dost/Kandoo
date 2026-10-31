@@ -18,6 +18,13 @@ public sealed class ManualHubClock : IClock
     public DateTimeOffset UtcNow { get; set; } = new(2026, 10, 22, 8, 0, 0, TimeSpan.Zero);
 }
 
+public sealed class ManualHubTimeProvider : TimeProvider
+{
+    public DateTimeOffset UtcNow { get; set; } = new(2026, 10, 22, 8, 0, 0, TimeSpan.Zero);
+
+    public override DateTimeOffset GetUtcNow() => UtcNow;
+}
+
 public sealed class HubApiFactory : WebApplicationFactory<Program>
 {
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "kandoo-hub-api", Guid.NewGuid().ToString("N"));
@@ -31,6 +38,7 @@ public sealed class HubApiFactory : WebApplicationFactory<Program>
 
     public string ConnectionString { get; }
     public ManualHubClock Clock { get; } = new();
+    public ManualHubTimeProvider StatsTime { get; } = new();
     public SqliteHubStore TestStore { get; }
     public SqliteHubStore Store => TestStore;
     public DeterministicHubSmsGateway TestSms { get; } = new();
@@ -48,6 +56,8 @@ public sealed class HubApiFactory : WebApplicationFactory<Program>
         {
             services.RemoveAll<IClock>();
             services.AddSingleton<IClock>(Clock);
+            services.RemoveAll<TimeProvider>();
+            services.AddSingleton<TimeProvider>(StatsTime);
             // Replace both interfaces and the operation service together. The
             // top-level default store must never be shared by parallel vectors.
             services.RemoveAll<IHubStore>();
@@ -190,12 +200,13 @@ public sealed class HubApiClient : IDisposable
             ownerUserId);
     }
 
-    public Task<ApiResponse> IssueGrant(TestSession owner, Guid storeId, string role = "COMPANION") =>
+    public Task<ApiResponse> IssueGrant(TestSession owner, Guid storeId, string role = "COMPANION", string? level = null) =>
         Post($"/v1/stores/{store_id(storeId)}/pairing-grants", new
         {
             hub_device_id = owner.DeviceId,
             hub_endpoint = "https://hub.lan",
-            requested_device_role = role
+            requested_device_role = role,
+            requested_level = level
         }, owner.Token);
 
     public async Task<PairedDevice> Pair(TestSession owner, Guid storeId, Guid deviceId, string label = "Counter")
@@ -215,14 +226,15 @@ public sealed class HubApiClient : IDisposable
         return new PairedDevice(session, consume.Body.GetProperty("device_credential").GetString()!, pairingId, nonce, qr, consume.Body);
     }
 
-    public Task<ApiResponse> Consume(string pairingId, string nonce, Guid deviceId, string label = "Counter") =>
+    public Task<ApiResponse> Consume(
+        string pairingId, string nonce, Guid deviceId, string label = "Counter", string platform = "WINDOWS") =>
         Post("/v1/pairing-grants/consume", new
         {
             pairing_id = pairingId,
             nonce,
             device_id = deviceId,
             label,
-            platform = "WINDOWS",
+            platform,
             device_public_key = "test-only-public-key"
         });
 
