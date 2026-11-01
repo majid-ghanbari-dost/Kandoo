@@ -36,7 +36,7 @@ function Write-ArtifactEvidence {
     Write-Host "C40_ARTIFACT PASS mode=$Mode path=$($file.FullName) bytes=$($file.Length) sha256=$hash"
 }
 
-Push-Location -LiteralPath $repoRoot
+Push-Location -LiteralPath (Join-Path $repoRoot 'src/Kandoo.App')
 try {
     switch ($Mode) {
         'Workload' {
@@ -44,12 +44,12 @@ try {
             Invoke-DotNet @('workload', 'install', 'maui')
         }
         'Test' {
-            Invoke-DotNet @('test', 'tests/Kandoo.App.Tests/Kandoo.App.Tests.csproj', '--configuration', 'Release')
+            Invoke-DotNet @('test', '../../tests/Kandoo.App.Tests/Kandoo.App.Tests.csproj', '--configuration', 'Release')
         }
         'Windows' {
             $publish = Join-Path $artifactRoot 'kandoo-app-c40-win-x64'
             Invoke-DotNet @(
-                'publish', 'src/Kandoo.App/Kandoo.App.csproj',
+                'publish', 'Kandoo.App.csproj',
                 '--configuration', 'Release',
                 '--framework', 'net8.0-windows10.0.19041.0',
                 '--runtime', 'win-x64', '--self-contained', 'true',
@@ -61,9 +61,9 @@ try {
         }
         'Android' {
             Invoke-DotNet @(
-                'build', 'src/Kandoo.App/Kandoo.App.csproj',
+                'build', 'Kandoo.App.csproj',
                 '--configuration', 'Debug', '--framework', 'net8.0-android')
-            $apk = Get-ChildItem -LiteralPath 'src/Kandoo.App/bin/Debug/net8.0-android' -Recurse -Filter '*.apk' |
+            $apk = Get-ChildItem -LiteralPath 'bin/Debug/net8.0-android' -Recurse -Filter '*.apk' |
                 Sort-Object LastWriteTime -Descending | Select-Object -First 1
             if ($null -eq $apk) {
                 throw 'C40 Android build produced no APK.'
