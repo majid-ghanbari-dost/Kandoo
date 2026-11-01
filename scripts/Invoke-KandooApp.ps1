@@ -52,7 +52,7 @@ try {
                 'publish', 'Kandoo.App.csproj',
                 '--configuration', 'Release',
                 '--framework', 'net8.0-windows10.0.19041.0',
-                '--runtime', 'win-x64', '--self-contained', 'true',
+                '-p:RuntimeIdentifierOverride=win10-x64', '--self-contained', 'true',
                 '-p:WindowsAppSDKSelfContained=true',
                 '--verbosity', 'detailed',
                 '--output', $publish)
