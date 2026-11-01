@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                    x:Class="Kandoo.App.Resources.DesignTokens">
+    <Color x:Key="Honey">#F2A900</Color>
+    <Color x:Key="Ink">#2B1D0E</Color>
+    <Color x:Key="Cream">#FFF8E7</Color>
+    <Color x:Key="Wax">#F5E9C8</Color>
+    <Color x:Key="Green">#256B43</Color>
+    <Color x:Key="Review">#9A3B0A</Color>
+
+    <x:String x:Key="FontFamilyRegular">Vazirmatn</x:String>
+    <x:String x:Key="FontFamilyBold">Vazirmatn-Bold</x:String>
+    <x:Double x:Key="FontSizeCaption">12</x:Double>
+    <x:Double x:Key="FontSizeBody">16</x:Double>
+    <x:Double x:Key="FontSizeSection">20</x:Double>
+    <x:Double x:Key="FontSizeTitle">28</x:Double>
+
+    <x:Double x:Key="Space1">4</x:Double>
+    <x:Double x:Key="Space2">8</x:Double>
+    <x:Double x:Key="Space3">12</x:Double>
+    <x:Double x:Key="Space4">16</x:Double>
+    <x:Double x:Key="Space5">24</x:Double>
+    <x:Double x:Key="Space6">32</x:Double>
+    <Thickness x:Key="PaddingSpace2">8</Thickness>
+    <Thickness x:Key="PaddingSpace3">12</Thickness>
+    <Thickness x:Key="PaddingSpace5">24</Thickness>
+    <x:Double x:Key="TouchTarget">48</x:Double>
+
+    <Style x:Key="PageStyle" TargetType="ContentPage">
+        <Setter Property="FlowDirection" Value="RightToLeft" />
+        <Setter Property="BackgroundColor" Value="{StaticResource Cream}" />
+    </Style>
+    <Style x:Key="RootStackStyle" TargetType="VerticalStackLayout">
+        <Setter Property="Padding" Value="{StaticResource PaddingSpace5}" />
+        <Setter Property="Spacing" Value="{StaticResource Space4}" />
+    </Style>
+    <Style x:Key="RowStackStyle" TargetType="VerticalStackLayout">
+        <Setter Property="Spacing" Value="{StaticResource Space2}" />
+    </Style>
+    <Style x:Key="ButtonRowStyle" TargetType="HorizontalStackLayout">
+        <Setter Property="Spacing" Value="{StaticResource Space2}" />
+    </Style>
+    <Style x:Key="BodyStyle" TargetType="Label">
+        <Setter Property="TextColor" Value="{StaticResource Ink}" />
+        <Setter Property="FontFamily" Value="{StaticResource FontFamilyRegular}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
+    </Style>
+    <Style x:Key="CaptionStyle" TargetType="Label" BasedOn="{StaticResource BodyStyle}">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeCaption}" />
+    </Style>
+    <Style x:Key="TitleStyle" TargetType="Label" BasedOn="{StaticResource BodyStyle}">
+        <Setter Property="FontFamily" Value="{StaticResource FontFamilyBold}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeTitle}" />
+    </Style>
+    <Style x:Key="SectionTitleStyle" TargetType="Label" BasedOn="{StaticResource BodyStyle}">
+        <Setter Property="FontFamily" Value="{StaticResource FontFamilyBold}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeSection}" />
+    </Style>
+    <Style x:Key="AmountStyle" TargetType="Label" BasedOn="{StaticResource SectionTitleStyle}">
+        <Setter Property="TextColor" Value="{StaticResource Green}" />
+    </Style>
+    <Style x:Key="DemoBannerStyle" TargetType="Label" BasedOn="{StaticResource BodyStyle}">
+        <Setter Property="TextColor" Value="{StaticResource Cream}" />
+        <Setter Property="BackgroundColor" Value="{StaticResource Review}" />
+        <Setter Property="Padding" Value="{StaticResource PaddingSpace3}" />
+        <Setter Property="FontFamily" Value="{StaticResource FontFamilyBold}" />
+    </Style>
+    <Style x:Key="InputStyle" TargetType="Entry">
+        <Setter Property="BackgroundColor" Value="{StaticResource Wax}" />
+        <Setter Property="TextColor" Value="{StaticResource Ink}" />
+        <Setter Property="PlaceholderColor" Value="{StaticResource Ink}" />
+        <Setter Property="FontFamily" Value="{StaticResource FontFamilyRegular}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
+        <Setter Property="MinimumHeightRequest" Value="{StaticResource TouchTarget}" />
+        <Setter Property="Padding" Value="{StaticResource PaddingSpace2}" />
+    </Style>
+    <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="{StaticResource Green}" />
+        <Setter Property="TextColor" Value="{StaticResource Cream}" />
+        <Setter Property="FontFamily" Value="{StaticResource FontFamilyBold}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
+        <Setter Property="MinimumHeightRequest" Value="{StaticResource TouchTarget}" />
+        <Setter Property="MinimumWidthRequest" Value="{StaticResource TouchTarget}" />
+        <Setter Property="Padding" Value="{StaticResource PaddingSpace3}" />
+    </Style>
+    <Style x:Key="SecondaryButtonStyle" TargetType="Button" BasedOn="{StaticResource PrimaryButtonStyle}">
+        <Setter Property="BackgroundColor" Value="{StaticResource Honey}" />
+        <Setter Property="TextColor" Value="{StaticResource Ink}" />
+    </Style>
+    <Style x:Key="RowStyle" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource Wax}" />
+        <Setter Property="Padding" Value="{StaticResource PaddingSpace3}" />
+    </Style>
+</ResourceDictionary>

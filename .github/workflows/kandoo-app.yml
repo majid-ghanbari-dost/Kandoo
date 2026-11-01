@@ -1,0 +1,70 @@
+name: Kandoo App
+
+on:
+  push:
+    paths:
+      - 'src/Kandoo.App/**'
+      - 'src/Kandoo.Core/JalaliDateConverter.cs'
+      - 'tests/Kandoo.App.Tests/**'
+      - 'scripts/Invoke-KandooApp.ps1'
+      - '.github/workflows/kandoo-app.yml'
+  pull_request:
+    paths:
+      - 'src/Kandoo.App/**'
+      - 'src/Kandoo.Core/JalaliDateConverter.cs'
+      - 'tests/Kandoo.App.Tests/**'
+      - 'scripts/Invoke-KandooApp.ps1'
+      - '.github/workflows/kandoo-app.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: 'true'
+
+jobs:
+  test-and-build:
+    name: App tests + Windows + Android
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Install MAUI workloads
+        shell: pwsh
+        run: scripts/Invoke-CiStep.ps1 -StepName 'Install MAUI workloads' -ScriptPath scripts/Invoke-KandooApp.ps1 -ScriptArguments @('-Mode', 'Workload', '-ArtifactDirectory', 'artifacts')
+
+      - name: Test app logic
+        shell: pwsh
+        run: scripts/Invoke-CiStep.ps1 -StepName 'Test app logic' -ScriptPath scripts/Invoke-KandooApp.ps1 -ScriptArguments @('-Mode', 'Test', '-ArtifactDirectory', 'artifacts')
+
+      - name: Publish self-contained Windows app and zip
+        shell: pwsh
+        run: scripts/Invoke-CiStep.ps1 -StepName 'Publish self-contained Windows app and zip' -ScriptPath scripts/Invoke-KandooApp.ps1 -ScriptArguments @('-Mode', 'Windows', '-ArtifactDirectory', 'artifacts')
+
+      - name: Upload Windows app
+        uses: actions/upload-artifact@v4
+        with:
+          name: kandoo-app-c40-win-x64
+          path: artifacts/kandoo-app-c40-win-x64.zip
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Build Android Debug APK
+        shell: pwsh
+        run: scripts/Invoke-CiStep.ps1 -StepName 'Build Android Debug APK' -ScriptPath scripts/Invoke-KandooApp.ps1 -ScriptArguments @('-Mode', 'Android', '-ArtifactDirectory', 'artifacts')
+
+      - name: Upload Android Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: kandoo-app-c40-android-debug-apk
+          path: artifacts/kandoo-app-c40-android-debug.apk
+          if-no-files-found: error
+          retention-days: 7
