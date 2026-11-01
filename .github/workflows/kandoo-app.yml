@@ -7,6 +7,7 @@ on:
       - 'src/Kandoo.Core/JalaliDateConverter.cs'
       - 'tests/Kandoo.App.Tests/**'
       - 'scripts/Invoke-KandooApp.ps1'
+      - 'scripts/Invoke-C40XamlDiagnosis.ps1'
       - '.github/workflows/kandoo-app.yml'
   pull_request:
     paths:
@@ -14,6 +15,7 @@ on:
       - 'src/Kandoo.Core/JalaliDateConverter.cs'
       - 'tests/Kandoo.App.Tests/**'
       - 'scripts/Invoke-KandooApp.ps1'
+      - 'scripts/Invoke-C40XamlDiagnosis.ps1'
       - '.github/workflows/kandoo-app.yml'
   workflow_dispatch:
 
@@ -44,6 +46,10 @@ jobs:
       - name: Test app logic
         shell: pwsh
         run: scripts/Invoke-CiStep.ps1 -StepName 'Test app logic' -ScriptPath scripts/Invoke-KandooApp.ps1 -ScriptArguments @('-Mode', 'Test', '-ArtifactDirectory', 'artifacts')
+
+      - name: Diagnose Windows XAML variants
+        shell: pwsh
+        run: scripts/Invoke-CiStep.ps1 -StepName 'Diagnose Windows XAML variants' -ScriptPath scripts/Invoke-C40XamlDiagnosis.ps1
 
       - name: Publish self-contained Windows app and zip
         shell: pwsh
