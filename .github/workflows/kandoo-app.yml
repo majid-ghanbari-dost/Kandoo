@@ -6,6 +6,7 @@ on:
       - 'src/Kandoo.App/**'
       - 'src/Kandoo.Core/JalaliDateConverter.cs'
       - 'tests/Kandoo.App.Tests/**'
+      - 'docs/reports/C-40.md'
       - 'scripts/Invoke-KandooApp.ps1'
       - '.github/workflows/kandoo-app.yml'
   pull_request:
@@ -13,6 +14,7 @@ on:
       - 'src/Kandoo.App/**'
       - 'src/Kandoo.Core/JalaliDateConverter.cs'
       - 'tests/Kandoo.App.Tests/**'
+      - 'docs/reports/C-40.md'
       - 'scripts/Invoke-KandooApp.ps1'
       - '.github/workflows/kandoo-app.yml'
   workflow_dispatch:
