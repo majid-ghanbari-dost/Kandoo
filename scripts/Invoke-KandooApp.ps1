@@ -54,7 +54,6 @@ try {
                 '--framework', 'net8.0-windows10.0.19041.0',
                 '-p:RuntimeIdentifierOverride=win10-x64', '--self-contained', 'true',
                 '-p:WindowsAppSDKSelfContained=true',
-                '--verbosity', 'detailed',
                 '--output', $publish)
             $zip = Join-Path $artifactRoot 'kandoo-app-c40-win-x64.zip'
             Compress-Archive -Path (Join-Path $publish '*') -DestinationPath $zip -Force
