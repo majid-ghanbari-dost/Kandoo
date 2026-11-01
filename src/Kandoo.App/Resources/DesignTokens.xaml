@@ -73,7 +73,6 @@
         <Setter Property="FontFamily" Value="{StaticResource FontFamilyRegular}" />
         <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
         <Setter Property="MinimumHeightRequest" Value="{StaticResource TouchTarget}" />
-        <Setter Property="Padding" Value="{StaticResource PaddingSpace2}" />
     </Style>
     <Style x:Key="PrimaryButtonStyle" TargetType="Button">
         <Setter Property="BackgroundColor" Value="{StaticResource Green}" />
