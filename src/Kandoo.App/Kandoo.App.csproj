@@ -18,6 +18,9 @@
     <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
     <AndroidPackageFormat Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == 'android'">apk</AndroidPackageFormat>
   </PropertyGroup>
+  <PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows' and '$(RuntimeIdentifierOverride)' != ''">
+    <RuntimeIdentifier>$(RuntimeIdentifierOverride)</RuntimeIdentifier>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../Kandoo.Core/Kandoo.Core.csproj" />
   </ItemGroup>
