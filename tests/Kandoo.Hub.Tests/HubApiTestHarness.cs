@@ -42,21 +42,17 @@ public sealed class HubApiFactory : WebApplicationFactory<Program>
     public SqliteHubStore TestStore { get; }
     public SqliteHubStore Store => TestStore;
     public DeterministicHubSmsGateway TestSms { get; } = new();
-    public IDictionary<string, string?> ExtraConfiguration { get; } = new Dictionary<string, string?>();
     public IHubStatusProbe? TestStatus { get; set; }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
-        builder.ConfigureAppConfiguration((_, configuration) =>
-        {
-            configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(
+            new Dictionary<string, string?>
             {
                 ["ConnectionStrings:HubSqlite"] = ConnectionString,
                 ["Hub:OwnerBootstrapProof"] = "test-only-owner-bootstrap"
-            });
-            configuration.AddInMemoryCollection(ExtraConfiguration);
-        });
+            }));
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<IClock>();

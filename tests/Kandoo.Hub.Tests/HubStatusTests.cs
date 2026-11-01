@@ -15,8 +15,13 @@ public sealed class HubStatusApiTests : IDisposable
 
     public HubStatusApiTests()
     {
-        _factory.ExtraConfiguration["Hub:Backup:DirectoryPath"] = _backupDirectory;
-        _factory.ExtraConfiguration[SystemHubStatusProbe.SmsConfigurationKey] = "true";
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(
+            new Dictionary<string, string?> { [SystemHubStatusProbe.SmsConfigurationKey] = "true" }).Build();
+        _factory.TestStatus = new SystemHubStatusProbe(
+            _factory.Store,
+            new HubBackupOptions { Enabled = false, DirectoryPath = _backupDirectory },
+            configuration,
+            SystemHubStatusProbe.DataPathFromConnectionString(_factory.ConnectionString));
         _api = new HubApiClient(_factory);
     }
 
@@ -37,6 +42,7 @@ public sealed class HubStatusApiTests : IDisposable
             _api.Store,
             new HubBackupOptions { Enabled = false, DirectoryPath = _backupDirectory },
             new ManualHubClock { UtcNow = backupAt }).BackupOnce();
+        Assert.Equal(backupAt, _factory.TestStatus!.Read(storeId).LastBackup.Value);
 
         var response = await _api.Get($"/v1/stores/{storeId:D}/status/v0", paired.Session.Token);
 
