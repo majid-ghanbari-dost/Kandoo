@@ -106,7 +106,7 @@ public sealed class HubStatusApiTests : IDisposable
         using var store = new SqliteHubStore("Data Source=:memory:;Pooling=False");
         var storeId = Guid.NewGuid();
         var missingDirectory = Path.Combine(Path.GetTempPath(), "kandoo-c43-missing", Guid.NewGuid().ToString("N"));
-        using var invalidSmsConfiguration = new ConfigurationBuilder().AddInMemoryCollection(
+        var invalidSmsConfiguration = new ConfigurationBuilder().AddInMemoryCollection(
             new Dictionary<string, string?> { [SystemHubStatusProbe.SmsConfigurationKey] = "not-a-boolean" }).Build();
         var disabled = new SystemHubStatusProbe(
             store,
@@ -119,7 +119,7 @@ public sealed class HubStatusApiTests : IDisposable
         AssertUnknown(disabled.FreeDiskBytes, SystemHubStatusProbe.DiskUnavailable);
         AssertUnknown(disabled.SmsEnabled, SystemHubStatusProbe.SmsConfigurationInvalid);
 
-        using var defaultConfiguration = new ConfigurationBuilder().Build();
+        var defaultConfiguration = new ConfigurationBuilder().Build();
         var enabledWithoutBackup = new SystemHubStatusProbe(
             store,
             new HubBackupOptions { Enabled = true, DirectoryPath = missingDirectory },
