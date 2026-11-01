@@ -26,6 +26,9 @@ builder.Services.AddSingleton(new PublicInvoiceRateLimiter(
     builder.Configuration.GetValue("PublicToken:RateLimitPerMinute", 60)));
 
 var app = builder.Build();
+// Only local public assets are served; /i/{token} still passes through its
+// existing rate-limit, capability, legal-copy, and content-negotiation guards.
+app.UseStaticFiles();
 
 app.MapGet("/health", () => Results.Json(new { status = "ok" }, CloudJson.Options));
 

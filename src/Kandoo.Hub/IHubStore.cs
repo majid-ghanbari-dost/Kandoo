@@ -42,6 +42,7 @@ public interface IHubStore : IDisposable
     void SaveInvoice(Invoice invoice);
     Invoice? GetInvoice(Guid storeId, Guid invoiceId);
     IReadOnlyList<ReplicationLogEntry> ReadReplicationEntries(Guid storeId);
+    DateTimeOffset? GetLastSyncAtUtc(Guid storeId);
     long GetDisplayNumberHighWatermark(Guid storeId);
     IReadOnlyList<DraftLock> GetDraftLocks();
     void CompleteTimeout(DraftLock draftLock);

@@ -42,6 +42,7 @@ public sealed class HubApiFactory : WebApplicationFactory<Program>
     public SqliteHubStore TestStore { get; }
     public SqliteHubStore Store => TestStore;
     public DeterministicHubSmsGateway TestSms { get; } = new();
+    public IHubStatusProbe? TestStatus { get; set; }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -66,6 +67,12 @@ public sealed class HubApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<HubProductCatalogService>();
             services.RemoveAll<ModeBReviewService>();
             services.RemoveAll<IHubSmsDeliveryGateway>();
+            if (TestStatus is not null)
+            {
+                services.RemoveAll<IHubStatusProbe>();
+                services.AddSingleton(TestStatus);
+            }
+
             services.AddSingleton<IHubStore>(TestStore);
             services.AddSingleton<IHubAccessStore>(TestStore);
             services.AddSingleton<IHubSmsDeliveryGateway>(TestSms);

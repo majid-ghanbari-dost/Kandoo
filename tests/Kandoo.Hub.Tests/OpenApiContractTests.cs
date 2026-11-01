@@ -24,6 +24,7 @@ public sealed class OpenApiContractTests
                      "/v1/stores/{store_id}/products/{product_id}",
                      "/v1/stores/{store_id}/service-types",
                      "/v1/stores/{store_id}/stats/v0",
+                     "/v1/stores/{store_id}/status/v0",
                      "/v1/stores/{store_id}/devices/{device_id}/level",
                      "/v1/stores/{store_id}/invoices/drafts",
                      "/v1/stores/{store_id}/invoices/{invoice_id}/items",
@@ -36,6 +37,10 @@ public sealed class OpenApiContractTests
         {
             Assert.True(paths.TryGetProperty(path, out _), $"Missing generated OpenAPI path: {path}");
         }
+
+        var statusPath = paths.GetProperty("/v1/stores/{store_id}/status/v0");
+        Assert.True(statusPath.TryGetProperty("get", out _), "C-43 status must be generated as GET.");
+        Assert.False(statusPath.TryGetProperty("post", out _), "C-43 status must remain read-only.");
 
         var schemas = document.RootElement.GetProperty("components").GetProperty("schemas");
         Assert.True(schemas.TryGetProperty("HubProductRegistrationRequest", out var registrationSchema), schemas.GetRawText());

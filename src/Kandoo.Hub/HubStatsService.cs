@@ -43,7 +43,6 @@ public sealed class HubStatsService
     public const string CashMethod = "CASH";
     public const string UnknownPaymentReason = "PAYMENT_METHOD_NOT_RECORDED_OR_UNSUPPORTED";
 
-    private static readonly TimeZoneInfo TehranZone = ResolveTehranZone();
     private readonly IHubStore _store;
     private readonly TimeProvider _time;
 
@@ -61,16 +60,16 @@ public sealed class HubStatsService
         }
 
         var nowUtc = _time.GetUtcNow().ToUniversalTime();
-        var nowLocal = TimeZoneInfo.ConvertTime(nowUtc, TehranZone);
+        var nowLocal = JalaliDateConverter.ToTehran(nowUtc);
         var todayStart = LocalMidnight(nowLocal);
         var daysFromSaturday = ((int)nowLocal.DayOfWeek - (int)DayOfWeek.Saturday + 7) % 7;
         var weekStart = todayStart.AddDays(-daysFromSaturday);
-        var jalali = new PersianCalendar();
-        var year = jalali.GetYear(nowLocal.DateTime);
-        var month = jalali.GetMonth(nowLocal.DateTime);
-        var day = jalali.GetDayOfMonth(nowLocal.DateTime);
+        var jalali = JalaliDateConverter.FromLocalDateTime(nowLocal.DateTime);
+        var year = jalali.Year;
+        var month = jalali.Month;
+        var day = jalali.Day;
         var monthStart = todayStart.AddDays(-(day - 1));
-        var monthEnd = monthStart.AddDays(jalali.GetDaysInMonth(year, month));
+        var monthEnd = monthStart.AddDays(JalaliDateConverter.DaysInMonth(year, month));
         var events = ReadIssuedEvents(storeId);
 
         return new HubStatsSnapshot(

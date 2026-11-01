@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Kandoo.App.MainPage"
+             Title="فاکتور دیجیتال کندو"
+             Style="{StaticResource PageStyle}">
+    <Grid RowDefinitions="Auto,*">
+        <Label x:Name="DemoBanner"
+               Grid.Row="0"
+               Style="{StaticResource DemoBannerStyle}"
+               Text="داده نمایشی — این اطلاعات واقعی نیست"
+               SemanticProperties.Description="هشدار دائمی داده نمایشی" />
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Style="{StaticResource RootStackStyle}">
+                <Label Style="{StaticResource TitleStyle}"
+                       Text="فاکتور دیجیتال کندو" />
+                <Label Style="{StaticResource BodyStyle}"
+                       Text="صف بررسی فاکتورها" />
+
+                <Label Style="{StaticResource SectionTitleStyle}"
+                       Text="منبع داده" />
+                <HorizontalStackLayout Style="{StaticResource ButtonRowStyle}">
+                    <Button x:Name="FakeModeButton"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Text="داده نمایشی"
+                            Clicked="OnFakeModeClicked"
+                            SemanticProperties.Description="انتخاب داده نمایشی" />
+                    <Button x:Name="RealModeButton"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Text="داده واقعی Hub"
+                            Clicked="OnRealModeClicked"
+                            SemanticProperties.Description="انتخاب داده واقعی هاب" />
+                </HorizontalStackLayout>
+                <Label x:Name="ModeLabel" Style="{StaticResource CaptionStyle}" />
+
+                <VerticalStackLayout x:Name="RealSettings" Style="{StaticResource RowStackStyle}">
+                    <Label Style="{StaticResource SectionTitleStyle}"
+                           Text="تنظیمات اتصال Hub" />
+                    <Entry x:Name="HubBaseUrlEntry"
+                           Style="{StaticResource InputStyle}"
+                           Placeholder="نشانی Hub، مانند https://hub.lan"
+                           Keyboard="Url"
+                           SemanticProperties.Description="نشانی پایه هاب" />
+                    <Entry x:Name="StoreIdEntry"
+                           Style="{StaticResource InputStyle}"
+                           Placeholder="شناسه فروشگاه"
+                           SemanticProperties.Description="شناسه فروشگاه هاب" />
+                    <Entry x:Name="SessionTokenEntry"
+                           Style="{StaticResource InputStyle}"
+                           Placeholder="نشست دستگاه"
+                           IsPassword="True"
+                           SemanticProperties.Description="رمز نشست دستگاه" />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout x:Name="PairingSection"
+                                     Style="{StaticResource RowStackStyle}"
+                                     IsVisible="False">
+                    <Label Style="{StaticResource SectionTitleStyle}"
+                           Text="جفت‌سازی Android" />
+                    <Label Style="{StaticResource BodyStyle}"
+                           Text="کد QR جفت‌سازی را به‌شکل JSON وارد کنید. مصرف‌کردن کد با Hub واقعی انجام می‌شود." />
+                    <Entry x:Name="PairingLabelEntry"
+                           Style="{StaticResource InputStyle}"
+                           Placeholder="نام دستگاه"
+                           SemanticProperties.Description="نام دستگاه اندروید" />
+                    <Editor x:Name="PairingCodeEntry"
+                            Style="{StaticResource PairingInputStyle}"
+                            Placeholder="JSON کد جفت‌سازی"
+                            SemanticProperties.Description="کد جفت‌سازی کیوآر" />
+                    <Button x:Name="PairButton"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            Text="مصرف کد جفت‌سازی"
+                            Clicked="OnPairClicked"
+                            SemanticProperties.Description="مصرف کد جفت‌سازی از هاب واقعی" />
+                    <Label x:Name="PairingStatusLabel"
+                           Style="{StaticResource BodyStyle}"
+                           Text="کد جفت‌سازی را وارد کنید." />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout x:Name="DevicesSection"
+                                     Style="{StaticResource RowStackStyle}"
+                                     IsVisible="False">
+                    <Label Style="{StaticResource SectionTitleStyle}"
+                           Text="دستگاه‌ها — مالک Windows" />
+                    <Button x:Name="LoadDevicesButton"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Text="بارگذاری دستگاه‌ها"
+                            Clicked="OnLoadDevicesClicked"
+                            SemanticProperties.Description="بارگذاری فهرست دستگاه‌ها با نشست مالک" />
+                    <Label x:Name="DevicesStatusLabel"
+                           Style="{StaticResource BodyStyle}"
+                           Text="نشست مالک لازم است." />
+                    <VerticalStackLayout x:Name="DeviceItems" Style="{StaticResource RowStackStyle}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource RowStyle}">
+                                    <VerticalStackLayout Style="{StaticResource RowStackStyle}">
+                                        <Label Style="{StaticResource SectionTitleStyle}"
+                                               Text="{Binding Label}" />
+                                        <Label Style="{StaticResource BodyStyle}"
+                                               Text="{Binding DetailsDisplay}" />
+                                        <Label Style="{StaticResource DeviceIdStyle}"
+                                               Text="{Binding DeviceIdDisplay}" />
+                                        <HorizontalStackLayout Style="{StaticResource ButtonRowStyle}">
+                                            <Button Style="{StaticResource SecondaryButtonStyle}"
+                                                    Text="SELLER"
+                                                    CommandParameter="{Binding DeviceId}"
+                                                    IsEnabled="{Binding CanAdminister}"
+                                                    Clicked="OnSellerClicked"
+                                                    SemanticProperties.Description="تغییر سطح دستگاه به فروشنده" />
+                                            <Button Style="{StaticResource SecondaryButtonStyle}"
+                                                    Text="OPERATOR"
+                                                    CommandParameter="{Binding DeviceId}"
+                                                    IsEnabled="{Binding CanAdminister}"
+                                                    Clicked="OnOperatorClicked"
+                                                    SemanticProperties.Description="تغییر سطح دستگاه به اپراتور" />
+                                            <Button Style="{StaticResource SecondaryButtonStyle}"
+                                                    Text="MANAGER"
+                                                    CommandParameter="{Binding DeviceId}"
+                                                    IsEnabled="{Binding CanAdminister}"
+                                                    Clicked="OnManagerClicked"
+                                                    SemanticProperties.Description="تغییر سطح دستگاه به مدیر" />
+                                            <Button Style="{StaticResource DangerButtonStyle}"
+                                                    Text="لغو دستگاه"
+                                                    CommandParameter="{Binding DeviceId}"
+                                                    IsEnabled="{Binding CanAdminister}"
+                                                    Clicked="OnRevokeClicked"
+                                                    SemanticProperties.Description="لغو دستگاه همراه" />
+                                        </HorizontalStackLayout>
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+
+                <Button x:Name="LoadButton"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Text="بارگذاری صف"
+                        Clicked="OnLoadClicked"
+                        SemanticProperties.Description="بارگذاری صف بررسی" />
+                <Label x:Name="StatusLabel"
+                       Style="{StaticResource BodyStyle}"
+                       Text="آماده" />
+
+                <Label Style="{StaticResource SectionTitleStyle}"
+                       Text="فاکتورها" />
+                <VerticalStackLayout x:Name="QueueItems" Style="{StaticResource RowStackStyle}">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource RowStyle}">
+                                <VerticalStackLayout Style="{StaticResource RowStackStyle}">
+                                    <Label Style="{StaticResource SectionTitleStyle}"
+                                           Text="{Binding InvoiceNumber}" />
+                                    <Label Style="{StaticResource BodyStyle}"
+                                           Text="{Binding JalaliDate}" />
+                                    <Label Style="{StaticResource BodyStyle}"
+                                           Text="{Binding QueueStatus}" />
+                                    <Label Style="{StaticResource AmountStyle}"
+                                           Text="{Binding AmountDisplay}" />
+                                </VerticalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>
