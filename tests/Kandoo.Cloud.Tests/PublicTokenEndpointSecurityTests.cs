@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Net;
+using System.Security.Cryptography;
 using System.Text.Json;
 using Kandoo.Core;
 using Microsoft.AspNetCore.Hosting;
@@ -52,6 +53,48 @@ public sealed class PublicTokenEndpointSecurityTests
         Assert.Equal("PUBLIC_INVOICE_NOT_FOUND", body.RootElement.GetProperty("code").GetString());
         Assert.DoesNotContain(UnknownToken, unknownBody);
         Assert.DoesNotContain(UnauthorizedToken, unauthorizedBody);
+    }
+
+    [Fact]
+    public async Task C44_StaticAssetsDoNotChangeMalformedUnknownOrUnauthorized404Semantics()
+    {
+        using var factory = new SecurityCloudFactory(_database.Store, new UnauthorizedPublicStore(), null);
+        using var client = factory.CreateClient();
+        using var malformed = await client.GetAsync("/i/not-a-valid-token");
+        using var unknown = await client.GetAsync($"/i/{UnknownToken}");
+        using var unauthorized = await client.GetAsync($"/i/{UnauthorizedToken}");
+        var malformedBody = await malformed.Content.ReadAsStringAsync();
+        var unknownBody = await unknown.Content.ReadAsStringAsync();
+        var unauthorizedBody = await unauthorized.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.NotFound, malformed.StatusCode);
+        Assert.Equal(malformed.StatusCode, unknown.StatusCode);
+        Assert.Equal(malformed.StatusCode, unauthorized.StatusCode);
+        Assert.Equal(malformedBody, unknownBody);
+        Assert.Equal(malformedBody, unauthorizedBody);
+        Assert.Equal(malformed.Content.Headers.ContentType?.ToString(), unknown.Content.Headers.ContentType?.ToString());
+        Assert.Equal(malformed.Content.Headers.ContentType?.ToString(), unauthorized.Content.Headers.ContentType?.ToString());
+        Assert.Equal("no-store", malformed.Headers.CacheControl?.ToString());
+        Assert.Equal("no-store", unknown.Headers.CacheControl?.ToString());
+        Assert.Equal("no-store", unauthorized.Headers.CacheControl?.ToString());
+    }
+
+    [Fact]
+    public async Task C44_LocalVazirmatnAssetsAreServedWithPinnedBytes()
+    {
+        using var factory = new SecurityCloudFactory(_database.Store, _database.Store, null);
+        using var client = factory.CreateClient();
+        foreach (var (path, expectedHash) in new[]
+                 {
+                     ("/fonts/Vazirmatn-Regular.ttf", "b69fd4c680b8f3f225feabcc655a2c585d97627b8f5f5c0f9985e894069f3a56"),
+                     ("/fonts/Vazirmatn-Bold.ttf", "f635fdbea28f265de395ba83b4b1570dcf2f58d13c65469e61903b1c2d2ae723")
+                 })
+        {
+            using var response = await client.GetAsync(path);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            var bytes = await response.Content.ReadAsByteArrayAsync();
+            Assert.Equal(expectedHash, Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant());
+        }
     }
 
     [Fact]
