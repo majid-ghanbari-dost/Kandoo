@@ -59,6 +59,11 @@ builder.Services.AddSingleton(provider => new SqliteBackupService(
     hubStore,
     backupOptions,
     provider.GetRequiredService<IClock>()));
+builder.Services.AddSingleton<IHubStatusProbe>(provider => new SystemHubStatusProbe(
+    provider.GetRequiredService<IHubStore>(),
+    backupOptions,
+    provider.GetRequiredService<IConfiguration>(),
+    SystemHubStatusProbe.DataPathFromConnectionString(sqliteConnection)));
 if (backupOptions.Enabled)
 {
     builder.Services.AddHostedService<SqliteBackupHostedService>();

@@ -166,6 +166,30 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore, IHubRep
         }
     }
 
+    public DateTimeOffset? GetLastSyncAtUtc(Guid storeId)
+    {
+        if (storeId == Guid.Empty)
+        {
+            throw new ArgumentException("A store is required.", nameof(storeId));
+        }
+
+        lock (_gate)
+        {
+            ThrowIfDisposed();
+            using var command = _connection.CreateCommand();
+            command.CommandText = "SELECT MAX(acknowledged_at) FROM replication_log WHERE store_id = $store;";
+            command.Parameters.AddWithValue("$store", storeId.ToString("D"));
+            var persisted = command.ExecuteScalar()?.ToString();
+            return string.IsNullOrWhiteSpace(persisted)
+                ? null
+                : DateTimeOffset.ParseExact(
+                    persisted,
+                    "O",
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.None).ToUniversalTime();
+        }
+    }
+
     public long GetDisplayNumberHighWatermark(Guid storeId)
     {
         lock (_gate)
