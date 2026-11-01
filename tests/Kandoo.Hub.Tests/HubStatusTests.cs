@@ -154,8 +154,10 @@ public sealed class HubStatusApiTests : IDisposable
 
     private static void AssertTime(JsonElement value, DateTimeOffset expected)
     {
-        Assert.Equal(expected, value.GetProperty("at_utc").GetDateTimeOffset());
-        Assert.Equal(JsonValueKind.Null, value.GetProperty("reason").ValueKind);
+        Assert.True(value.GetProperty("reason").ValueKind == JsonValueKind.Null, value.GetRawText());
+        var observed = value.GetProperty("at_utc");
+        Assert.True(observed.ValueKind == JsonValueKind.String, value.GetRawText());
+        Assert.Equal(expected, observed.GetDateTimeOffset());
     }
 
     private static void AssertUnknown(JsonElement value, string valueName, string reason)
