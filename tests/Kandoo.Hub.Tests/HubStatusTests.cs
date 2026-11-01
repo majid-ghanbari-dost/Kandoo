@@ -46,6 +46,7 @@ public sealed class HubStatusApiTests : IDisposable
         Assert.Equal(generatedAt, response.Body.GetProperty("generated_at_utc").GetDateTimeOffset());
         Assert.Equal("UTC", response.Body.GetProperty("time_zone").GetString());
         var version = response.Body.GetProperty("version");
+        Assert.True(version.GetProperty("value").ValueKind == JsonValueKind.String, response.Body.GetRawText());
         Assert.False(string.IsNullOrWhiteSpace(version.GetProperty("value").GetString()));
         Assert.Equal(JsonValueKind.Null, version.GetProperty("reason").ValueKind);
         AssertTime(response.Body.GetProperty("last_sync"), syncAt);
