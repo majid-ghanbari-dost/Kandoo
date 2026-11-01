@@ -7,6 +7,7 @@ on:
       - 'src/Kandoo.Core/JalaliDateConverter.cs'
       - 'tests/Kandoo.App.Tests/**'
       - 'docs/reports/C-40.md'
+      - 'docs/reports/C-41.md'
       - 'scripts/Invoke-KandooApp.ps1'
       - '.github/workflows/kandoo-app.yml'
   pull_request:
@@ -15,6 +16,7 @@ on:
       - 'src/Kandoo.Core/JalaliDateConverter.cs'
       - 'tests/Kandoo.App.Tests/**'
       - 'docs/reports/C-40.md'
+      - 'docs/reports/C-41.md'
       - 'scripts/Invoke-KandooApp.ps1'
       - '.github/workflows/kandoo-app.yml'
   workflow_dispatch:
@@ -54,8 +56,8 @@ jobs:
       - name: Upload Windows app
         uses: actions/upload-artifact@v4
         with:
-          name: kandoo-app-c40-win-x64
-          path: artifacts/kandoo-app-c40-win-x64.zip
+          name: kandoo-app-c41-win-x64
+          path: artifacts/kandoo-app-c41-win-x64.zip
           if-no-files-found: error
           retention-days: 7
 
@@ -66,7 +68,7 @@ jobs:
       - name: Upload Android Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: kandoo-app-c40-android-debug-apk
-          path: artifacts/kandoo-app-c40-android-debug.apk
+          name: kandoo-app-c41-android-debug-apk
+          path: artifacts/kandoo-app-c41-android-debug.apk
           if-no-files-found: error
           retention-days: 7

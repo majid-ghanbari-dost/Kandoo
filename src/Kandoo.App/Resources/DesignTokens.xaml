@@ -49,6 +49,9 @@
     <Style x:Key="CaptionStyle" TargetType="Label" BasedOn="{StaticResource BodyStyle}">
         <Setter Property="FontSize" Value="{StaticResource FontSizeCaption}" />
     </Style>
+    <Style x:Key="DeviceIdStyle" TargetType="Label" BasedOn="{StaticResource CaptionStyle}">
+        <Setter Property="FlowDirection" Value="LeftToRight" />
+    </Style>
     <Style x:Key="TitleStyle" TargetType="Label" BasedOn="{StaticResource BodyStyle}">
         <Setter Property="FontFamily" Value="{StaticResource FontFamilyBold}" />
         <Setter Property="FontSize" Value="{StaticResource FontSizeTitle}" />
@@ -74,6 +77,14 @@
         <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
         <Setter Property="MinimumHeightRequest" Value="{StaticResource TouchTarget}" />
     </Style>
+    <Style x:Key="PairingInputStyle" TargetType="Editor">
+        <Setter Property="BackgroundColor" Value="{StaticResource Wax}" />
+        <Setter Property="TextColor" Value="{StaticResource Ink}" />
+        <Setter Property="PlaceholderColor" Value="{StaticResource Ink}" />
+        <Setter Property="FontFamily" Value="{StaticResource FontFamilyRegular}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
+        <Setter Property="MinimumHeightRequest" Value="{StaticResource TouchTarget}" />
+    </Style>
     <Style x:Key="PrimaryButtonStyle" TargetType="Button">
         <Setter Property="BackgroundColor" Value="{StaticResource Green}" />
         <Setter Property="TextColor" Value="{StaticResource Cream}" />
@@ -86,6 +97,10 @@
     <Style x:Key="SecondaryButtonStyle" TargetType="Button" BasedOn="{StaticResource PrimaryButtonStyle}">
         <Setter Property="BackgroundColor" Value="{StaticResource Honey}" />
         <Setter Property="TextColor" Value="{StaticResource Ink}" />
+    </Style>
+    <Style x:Key="DangerButtonStyle" TargetType="Button" BasedOn="{StaticResource PrimaryButtonStyle}">
+        <Setter Property="BackgroundColor" Value="{StaticResource Review}" />
+        <Setter Property="TextColor" Value="{StaticResource Cream}" />
     </Style>
     <Style x:Key="RowStyle" TargetType="Border">
         <Setter Property="BackgroundColor" Value="{StaticResource Wax}" />

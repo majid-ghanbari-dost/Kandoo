@@ -52,6 +52,88 @@
                            SemanticProperties.Description="رمز نشست دستگاه" />
                 </VerticalStackLayout>
 
+                <VerticalStackLayout x:Name="PairingSection"
+                                     Style="{StaticResource RowStackStyle}"
+                                     IsVisible="False">
+                    <Label Style="{StaticResource SectionTitleStyle}"
+                           Text="جفت‌سازی Android" />
+                    <Label Style="{StaticResource BodyStyle}"
+                           Text="کد QR جفت‌سازی را به‌شکل JSON وارد کنید. مصرف‌کردن کد با Hub واقعی انجام می‌شود." />
+                    <Entry x:Name="PairingLabelEntry"
+                           Style="{StaticResource InputStyle}"
+                           Placeholder="نام دستگاه"
+                           SemanticProperties.Description="نام دستگاه اندروید" />
+                    <Editor x:Name="PairingCodeEntry"
+                            Style="{StaticResource PairingInputStyle}"
+                            Placeholder="JSON کد جفت‌سازی"
+                            SemanticProperties.Description="کد جفت‌سازی کیوآر" />
+                    <Button x:Name="PairButton"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            Text="مصرف کد جفت‌سازی"
+                            Clicked="OnPairClicked"
+                            SemanticProperties.Description="مصرف کد جفت‌سازی از هاب واقعی" />
+                    <Label x:Name="PairingStatusLabel"
+                           Style="{StaticResource BodyStyle}"
+                           Text="کد جفت‌سازی را وارد کنید." />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout x:Name="DevicesSection"
+                                     Style="{StaticResource RowStackStyle}"
+                                     IsVisible="False">
+                    <Label Style="{StaticResource SectionTitleStyle}"
+                           Text="دستگاه‌ها — مالک Windows" />
+                    <Button x:Name="LoadDevicesButton"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Text="بارگذاری دستگاه‌ها"
+                            Clicked="OnLoadDevicesClicked"
+                            SemanticProperties.Description="بارگذاری فهرست دستگاه‌ها با نشست مالک" />
+                    <Label x:Name="DevicesStatusLabel"
+                           Style="{StaticResource BodyStyle}"
+                           Text="نشست مالک لازم است." />
+                    <VerticalStackLayout x:Name="DeviceItems" Style="{StaticResource RowStackStyle}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource RowStyle}">
+                                    <VerticalStackLayout Style="{StaticResource RowStackStyle}">
+                                        <Label Style="{StaticResource SectionTitleStyle}"
+                                               Text="{Binding Label}" />
+                                        <Label Style="{StaticResource BodyStyle}"
+                                               Text="{Binding DetailsDisplay}" />
+                                        <Label Style="{StaticResource DeviceIdStyle}"
+                                               Text="{Binding DeviceIdDisplay}" />
+                                        <HorizontalStackLayout Style="{StaticResource ButtonRowStyle}">
+                                            <Button Style="{StaticResource SecondaryButtonStyle}"
+                                                    Text="SELLER"
+                                                    CommandParameter="{Binding DeviceId}"
+                                                    IsEnabled="{Binding CanAdminister}"
+                                                    Clicked="OnSellerClicked"
+                                                    SemanticProperties.Description="تغییر سطح دستگاه به فروشنده" />
+                                            <Button Style="{StaticResource SecondaryButtonStyle}"
+                                                    Text="OPERATOR"
+                                                    CommandParameter="{Binding DeviceId}"
+                                                    IsEnabled="{Binding CanAdminister}"
+                                                    Clicked="OnOperatorClicked"
+                                                    SemanticProperties.Description="تغییر سطح دستگاه به اپراتور" />
+                                            <Button Style="{StaticResource SecondaryButtonStyle}"
+                                                    Text="MANAGER"
+                                                    CommandParameter="{Binding DeviceId}"
+                                                    IsEnabled="{Binding CanAdminister}"
+                                                    Clicked="OnManagerClicked"
+                                                    SemanticProperties.Description="تغییر سطح دستگاه به مدیر" />
+                                            <Button Style="{StaticResource DangerButtonStyle}"
+                                                    Text="لغو دستگاه"
+                                                    CommandParameter="{Binding DeviceId}"
+                                                    IsEnabled="{Binding CanAdminister}"
+                                                    Clicked="OnRevokeClicked"
+                                                    SemanticProperties.Description="لغو دستگاه همراه" />
+                                        </HorizontalStackLayout>
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+
                 <Button x:Name="LoadButton"
                         Style="{StaticResource PrimaryButtonStyle}"
                         Text="بارگذاری صف"
