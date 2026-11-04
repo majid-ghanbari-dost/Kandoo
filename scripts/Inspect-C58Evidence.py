@@ -43,6 +43,17 @@ def inspect(label: str, root: pathlib.Path) -> None:
             if current not in shown:
                 annotate("warning", "C58_CRASH_CONTEXT", f"run={label} {lines[current]}")
                 shown.add(current)
+    if not indexes:
+        diagnostic_indexes = [
+            i for i, line in enumerate(lines)
+            if re.search(r"exception|fatal|\banr\b|notimplemented", line, re.IGNORECASE)
+            and re.search(r"ir\.kandoo\.app|AndroidRuntime|Mono|Microsoft\.Maui", line, re.IGNORECASE)]
+        annotate("notice", "C58_EXCEPTION_INDEXES", f"run={label} count={len(diagnostic_indexes)}")
+        for index in diagnostic_indexes[:12]:
+            for current in range(max(0, index - 1), min(len(lines), index + 3)):
+                if current not in shown:
+                    annotate("warning", "C58_EXCEPTION_CONTEXT", f"run={label} {lines[current]}")
+                    shown.add(current)
 
 
 def inspect_theme_attributes(root: pathlib.Path, apk: pathlib.Path) -> None:

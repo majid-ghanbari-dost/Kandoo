@@ -44,6 +44,6 @@ public partial class RoleSelectionPage : ContentPage
 
         var profile = new LocalUserProfile(role);
         _profiles.Save(profile);
-        Application.Current!.MainPage = new MainPage(profile, _profiles);
+        Application.Current!.MainPage = new NavigationPage(new MainPage(profile, _profiles));
     }
 }
