@@ -28,6 +28,16 @@ def inspect(label: str, root: pathlib.Path) -> None:
                     if value:
                         values.append(value)
             annotate("notice", "C58_UI_VALUES", f"run={label} values={' | '.join(values) or 'NONE'}")
+            nodes = []
+            for node in document.iter():
+                attributes = node.attrib
+                nodes.append(
+                    f"{attributes.get('class', '?')}[{attributes.get('resource-id', '')}]"
+                    f" bounds={attributes.get('bounds', '')}"
+                    f" text={attributes.get('text', '')}"
+                    f" desc={attributes.get('content-desc', '')}")
+            for offset in range(0, len(nodes), 30):
+                annotate("notice", "C58_UI_NODES", f"run={label} from={offset} {' | '.join(nodes[offset:offset + 30])}")
         except Exception as error:
             annotate("warning", "C58_UI_PARSE", f"run={label} error={error} raw={ui.read_text(errors='replace')[:2000]}")
     logcat = root / "logcat.txt"
@@ -46,7 +56,7 @@ def inspect(label: str, root: pathlib.Path) -> None:
     if not indexes:
         diagnostic_indexes = [
             i for i, line in enumerate(lines)
-            if re.search(r"exception|fatal|\banr\b|notimplemented", line, re.IGNORECASE)
+            if re.search(r"exception|fatal|\banr\b|notimplemented|font|typeface|failed", line, re.IGNORECASE)
             and re.search(r"ir\.kandoo\.app|AndroidRuntime|Mono|Microsoft\.Maui", line, re.IGNORECASE)]
         annotate("notice", "C58_EXCEPTION_INDEXES", f"run={label} count={len(diagnostic_indexes)}")
         for index in diagnostic_indexes[:12]:

@@ -4,8 +4,9 @@
              x:Class="Kandoo.App.RoleSelectionPage"
              Title="انتخاب نقش"
              Style="{StaticResource PageStyle}">
-    <ScrollView>
-        <VerticalStackLayout Style="{StaticResource RootStackStyle}">
+    <VerticalStackLayout Style="{StaticResource RootStackStyle}"
+                         HorizontalOptions="Fill"
+                         VerticalOptions="Start">
             <Label Style="{StaticResource TitleStyle}" Text="کندو" />
             <Label Style="{StaticResource SectionTitleStyle}" Text="انتخاب نقش کاربر" />
             <Label x:Name="CurrentRoleLabel" Style="{StaticResource BodyStyle}" />
@@ -37,6 +38,5 @@
                     Text="گزارش آخرین خطا"
                     Clicked="OnCrashReportClicked"
                     SemanticProperties.Description="نمایش و کپی آخرین گزارش خطای برنامه" />
-        </VerticalStackLayout>
-    </ScrollView>
+    </VerticalStackLayout>
 </ContentPage>
