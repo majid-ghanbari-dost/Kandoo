@@ -48,8 +48,16 @@ dump_ui() {
   done
   return 1
 }
-dump_ui
-wait_point=$(python3 - "$evidence/ui.xml" <<'PY'
+roles_present() {
+  local role_text
+  for role_text in 'فروشگاه نمونه' 'مشتری نمونه' 'فروشگاه و مشتری نمونه'; do
+    grep -q "$role_text" "$evidence/ui.xml" || return 1
+  done
+  return 0
+}
+dismiss_system_ui_wait() {
+  local wait_point wait_x wait_y
+  wait_point=$(python3 - "$evidence/ui.xml" <<'PY'
 import re
 import sys
 import xml.etree.ElementTree as ET
@@ -68,13 +76,25 @@ for node in nodes:
         break
 PY
 )
-if [[ -n "$wait_point" ]]; then
+  if [[ -z "$wait_point" ]]; then
+    return 1
+  fi
   read -r wait_x wait_y <<< "$wait_point"
   echo "::warning::C58_SYSTEM_UI dialog=not_responding action=wait"
   adb shell input tap "$wait_x" "$wait_y"
-  sleep 5
-  dump_ui
-fi
+}
+dump_ui
+for role_attempt in 1 2 3 4 5 6; do
+  if roles_present; then
+    break
+  fi
+  dismiss_system_ui_wait || true
+  if [[ "$role_attempt" -lt 6 ]]; then
+    echo "::warning::C58_ROLE_RETRY attempt=$role_attempt reason=role_text_not_present"
+    sleep 5
+    dump_ui
+  fi
+done
 for role_text in 'فروشگاه نمونه' 'مشتری نمونه' 'فروشگاه و مشتری نمونه'; do
   if ! grep -q "$role_text" "$evidence/ui.xml"; then
     echo "::error::C58_UI missing_text=$role_text"
