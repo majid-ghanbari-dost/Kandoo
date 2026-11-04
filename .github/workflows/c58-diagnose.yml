@@ -21,14 +21,14 @@ jobs:
         with:
           name: kandoo-app-c50-emulator-evidence
           path: current
-          run-id: 41858265612
+          run-id: 41860723500
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Download previous logcat evidence
         uses: actions/download-artifact@v4
         with:
           name: kandoo-app-c50-emulator-evidence
           path: previous
-          run-id: 41855764797
+          run-id: 41858265612
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Annotate UI and crash evidence
         run: python3 scripts/Inspect-C58Evidence.py current=current previous=previous
