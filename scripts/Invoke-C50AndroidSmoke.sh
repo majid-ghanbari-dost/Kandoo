@@ -33,8 +33,20 @@ fi
 
 grep -q 'Events injected: 1' "$evidence/launch.txt"
 dump_ui() {
-  adb shell uiautomator dump /sdcard/kandoo-c58-ui.xml > "$evidence/ui-dump.txt" 2>&1
-  adb shell cat /sdcard/kandoo-c58-ui.xml > "$evidence/ui.xml"
+  local attempt
+  for attempt in 1 2 3 4 5; do
+    rm -f "$evidence/ui.xml"
+    adb shell rm -f /sdcard/kandoo-c58-ui.xml || true
+    if adb shell uiautomator dump /sdcard/kandoo-c58-ui.xml > "$evidence/ui-dump.txt" 2>&1 \
+      && adb shell cat /sdcard/kandoo-c58-ui.xml > "$evidence/ui.xml" \
+      && [[ -s "$evidence/ui.xml" ]] \
+      && python3 -c 'import sys; import xml.etree.ElementTree as ET; ET.parse(sys.argv[1])' "$evidence/ui.xml"; then
+      return 0
+    fi
+    echo "::warning::C58_UI_RETRY attempt=$attempt reason=empty_or_invalid_xml"
+    sleep 5
+  done
+  return 1
 }
 dump_ui
 wait_point=$(python3 - "$evidence/ui.xml" <<'PY'
