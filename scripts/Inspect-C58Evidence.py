@@ -43,7 +43,7 @@ def inspect(label: str, root: pathlib.Path) -> None:
 
 
 def main() -> int:
-    if len(sys.argv) < 2 or len(sys.argv) % 2 != 0:
+    if len(sys.argv) < 2:
         raise SystemExit("usage: Inspect-C58Evidence.py <label=path> [...]")
     for item in sys.argv[1:]:
         label, separator, path = item.partition("=")
