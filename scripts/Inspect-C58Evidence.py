@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Emit synthetic CI UI/crash evidence as visible GitHub annotations."""
+"""Emit CI UI/crash evidence as visible GitHub annotations."""
 
 import pathlib
 import sys

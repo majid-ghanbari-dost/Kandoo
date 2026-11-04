@@ -14,6 +14,7 @@ on:
       - 'scripts/Invoke-KandooApp.ps1'
       - 'scripts/Inspect-KandooApk.py'
       - 'scripts/Invoke-C50AndroidSmoke.sh'
+      - 'scripts/Inspect-C58Evidence.py'
       - '.github/workflows/kandoo-app.yml'
   pull_request:
     paths:
@@ -28,6 +29,7 @@ on:
       - 'scripts/Invoke-KandooApp.ps1'
       - 'scripts/Inspect-KandooApk.py'
       - 'scripts/Invoke-C50AndroidSmoke.sh'
+      - 'scripts/Inspect-C58Evidence.py'
       - '.github/workflows/kandoo-app.yml'
   workflow_dispatch:
 
@@ -120,6 +122,10 @@ jobs:
           disable-animations: true
           emulator-boot-timeout: 900
           script: bash scripts/Invoke-C50AndroidSmoke.sh artifacts/kandoo-app-c50-android-debug.apk artifacts/emulator
+
+      - name: Annotate emulator UI and crash evidence
+        if: always()
+        run: python3 scripts/Inspect-C58Evidence.py current=artifacts/emulator
 
       - name: Upload emulator logcat and launch evidence
         if: always()
