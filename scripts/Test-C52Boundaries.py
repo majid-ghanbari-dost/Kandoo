@@ -15,7 +15,11 @@ BANNED = (
 
 
 def main() -> int:
-    sources = {path: path.read_text(encoding="utf-8") for path in PROJECT.rglob("*.cs")}
+    sources = {
+        path: path.read_text(encoding="utf-8")
+        for path in PROJECT.rglob("*.cs")
+        if not {"bin", "obj"}.intersection(path.relative_to(PROJECT).parts)
+    }
     violations = []
     for path, text in sources.items():
         for token in BANNED:
