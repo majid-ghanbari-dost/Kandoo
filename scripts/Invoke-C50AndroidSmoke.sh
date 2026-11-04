@@ -32,7 +32,24 @@ else
 fi
 
 grep -q 'Events injected: 1' "$evidence/launch.txt"
+adb shell uiautomator dump /sdcard/kandoo-c58-ui.xml > "$evidence/ui-dump.txt" 2>&1
+adb shell cat /sdcard/kandoo-c58-ui.xml > "$evidence/ui.xml"
+for role_text in 'فروشگاه نمونه' 'مشتری نمونه' 'فروشگاه و مشتری نمونه'; do
+  if ! grep -q "$role_text" "$evidence/ui.xml"; then
+    echo "::error::C58_UI missing_text=$role_text"
+    exit 1
+  fi
+done
+echo "::notice::C58_UI PASS first_run_roles=store,customer,both"
 capture_logcat
 trap - EXIT
 crash_markers=$(grep -c 'KANDOO_CRASH' "$evidence/logcat.txt" || true)
 echo "::notice::C50_LOGCAT lines=$(wc -l < "$evidence/logcat.txt") crash_markers=$crash_markers artifact=kandoo-app-c50-emulator-evidence"
+if [[ "$crash_markers" -gt 0 ]]; then
+  grep -A 12 -B 2 -E 'KANDOO_CRASH|KandooCrash' "$evidence/logcat.txt" | head -60 > "$evidence/crash-context.txt" || true
+  while IFS= read -r line; do
+    printf '::warning::C50_CRASH_DETAIL %s\n' "$line"
+  done < "$evidence/crash-context.txt"
+  echo "::error::C50_CRASH markers=$crash_markers"
+  exit 1
+fi
