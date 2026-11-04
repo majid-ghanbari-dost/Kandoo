@@ -125,7 +125,7 @@ jobs:
 
       - name: Annotate emulator UI and crash evidence
         if: always()
-        run: python3 scripts/Inspect-C58Evidence.py current=artifacts/emulator
+        run: python3 scripts/Inspect-C58Evidence.py current=artifacts/emulator apk=artifacts/kandoo-app-c50-android-debug.apk
 
       - name: Upload emulator logcat and launch evidence
         if: always()
