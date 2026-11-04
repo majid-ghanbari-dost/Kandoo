@@ -125,10 +125,11 @@ public sealed class HubCloudReplicationClient
             return new HubReplicationResult("IDLE", 0, depth, 0);
         }
 
+        var outbound = HubReplicationPayloadV11.Apply(batch, _options);
         CloudTransportResponse response;
         try
         {
-            response = await _transport.SendAsync(batch, cancellationToken);
+            response = await _transport.SendAsync(outbound, cancellationToken);
         }
         catch (Exception exception) when (
             exception is HttpRequestException || exception is IOException || exception is JsonException ||
