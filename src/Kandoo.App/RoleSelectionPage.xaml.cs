@@ -23,6 +23,30 @@ public partial class RoleSelectionPage : ContentPage
         CustomerButton.IsVisible = !_isWindows;
         BothButton.IsVisible = !_isWindows;
         BackButton.IsVisible = current is not null;
+        SizeChanged += (_, _) => LogLayout("size");
+        LogLayout("ctor");
+    }
+
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        LogLayout("appearing");
+    }
+
+    private void LogLayout(string stage)
+    {
+        if (Content is not ScrollView { Content: Layout layout })
+        {
+            System.Diagnostics.Debug.WriteLine($"KANDOO_C58_LAYOUT stage={stage} content=missing");
+            return;
+        }
+        System.Diagnostics.Debug.WriteLine(
+            $"KANDOO_C58_LAYOUT stage={stage} children={layout.Children.Count} page={Width:F0}x{Height:F0} grid={layout.Width:F0}x{layout.Height:F0}");
+        foreach (var child in layout.Children.OfType<VisualElement>())
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"KANDOO_C58_CHILD type={child.GetType().Name} visible={child.IsVisible} size={child.Width:F0}x{child.Height:F0}");
+        }
     }
 
     private async void OnBackClicked(object? sender, EventArgs e) =>

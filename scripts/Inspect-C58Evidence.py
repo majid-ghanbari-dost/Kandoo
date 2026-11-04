@@ -45,6 +45,9 @@ def inspect(label: str, root: pathlib.Path) -> None:
         annotate("warning", "C58_LOGCAT_MISSING", f"run={label}")
         return
     lines = logcat.read_text(errors="replace").splitlines()
+    debug_lines = [line for line in lines if "KANDOO_C58" in line]
+    for line in debug_lines[:45]:
+        annotate("notice", "C58_DEBUG", f"run={label} {line}")
     indexes = [i for i, line in enumerate(lines) if "KANDOO_CRASH" in line or "KandooCrash" in line]
     annotate("notice", "C58_CRASH_INDEXES", f"run={label} count={len(indexes)}")
     shown = set()
