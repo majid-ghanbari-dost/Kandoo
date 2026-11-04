@@ -10,6 +10,6 @@ public partial class App : Application
         Page startPage = profile is null
             ? new RoleSelectionPage(profiles)
             : new MainPage(profile, profiles);
-        MainPage = new NavigationPage(startPage);
+        MainPage = startPage;
     }
 }

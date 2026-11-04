@@ -22,6 +22,10 @@
                     Clicked="OnCopyClicked"
                     SemanticProperties.Description="کپی آخرین گزارش خطا در حافظه موقت" />
             <Label x:Name="CopyStatusLabel" Style="{StaticResource BodyStyle}" />
+            <Button Style="{StaticResource SecondaryButtonStyle}"
+                    Text="بازگشت"
+                    Clicked="OnBackClicked"
+                    SemanticProperties.Description="بازگشت از گزارش خطا" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

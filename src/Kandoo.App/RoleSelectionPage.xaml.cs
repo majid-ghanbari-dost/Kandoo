@@ -22,10 +22,14 @@ public partial class RoleSelectionPage : ContentPage
             : "حالت مشتری فقط انتخاب پروفایل است؛ فهرست فاکتورها در این مرحله اضافه نشده است.";
         CustomerButton.IsVisible = !_isWindows;
         BothButton.IsVisible = !_isWindows;
+        BackButton.IsVisible = current is not null;
     }
 
+    private async void OnBackClicked(object? sender, EventArgs e) =>
+        await Navigation.PopModalAsync();
+
     private async void OnCrashReportClicked(object? sender, EventArgs e) =>
-        await Navigation.PushAsync(new CrashReportPage());
+        await Navigation.PushModalAsync(new CrashReportPage());
 
     private void OnStoreClicked(object? sender, EventArgs e) => Select(AppUserRole.Store);
     private void OnCustomerClicked(object? sender, EventArgs e) => Select(AppUserRole.Customer);
@@ -40,6 +44,6 @@ public partial class RoleSelectionPage : ContentPage
 
         var profile = new LocalUserProfile(role);
         _profiles.Save(profile);
-        Application.Current!.MainPage = new NavigationPage(new MainPage(profile, _profiles));
+        Application.Current!.MainPage = new MainPage(profile, _profiles);
     }
 }

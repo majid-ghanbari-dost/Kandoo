@@ -59,10 +59,10 @@ public partial class MainPage : ContentPage
     }
 
     private async void OnRoleSettingsClicked(object? sender, EventArgs e) =>
-        await Navigation.PushAsync(new RoleSelectionPage(_profiles, _profile));
+        await Navigation.PushModalAsync(new RoleSelectionPage(_profiles, _profile));
 
     private async void OnCrashReportClicked(object? sender, EventArgs e) =>
-        await Navigation.PushAsync(new CrashReportPage());
+        await Navigation.PushModalAsync(new CrashReportPage());
 
     private async void OnLoadClicked(object? sender, EventArgs e) => await LoadQueueAsync();
 

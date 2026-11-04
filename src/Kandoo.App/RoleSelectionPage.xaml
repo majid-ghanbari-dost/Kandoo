@@ -27,6 +27,12 @@
                     Clicked="OnBothClicked"
                     SemanticProperties.Description="انتخاب هر دو نقش در اندروید" />
             <Label x:Name="PlatformNoteLabel" Style="{StaticResource BodyStyle}" />
+            <Button x:Name="BackButton"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Text="بازگشت"
+                    IsVisible="False"
+                    Clicked="OnBackClicked"
+                    SemanticProperties.Description="بازگشت بدون تغییر نقش" />
             <Button Style="{StaticResource SecondaryButtonStyle}"
                     Text="گزارش آخرین خطا"
                     Clicked="OnCrashReportClicked"

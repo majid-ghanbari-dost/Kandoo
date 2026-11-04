@@ -28,6 +28,9 @@ public partial class CrashReportPage : ContentPage
         CopyButton.IsEnabled = !string.IsNullOrWhiteSpace(_report);
     }
 
+    private async void OnBackClicked(object? sender, EventArgs e) =>
+        await Navigation.PopModalAsync();
+
     private async void OnCopyClicked(object? sender, EventArgs e)
     {
         if (string.IsNullOrWhiteSpace(_report))
