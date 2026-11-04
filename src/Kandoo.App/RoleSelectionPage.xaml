@@ -5,7 +5,7 @@
              Title="انتخاب نقش"
              Style="{StaticResource PageStyle}">
     <ScrollView>
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+        <Grid RowDefinitions="48,40,72,64,56,56,56,80,56,56"
               RowSpacing="{StaticResource Space4}"
               Padding="{StaticResource PaddingSpace5}"
               HorizontalOptions="Fill"
