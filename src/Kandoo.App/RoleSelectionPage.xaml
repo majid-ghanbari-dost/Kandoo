@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Kandoo.App.RoleSelectionPage"
+             Title="انتخاب نقش"
+             Style="{StaticResource PageStyle}">
+    <ScrollView>
+        <VerticalStackLayout Style="{StaticResource RootStackStyle}">
+            <Label Style="{StaticResource TitleStyle}" Text="کندو" />
+            <Label Style="{StaticResource SectionTitleStyle}" Text="انتخاب نقش کاربر" />
+            <Label x:Name="CurrentRoleLabel" Style="{StaticResource BodyStyle}" />
+            <Label Style="{StaticResource DemoBannerStyle}"
+                   Text="پروفایل محلی با داده نمونه؛ اطلاعات واقعی نیست" />
+            <Button x:Name="StoreButton"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Text="فروشگاه نمونه"
+                    Clicked="OnStoreClicked"
+                    SemanticProperties.Description="انتخاب نقش فروشگاه نمونه" />
+            <Button x:Name="CustomerButton"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Text="مشتری نمونه"
+                    Clicked="OnCustomerClicked"
+                    SemanticProperties.Description="انتخاب نقش مشتری نمونه در اندروید" />
+            <Button x:Name="BothButton"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Text="فروشگاه و مشتری نمونه"
+                    Clicked="OnBothClicked"
+                    SemanticProperties.Description="انتخاب هر دو نقش در اندروید" />
+            <Label x:Name="PlatformNoteLabel" Style="{StaticResource BodyStyle}" />
+            <Button Style="{StaticResource SecondaryButtonStyle}"
+                    Text="گزارش آخرین خطا"
+                    Clicked="OnCrashReportClicked"
+                    SemanticProperties.Description="نمایش و کپی آخرین گزارش خطای برنامه" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
