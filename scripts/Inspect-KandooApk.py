@@ -38,10 +38,11 @@ def main() -> int:
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps(report, indent=2, sort_keys=True))
+    sample = ",".join(f"{item['name']}({item['bytes']})" for item in managed[:12])
     print(
         f"::notice::C50_APK path={apk} sha256={report['sha256']} "
         f"managed_payload_present={str(report['managed_payload_present']).lower()} "
-        f"managed_payload_entries={len(managed)}"
+        f"managed_payload_entries={len(managed)} sample={sample or 'none'}"
     )
     return 0
 

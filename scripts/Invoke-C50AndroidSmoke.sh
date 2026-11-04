@@ -25,9 +25,14 @@ sleep 15
 if pid="$(adb shell pidof -s ir.kandoo.app 2>/dev/null | tr -d '\r')" && [[ -n "$pid" ]]; then
   printf '%s\n' "$pid" > "$evidence/process-alive.txt"
   echo "C50_EMULATOR PASS package=ir.kandoo.app alive_after_seconds=15 pid=$pid"
+  echo "::notice::C50_EMULATOR PASS package=ir.kandoo.app alive_after_seconds=15 pid=$pid"
 else
   echo "C50_EMULATOR FAIL package=ir.kandoo.app process_not_alive_after_seconds=15" | tee "$evidence/process-dead.txt"
   exit 1
 fi
 
 grep -q 'Events injected: 1' "$evidence/launch.txt"
+capture_logcat
+trap - EXIT
+crash_markers=$(grep -c 'KANDOO_CRASH' "$evidence/logcat.txt" || true)
+echo "::notice::C50_LOGCAT lines=$(wc -l < "$evidence/logcat.txt") crash_markers=$crash_markers artifact=kandoo-app-c50-emulator-evidence"
