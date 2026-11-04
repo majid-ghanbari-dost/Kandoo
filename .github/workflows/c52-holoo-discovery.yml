@@ -28,7 +28,7 @@ env:
 
 jobs:
   synthetic-test:
-    name: Synthetic C-52 (${{ runner.os }})
+    name: Synthetic C-52 (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
