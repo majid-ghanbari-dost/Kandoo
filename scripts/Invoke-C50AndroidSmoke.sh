@@ -32,8 +32,37 @@ else
 fi
 
 grep -q 'Events injected: 1' "$evidence/launch.txt"
-adb shell uiautomator dump /sdcard/kandoo-c58-ui.xml > "$evidence/ui-dump.txt" 2>&1
-adb shell cat /sdcard/kandoo-c58-ui.xml > "$evidence/ui.xml"
+dump_ui() {
+  adb shell uiautomator dump /sdcard/kandoo-c58-ui.xml > "$evidence/ui-dump.txt" 2>&1
+  adb shell cat /sdcard/kandoo-c58-ui.xml > "$evidence/ui.xml"
+}
+dump_ui
+wait_point=$(python3 - "$evidence/ui.xml" <<'PY'
+import re
+import sys
+import xml.etree.ElementTree as ET
+
+root = ET.parse(sys.argv[1]).getroot()
+nodes = list(root.iter())
+if not any(node.attrib.get("text") == "System UI isn't responding" for node in nodes):
+    raise SystemExit(0)
+for node in nodes:
+    if node.attrib.get("text") != "Wait":
+        continue
+    match = re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", node.attrib.get("bounds", ""))
+    if match:
+        left, top, right, bottom = map(int, match.groups())
+        print((left + right) // 2, (top + bottom) // 2)
+        break
+PY
+)
+if [[ -n "$wait_point" ]]; then
+  read -r wait_x wait_y <<< "$wait_point"
+  echo "::warning::C58_SYSTEM_UI dialog=not_responding action=wait"
+  adb shell input tap "$wait_x" "$wait_y"
+  sleep 5
+  dump_ui
+fi
 for role_text in 'فروشگاه نمونه' 'مشتری نمونه' 'فروشگاه و مشتری نمونه'; do
   if ! grep -q "$role_text" "$evidence/ui.xml"; then
     echo "::error::C58_UI missing_text=$role_text"
