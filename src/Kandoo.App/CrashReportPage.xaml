@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Kandoo.App.CrashReportPage"
+             Title="گزارش خطا"
+             Style="{StaticResource PageStyle}">
+    <ScrollView>
+        <VerticalStackLayout Style="{StaticResource RootStackStyle}">
+            <Label Style="{StaticResource TitleStyle}" Text="آخرین گزارش خطا" />
+            <Label Style="{StaticResource BodyStyle}"
+                   Text="گزارش فقط روی این دستگاه ذخیره می‌شود و خودکار ارسال نمی‌گردد." />
+            <Editor x:Name="ReportEditor"
+                    Style="{StaticResource PairingInputStyle}"
+                    IsReadOnly="True"
+                    AutoSize="TextChanges"
+                    MinimumHeightRequest="240"
+                    FlowDirection="LeftToRight"
+                    SemanticProperties.Description="متن آخرین گزارش خطای برنامه" />
+            <Button x:Name="CopyButton"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Text="کپی گزارش خطا"
+                    Clicked="OnCopyClicked"
+                    SemanticProperties.Description="کپی آخرین گزارش خطا در حافظه موقت" />
+            <Label x:Name="CopyStatusLabel" Style="{StaticResource BodyStyle}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

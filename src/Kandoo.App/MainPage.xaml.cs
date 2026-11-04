@@ -48,6 +48,9 @@ public partial class MainPage : ContentPage
         StatusLabel.Text = "تنظیمات Hub را وارد و صف را بارگذاری کنید.";
     }
 
+    private async void OnCrashReportClicked(object? sender, EventArgs e) =>
+        await Navigation.PushAsync(new CrashReportPage());
+
     private async void OnLoadClicked(object? sender, EventArgs e) => await LoadQueueAsync();
 
     private async void OnPairClicked(object? sender, EventArgs e)

@@ -4,6 +4,7 @@ public static class MauiProgram
 {
     public static MauiApp CreateMauiApp()
     {
+        AppCrashReports.RegisterGlobalHandlers();
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()

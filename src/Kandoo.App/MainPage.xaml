@@ -32,6 +32,10 @@
                             SemanticProperties.Description="انتخاب داده واقعی هاب" />
                 </HorizontalStackLayout>
                 <Label x:Name="ModeLabel" Style="{StaticResource CaptionStyle}" />
+                <Button Style="{StaticResource SecondaryButtonStyle}"
+                        Text="گزارش آخرین خطا"
+                        Clicked="OnCrashReportClicked"
+                        SemanticProperties.Description="نمایش و کپی آخرین گزارش خطای برنامه" />
 
                 <VerticalStackLayout x:Name="RealSettings" Style="{StaticResource RowStackStyle}">
                     <Label Style="{StaticResource SectionTitleStyle}"

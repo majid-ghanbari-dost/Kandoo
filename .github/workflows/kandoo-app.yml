@@ -96,15 +96,27 @@ jobs:
           name: kandoo-app-c50-android-debug-apk
           path: artifacts
 
-      - name: Inspect APK managed payload
-        run: python3 scripts/Inspect-KandooApk.py artifacts/kandoo-app-c50-android-debug.apk artifacts/apk-inspection.json
+      - name: Download preserved baseline APK for hypothesis check
+        uses: actions/download-artifact@v4
+        with:
+          name: kandoo-app-c50-android-debug-apk
+          path: baseline-artifacts
+          run-id: 41838870248
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Inspect baseline and candidate APK managed payloads
+        run: |
+          python3 scripts/Inspect-KandooApk.py baseline-artifacts/kandoo-app-c50-android-debug.apk artifacts/baseline-apk-inspection.json
+          python3 scripts/Inspect-KandooApk.py artifacts/kandoo-app-c50-android-debug.apk artifacts/apk-inspection.json
 
       - name: Upload APK inspection
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: kandoo-app-c50-apk-inspection
-          path: artifacts/apk-inspection.json
+          path: |
+            artifacts/apk-inspection.json
+            artifacts/baseline-apk-inspection.json
           if-no-files-found: error
           retention-days: 7
 
@@ -116,7 +128,7 @@ jobs:
           arch: x86_64
           profile: pixel_2
           disable-animations: true
-          emulator-options: -no-snapshot-save -noaudio -no-boot-anim -gpu swiftshader_indirect
+          emulator-boot-timeout: 900
           script: bash scripts/Invoke-C50AndroidSmoke.sh artifacts/kandoo-app-c50-android-debug.apk artifacts/emulator
 
       - name: Upload emulator logcat and launch evidence
