@@ -1,0 +1,70 @@
+name: C-52 Holoo Discovery
+
+on:
+  push:
+    paths:
+      - 'src/Kandoo.HolooDiscovery/**'
+      - 'tests/Kandoo.HolooDiscovery.Tests/**'
+      - 'scripts/New-C52SyntheticSandbox.py'
+      - 'scripts/Test-C52Boundaries.py'
+      - 'docs/reports/C-52.md'
+      - '.github/workflows/c52-holoo-discovery.yml'
+  pull_request:
+    paths:
+      - 'src/Kandoo.HolooDiscovery/**'
+      - 'tests/Kandoo.HolooDiscovery.Tests/**'
+      - 'scripts/New-C52SyntheticSandbox.py'
+      - 'scripts/Test-C52Boundaries.py'
+      - 'docs/reports/C-52.md'
+      - '.github/workflows/c52-holoo-discovery.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: 'true'
+
+jobs:
+  synthetic-test:
+    name: Synthetic C-52 (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore C-52 tests
+        run: dotnet restore tests/Kandoo.HolooDiscovery.Tests/Kandoo.HolooDiscovery.Tests.csproj
+
+      - name: Build C-52 console and tests
+        run: dotnet build tests/Kandoo.HolooDiscovery.Tests/Kandoo.HolooDiscovery.Tests.csproj --configuration Release --no-restore
+
+      - name: Test C-52 read-only behavior
+        run: dotnet test tests/Kandoo.HolooDiscovery.Tests/Kandoo.HolooDiscovery.Tests.csproj --configuration Release --no-build
+
+      - name: Guard network-free and report-only-write boundaries
+        run: python3 scripts/Test-C52Boundaries.py
+
+      - name: Create new synthetic-only sandbox
+        run: python3 scripts/New-C52SyntheticSandbox.py artifacts/c52-synthetic-sandbox
+
+      - name: Run synthetic discovery and 16-byte backup inspection
+        run: dotnet run --project src/Kandoo.HolooDiscovery/Kandoo.HolooDiscovery.csproj --configuration Release --no-build -- demo --sandbox artifacts/c52-synthetic-sandbox --report artifacts/c52-report.txt
+
+      - name: Upload synthetic report
+        uses: actions/upload-artifact@v4
+        with:
+          name: kandoo-c52-synthetic-${{ runner.os }}
+          path: artifacts/c52-report.txt
+          if-no-files-found: error
+          retention-days: 7

@@ -7,20 +7,30 @@ public partial class MainPage : ContentPage
 {
     private readonly HttpClient _httpClient = new();
     private readonly ReviewQueueCoordinator _coordinator;
+    private readonly IUserProfileStore _profiles;
+    private readonly LocalUserProfile _profile;
     private bool _initialLoadComplete;
 
-    public MainPage()
+    public MainPage(LocalUserProfile profile, IUserProfileStore profiles)
     {
+        _profile = profile ?? throw new ArgumentNullException(nameof(profile));
+        _profiles = profiles ?? throw new ArgumentNullException(nameof(profiles));
         InitializeComponent();
         _coordinator = new ReviewQueueCoordinator(
             new FakeReviewQueueDataSource(),
             settings => new HubReviewQueueDataSource(_httpClient, settings));
         UpdateModePresentation();
+        UpdateRolePresentation();
     }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        if (_profile.Role == AppUserRole.Customer)
+        {
+            return;
+        }
+
         if (_initialLoadComplete)
         {
             return;
@@ -47,6 +57,12 @@ public partial class MainPage : ContentPage
         UpdateModePresentation();
         StatusLabel.Text = "تنظیمات Hub را وارد و صف را بارگذاری کنید.";
     }
+
+    private async void OnRoleSettingsClicked(object? sender, EventArgs e) =>
+        await Navigation.PushModalAsync(new RoleSelectionPage(_profiles, _profile));
+
+    private async void OnCrashReportClicked(object? sender, EventArgs e) =>
+        await Navigation.PushModalAsync(new CrashReportPage());
 
     private async void OnLoadClicked(object? sender, EventArgs e) => await LoadQueueAsync();
 
@@ -112,6 +128,13 @@ public partial class MainPage : ContentPage
         {
             DevicesStatusLabel.Text = exception.Message;
         }
+    }
+
+    private void UpdateRolePresentation()
+    {
+        RoleLabel.Text = $"نقش فعلی: {AppRolePolicy.DemoDisplayName(_profile.Role)}";
+        StoreWorkspace.IsVisible = _profile.Role is AppUserRole.Store or AppUserRole.Both;
+        CustomerPanel.IsVisible = _profile.Role is AppUserRole.Customer or AppUserRole.Both;
     }
 
     private void UpdateModePresentation()

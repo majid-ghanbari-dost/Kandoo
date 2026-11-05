@@ -17,10 +17,15 @@ public sealed record HubInvoiceItemRequest(
     long? UnitPriceRials,
     string? ProductId);
 
+public sealed record HubInvoicePaymentRequest(string? Type, long? Amount);
+
 public sealed record HubInvoiceIssueRequest(
     string? OperationId,
     string? ServiceType,
-    bool Print = false);
+    bool Print = false,
+    string? CustomerName = null,
+    IReadOnlyList<HubInvoicePaymentRequest>? Payments = null,
+    long? RemainingBalance = null);
 
 public sealed record HubInvoicePrintResult(string Status);
 
@@ -198,9 +203,38 @@ public static partial class HubApiFirstEndpoints
                 return disabled;
             }
 
+            if (request.CustomerName is not null && string.IsNullOrWhiteSpace(request.CustomerName))
+            {
+                return HubHttp.Error(400, "VALIDATION_ERROR", "Recorded customer_name must not be blank.");
+            }
+
+            if (request.Payments is not null && request.Payments.Any(payment =>
+                    payment is null ||
+                    payment.Type is not ("card-reader" or "card-to-card" or "cash" or "credit") ||
+                    payment.Amount is null))
+            {
+                return HubHttp.Error(400, "VALIDATION_ERROR", "Recorded payments require a supported type and integer amount.");
+            }
+
+            var values = new Dictionary<string, object?>
+            {
+                ["invoice_id"] = invoice_id,
+                ["service_type"] = "SALE"
+            };
+            if (request.CustomerName is not null) values["customer_name"] = request.CustomerName;
+            if (request.Payments is not null)
+            {
+                values["payments"] = request.Payments.Select(payment => new
+                {
+                    type = payment.Type,
+                    amount = payment.Amount!.Value
+                }).ToArray();
+            }
+
+            if (request.RemainingBalance is not null) values["remaining_balance"] = request.RemainingBalance.Value;
             var result = Submit(
                 store_id, auth.Session!, operations, request.OperationId, "invoice.issue",
-                HubJson.Element(new { invoice_id, service_type = "SALE" }));
+                HubJson.Element(values));
             var printStatus = request.Print ? "NOT_ATTEMPTED" : "NOT_REQUESTED";
             if (request.Print && result.Body.Status == "SUCCEEDED")
             {

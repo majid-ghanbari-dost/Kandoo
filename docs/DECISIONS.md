@@ -252,6 +252,16 @@ do not change any code)
 
 ---
 
+## PM ORDER 9 — Recorded Decisions (`2026-11-03`)
+
+D1. One app, several roles: on first run the user picks store, customer, or both and can switch later. Customer mode is Android-only for now. Customer mode is part of the MVP in a minimal form (role choice, OTP login, invoice list per store, invoice page, "new invoice" banner); buying from stores comes later.
+D2. Production Cloud for the pilot = PHP 8.1+ and MariaDB 10.6 on a shared host (e.g., plan E1: no shell/Composer assumed, config outside web root, outbound HTTPS to api.iranpayamak.com, cron every minute, shared outbound IP so never rely on IP allow-listing). The existing .NET Cloud is FROZEN as-is and kept for later.
+D3. All SMS are sent ONLY by the Cloud. The Hub never holds the SMS key.
+D4. SMS policy (provider confirmed): fixed notification pattern (no variables), OTP pattern (one variable "code"); limits: 2 OTP per number per rolling 24 h, 3 wrong entries per request, a device may use at most 3 numbers per day, per-IP limits. Domain/base address is configuration (a "base URL" setting), never hardcoded.
+D5. Hosting limits to design for: DB about 200-300 MB, about 2000 visits/day on the first plan, nightly DB backup by our own cron; the Cloud keeps only the public/compact form of each invoice (the Hub holds the master copy).
+
+---
+
 ## Assumptions
 
 Per Global Rule 5 (*Missing decision: take conservative option, record in `docs/DECISIONS.md` under "Assumptions"*), the following conservative baselines govern until superseded by an explicit Owner/PM decision:

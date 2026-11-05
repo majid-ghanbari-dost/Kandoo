@@ -14,6 +14,18 @@
             <VerticalStackLayout Style="{StaticResource RootStackStyle}">
                 <Label Style="{StaticResource TitleStyle}"
                        Text="فاکتور دیجیتال کندو" />
+                <Label x:Name="RoleLabel" Style="{StaticResource SectionTitleStyle}" />
+                <Button Style="{StaticResource SecondaryButtonStyle}"
+                        Text="تنظیمات نقش"
+                        Clicked="OnRoleSettingsClicked"
+                        SemanticProperties.Description="تغییر نقش فروشگاه یا مشتری" />
+                <Button Style="{StaticResource SecondaryButtonStyle}"
+                        Text="گزارش آخرین خطا"
+                        Clicked="OnCrashReportClicked"
+                        SemanticProperties.Description="نمایش و کپی آخرین گزارش خطای برنامه" />
+
+                <VerticalStackLayout x:Name="StoreWorkspace"
+                                     Spacing="{StaticResource Space4}">
                 <Label Style="{StaticResource BodyStyle}"
                        Text="صف بررسی فاکتورها" />
 
@@ -163,6 +175,17 @@
                         </DataTemplate>
                     </BindableLayout.ItemTemplate>
                 </VerticalStackLayout>
+                </VerticalStackLayout>
+
+                <Border x:Name="CustomerPanel"
+                        Style="{StaticResource RowStyle}"
+                        IsVisible="False">
+                    <VerticalStackLayout Style="{StaticResource RowStackStyle}">
+                        <Label Style="{StaticResource SectionTitleStyle}" Text="مشتری نمونه" />
+                        <Label Style="{StaticResource BodyStyle}"
+                               Text="نقش مشتری فعال است؛ فهرست فاکتورها در این مرحله اضافه نشده است." />
+                    </VerticalStackLayout>
+                </Border>
             </VerticalStackLayout>
         </ScrollView>
     </Grid>

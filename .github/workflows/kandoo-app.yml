@@ -6,18 +6,30 @@ on:
       - 'src/Kandoo.App/**'
       - 'src/Kandoo.Core/JalaliDateConverter.cs'
       - 'tests/Kandoo.App.Tests/**'
+      - 'docs/DECISIONS.md'
       - 'docs/reports/C-40.md'
       - 'docs/reports/C-41.md'
+      - 'docs/reports/C-50.md'
+      - 'docs/reports/C-58.md'
       - 'scripts/Invoke-KandooApp.ps1'
+      - 'scripts/Inspect-KandooApk.py'
+      - 'scripts/Invoke-C50AndroidSmoke.sh'
+      - 'scripts/Inspect-C58Evidence.py'
       - '.github/workflows/kandoo-app.yml'
   pull_request:
     paths:
       - 'src/Kandoo.App/**'
       - 'src/Kandoo.Core/JalaliDateConverter.cs'
       - 'tests/Kandoo.App.Tests/**'
+      - 'docs/DECISIONS.md'
       - 'docs/reports/C-40.md'
       - 'docs/reports/C-41.md'
+      - 'docs/reports/C-50.md'
+      - 'docs/reports/C-58.md'
       - 'scripts/Invoke-KandooApp.ps1'
+      - 'scripts/Inspect-KandooApk.py'
+      - 'scripts/Invoke-C50AndroidSmoke.sh'
+      - 'scripts/Inspect-C58Evidence.py'
       - '.github/workflows/kandoo-app.yml'
   workflow_dispatch:
 
@@ -56,8 +68,8 @@ jobs:
       - name: Upload Windows app
         uses: actions/upload-artifact@v4
         with:
-          name: kandoo-app-c41-win-x64
-          path: artifacts/kandoo-app-c41-win-x64.zip
+          name: kandoo-app-c50-win-x64
+          path: artifacts/kandoo-app-c50-win-x64.zip
           if-no-files-found: error
           retention-days: 7
 
@@ -68,7 +80,58 @@ jobs:
       - name: Upload Android Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: kandoo-app-c41-android-debug-apk
-          path: artifacts/kandoo-app-c41-android-debug.apk
+          name: kandoo-app-c50-android-debug-apk
+          path: artifacts/kandoo-app-c50-android-debug.apk
+          if-no-files-found: error
+          retention-days: 7
+
+  android-emulator-smoke:
+    name: Android 10 emulator launch + 15s liveness
+    runs-on: ubuntu-latest
+    needs: test-and-build
+    timeout-minutes: 35
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Download Android test APK
+        uses: actions/download-artifact@v4
+        with:
+          name: kandoo-app-c50-android-debug-apk
+          path: artifacts
+
+      - name: Inspect APK managed payload
+        run: python3 scripts/Inspect-KandooApk.py artifacts/kandoo-app-c50-android-debug.apk artifacts/apk-inspection.json
+
+      - name: Upload APK inspection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kandoo-app-c50-apk-inspection
+          path: artifacts/apk-inspection.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Launch on Android 10 emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          target: default
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-boot-timeout: 900
+          script: bash scripts/Invoke-C50AndroidSmoke.sh artifacts/kandoo-app-c50-android-debug.apk artifacts/emulator
+
+      - name: Annotate emulator UI and crash evidence
+        if: always()
+        run: python3 scripts/Inspect-C58Evidence.py current=artifacts/emulator apk=artifacts/kandoo-app-c50-android-debug.apk
+
+      - name: Upload emulator logcat and launch evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kandoo-app-c50-emulator-evidence
+          path: artifacts/emulator
           if-no-files-found: error
           retention-days: 7

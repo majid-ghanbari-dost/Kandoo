@@ -96,6 +96,18 @@ public sealed class ReplicationBatch
     [JsonPropertyName("entries")]
     public List<ReplicationLogEntry>? Entries { get; set; }
 
+    [JsonPropertyName("payload_version")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? PayloadVersion { get; set; }
+
+    [JsonPropertyName("currency")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Currency { get; set; }
+
+    [JsonPropertyName("invoice_payloads")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<HubInvoiceReplicationPayloadV11>? InvoicePayloads { get; set; }
+
     public static ReplicationBatch Create(HubWriterIdentity writer, Guid storeId, IReadOnlyList<ReplicationLogEntry> entries)
     {
         if (entries.Count == 0)
@@ -150,5 +162,7 @@ public sealed class HubReplicationOptions
     public int MaxAttempts { get; init; } = 3;
     public int MaxBatchEntries { get; init; } = 100;
     public int MaxBatchBytes { get; init; } = 1_048_576;
+    public bool PayloadV11Enabled { get; init; }
+    public IReadOnlyDictionary<Guid, string>? PayloadV11StoreCurrencies { get; init; }
     public Func<TimeSpan, CancellationToken, Task> DelayAsync { get; init; } = Task.Delay;
 }
