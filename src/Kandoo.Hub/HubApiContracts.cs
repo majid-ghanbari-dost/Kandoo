@@ -57,6 +57,7 @@ public sealed record HubProductRegistrationRequest(
     long? PurchasePriceRials = null);
 
 public sealed record SessionResumeRequest(string? DeviceCredential);
+public sealed record VerifyDeviceServerKeyRequest(string? DeviceServerKey);
 
 public sealed record HubDeviceLevelRequest(string? OperatorLevel);
 

@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Text.Json;
 using Kandoo.Capture;
 using Kandoo.Core;
@@ -330,6 +331,94 @@ app.MapPost("/v1/stores/{store_id}/devices/{device_id}/sessions", (
             operation_id_namespace_unchanged = true
         }, HubJson.Options)
         : HubHttp.Error(result.Code == "DEVICE_REVOKED" ? 403 : 401, result.Code, "The device session cannot be resumed.");
+});
+
+app.MapPost("/v1/stores/{store_id}/devices/{device_id}/server-key", (
+    Guid store_id,
+    Guid device_id,
+    HttpContext context,
+    IHubAccessStore access,
+    IClock clock) =>
+{
+    var auth = Authenticate(context, store_id, access, clock);
+    if (!auth.IsAuthenticated)
+    {
+        return AuthError(auth.Code);
+    }
+
+    if (!IsOwner(auth))
+    {
+        return HubHttp.Error(403, "OWNER_REQUIRED", "An active owner session is required.");
+    }
+
+    var device = access.GetDevices(store_id).FirstOrDefault(d => d.DeviceId == device_id);
+    if (device is null)
+    {
+        return HubHttp.Error(404, "DEVICE_NOT_PAIRED", "The device is not registered in this store.");
+    }
+
+    if (device.PairingStatus == HubPairingStatus.Revoked)
+    {
+        return HubHttp.Error(409, "DEVICE_REVOKED", "A revoked device cannot receive a server key.");
+    }
+
+    var issued = access.GenerateDeviceServerKey(store_id, device_id, auth.Session!.OwnerUserId!.Value, clock.UtcNow);
+    if (issued is null)
+    {
+        return HubHttp.Error(404, "DEVICE_NOT_PAIRED", "The device is not registered in this store.");
+    }
+
+    return Results.Json(new
+    {
+        status = "DEVICE_SERVER_KEY_ISSUED",
+        device_id = device_id,
+        device_server_key = issued,
+        issued_at = clock.UtcNow
+    }, HubJson.Options);
+});
+
+app.MapPost("/v1/stores/{store_id}/devices/{device_id}/verify-server-key", (
+    Guid store_id,
+    Guid device_id,
+    VerifyDeviceServerKeyRequest? request,
+    HttpContext context,
+    IHubAccessStore access,
+    IClock clock) =>
+{
+    var auth = Authenticate(context, store_id, access, clock);
+    if (!auth.IsAuthenticated)
+    {
+        return AuthError(auth.Code);
+    }
+
+    if (!IsOwner(auth) && auth.Session!.DeviceId != device_id)
+    {
+        return HubHttp.Error(403, "STORE_ACCESS_DENIED", "Only the device owner or the device itself can verify the server key.");
+    }
+
+    var device = access.GetDevices(store_id).FirstOrDefault(d => d.DeviceId == device_id);
+    if (device is null)
+    {
+        return HubHttp.Error(404, "DEVICE_NOT_PAIRED", "The device is not registered in this store.");
+    }
+
+    if (device.PairingStatus == HubPairingStatus.Revoked)
+    {
+        return HubHttp.Error(403, "DEVICE_REVOKED", "A revoked device cannot verify a server key.");
+    }
+
+    if (request is null || string.IsNullOrWhiteSpace(request.DeviceServerKey))
+    {
+        return HubHttp.Error(400, "DEVICE_SERVER_KEY_INVALID", "A device server key is required.");
+    }
+
+    var result = access.VerifyDeviceServerKey(store_id, device_id, request.DeviceServerKey, clock.UtcNow);
+    return result.Code switch
+    {
+        "DEVICE_SERVER_KEY_VERIFIED" => Results.Json(new { status = result.Code, verified = true }, HubJson.Options),
+        "DEVICE_REVOKED" => HubHttp.Error(403, result.Code, "The device is revoked."),
+        _ => HubHttp.Error(400, result.Code, "The device server key is invalid.")
+    };
 });
 
 app.MapGet("/v1/stores/{store_id}/devices", (
