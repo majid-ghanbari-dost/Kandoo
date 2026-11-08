@@ -40,7 +40,7 @@ public sealed class HubDeviceServerKeyTests : IClassFixture<HubApiFactory>
             $"/v1/stores/{storeId.ToString("D")}/devices/{companionDeviceId.ToString("D")}/verify-server-key",
             new { device_server_key = "wrong-key" },
             owner.Token);
-        Assert.Equal(HttpStatusCode.BadRequest, invalid.Status);
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
 
         var unknown = await _api.Post(
             $"/v1/stores/{storeId.ToString("D")}/devices/{Guid.NewGuid().ToString("D")}/server-key",
