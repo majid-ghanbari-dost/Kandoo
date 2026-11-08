@@ -535,31 +535,24 @@ public sealed partial class SqliteHubStore
             using var transaction = _connection.BeginTransaction();
             try
             {
-                HubDevice? existing;
+                HubPairingStatus status;
                 using (var command = AccessCommand(transaction, """
-                    SELECT store_id, device_id, pairing_status FROM devices WHERE store_id = $store AND device_id = $device;
+                    SELECT pairing_status FROM devices WHERE store_id = $store AND device_id = $device;
                     """))
                 {
                     AddAccess(command, "$store", AccessUuid(storeId));
                     AddAccess(command, "$device", AccessUuid(deviceId));
                     using var reader = command.ExecuteReader();
-                    existing = reader.Read()
-                        ? new HubDevice(
-                            Guid.Parse(reader.GetString(0)),
-                            Guid.Parse(reader.GetString(1)),
-                            (HubDeviceRole)reader.GetInt32(2),
-                            (HubPairingStatus)reader.GetInt32(3),
-                            null, string.Empty, string.Empty, null, null)
-                        : null;
+                    if (!reader.Read())
+                    {
+                        transaction.Rollback();
+                        return null;
+                    }
+
+                    status = (HubPairingStatus)reader.GetInt32(0);
                 }
 
-                if (existing is null)
-                {
-                    transaction.Rollback();
-                    return null;
-                }
-
-                if (existing.PairingStatus == HubPairingStatus.Revoked)
+                if (status == HubPairingStatus.Revoked)
                 {
                     transaction.Rollback();
                     return null;
