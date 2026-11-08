@@ -273,7 +273,8 @@ app.MapPost("/v1/stores/{store_id}/products", (
                 request.Specification,
                 request.ProductTagNumber,
                 request.OperatorFields,
-                request.PurchasePriceRials).Validate();
+                request.PurchasePriceRials,
+                request.GroupId).Validate();
         result = catalog.Register(store_id, auth.Session!.DeviceId, request.OperationId, input);
     }
     catch (ArgumentException)
@@ -305,6 +306,161 @@ app.MapPost("/v1/stores/{store_id}/products", (
         operation_seq = result.OperationSeq,
         idempotent_replay = result.IdempotentReplay
     }, HubJson.Options, statusCode: httpStatus);
+});
+
+app.MapPost("/v1/stores/{store_id}/product-groups", (
+    Guid store_id,
+    HubProductGroupRequest? request,
+    HttpContext context,
+    IHubAccessStore access,
+    IClock clock,
+    HubProductCatalogService catalog) =>
+{
+    var auth = Authenticate(context, store_id, access, clock);
+    if (!auth.IsAuthenticated)
+    {
+        return AuthError(auth.Code);
+    }
+
+    if (request is null || string.IsNullOrWhiteSpace(request.OperationId) ||
+        string.IsNullOrWhiteSpace(request.GroupId) || string.IsNullOrWhiteSpace(request.Name))
+    {
+        return HubHttp.Error(400, "VALIDATION_ERROR", "operation_id, group_id, and name are required.");
+    }
+
+    string result;
+    try
+    {
+        result = catalog.CreateProductGroup(
+            store_id, auth.Session!.DeviceId, request.OperationId, request.GroupId,
+            request.ParentGroupId, request.Name);
+    }
+    catch (ArgumentException)
+    {
+        return HubHttp.Error(400, "VALIDATION_ERROR", "Invalid group_id, parent_group_id, or name.");
+    }
+    catch (InvalidOperationException exception) when (exception.Message == "OPERATION_ID_CONFLICT")
+    {
+        return HubHttp.Error(409, "OPERATION_ID_CONFLICT", "The operation ID was already used for different content.");
+    }
+
+    return result switch
+    {
+        "CREATED" => Results.Json(new
+        {
+            status = "CREATED",
+            group_id = request.GroupId,
+            parent_group_id = request.ParentGroupId,
+            name = request.Name
+        }, HubJson.Options, statusCode: 200),
+        "DUPLICATE_GROUP_ID" => HubHttp.Error(409, "DUPLICATE_GROUP_ID", "The group ID already exists in this store."),
+        "UNKNOWN_PARENT_GROUP" => HubHttp.Error(409, "UNKNOWN_PARENT_GROUP", "The parent group does not exist in this store."),
+        _ => HubHttp.Error(500, "REVIEW", "The group could not be created.")
+    };
+});
+
+app.MapGet("/v1/stores/{store_id}/product-groups", (
+    Guid store_id,
+    HttpContext context,
+    IHubAccessStore access,
+    IClock clock,
+    HubProductCatalogService catalog) =>
+{
+    var auth = Authenticate(context, store_id, access, clock);
+    if (!auth.IsAuthenticated)
+    {
+        return AuthError(auth.Code);
+    }
+
+    return Results.Json(new
+    {
+        status = "OK",
+        groups = catalog.GetProductGroups(store_id).Select(group => new
+        {
+            group_id = group.GroupId,
+            parent_group_id = group.ParentGroupId,
+            name = group.Name,
+            is_active = group.IsActive,
+            created_at = group.CreatedAt
+        }).ToArray()
+    }, HubJson.Options);
+});
+
+app.MapGet("/v1/stores/{store_id}/product-groups/{group_id}", (
+    Guid store_id,
+    string group_id,
+    HttpContext context,
+    IHubAccessStore access,
+    IClock clock,
+    HubProductCatalogService catalog) =>
+{
+    var auth = Authenticate(context, store_id, access, clock);
+    if (!auth.IsAuthenticated)
+    {
+        return AuthError(auth.Code);
+    }
+
+    var group = catalog.GetProductGroup(store_id, group_id);
+    return group is null
+        ? HubHttp.Error(404, "UNKNOWN_GROUP", "The product group does not exist in this store.")
+        : Results.Json(new
+        {
+            status = "OK",
+            group_id = group.GroupId,
+            parent_group_id = group.ParentGroupId,
+            name = group.Name,
+            is_active = group.IsActive,
+            created_at = group.CreatedAt
+        }, HubJson.Options);
+});
+
+app.MapPost("/v1/stores/{store_id}/products/{product_id}/group", (
+    Guid store_id,
+    string product_id,
+    HubProductGroupAssignRequest? request,
+    HttpContext context,
+    IHubAccessStore access,
+    IClock clock,
+    HubProductCatalogService catalog) =>
+{
+    var auth = Authenticate(context, store_id, access, clock);
+    if (!auth.IsAuthenticated)
+    {
+        return AuthError(auth.Code);
+    }
+
+    if (request is null || string.IsNullOrWhiteSpace(request.OperationId))
+    {
+        return HubHttp.Error(400, "VALIDATION_ERROR", "operation_id is required.");
+    }
+
+    string result;
+    try
+    {
+        result = catalog.AssignProductToGroup(store_id, auth.Session!.DeviceId, request.OperationId,
+            product_id, request.GroupId);
+    }
+    catch (ArgumentException)
+    {
+        return HubHttp.Error(400, "VALIDATION_ERROR", "Invalid product or group.");
+    }
+    catch (InvalidOperationException exception) when (exception.Message == "OPERATION_ID_CONFLICT")
+    {
+        return HubHttp.Error(409, "OPERATION_ID_CONFLICT", "The operation ID was already used for different content.");
+    }
+
+    return result switch
+    {
+        "ASSIGNED" or "UNASSIGNED" => Results.Json(new
+        {
+            status = result,
+            product_id = product_id,
+            group_id = request.GroupId
+        }, HubJson.Options, statusCode: 200),
+        "UNKNOWN_PRODUCT" => HubHttp.Error(404, "UNKNOWN_PRODUCT", "The product does not exist in this store."),
+        "UNKNOWN_GROUP" => HubHttp.Error(404, "UNKNOWN_GROUP", "The group does not exist in this store."),
+        _ => HubHttp.Error(500, "REVIEW", "The product group could not be changed.")
+    };
 });
 
 app.MapPost("/v1/stores/{store_id}/devices/{device_id}/sessions", (

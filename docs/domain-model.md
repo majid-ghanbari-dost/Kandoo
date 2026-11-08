@@ -301,6 +301,34 @@ There are **67 concrete test cases**: 15 entity cases and 52 numbered-rule cases
 - Successful price/specification edits increment `version`; stale `base_version` edits fail without changing the product.
 - Product matching and catalog results never include another store's products.
 
+#### 2.8.1 Product Group (hierarchical organization)
+
+**Description:** A store-owned optional category for catalog products. Groups form a single-level parent/child
+hierarchy: a group may have at most one `parent_group_id` within the same store (a subgroup), and a product
+references at most one group through nullable `group_id`. Grouping is a presentation/organization concern only;
+it does not change product identity, pricing, stock, or invoice behavior.
+
+**Key fields**
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `group_id` | String | Yes | Immutable opaque identifier, unique within the store. |
+| `store_id` | UUID | Yes | Owning store. |
+| `parent_group_id` | String | No | Parent group in the same store; null for a top-level group. |
+| `name` | String | Yes | Operator-visible group name. |
+| `is_active` | Boolean | Yes | Whether the group is active. |
+
+**Constraints**
+
+- `(store_id, group_id)` is unique; group names are unique among active groups of one store.
+- A subgroup's parent must exist and belong to the same store; cycles are not allowed.
+- A product may belong to at most one group; removing the group from a product leaves the product intact.
+- Group mutations are store-scoped operations with `operation_id`/`device_id` and are replicated through the
+  same Hub append-only operation log as product registration.
+- Group reads never include another store's groups or products.
+
+**Tests:** `TC-C61-G1`–`TC-C61-G5` (see `ProductGroupServiceTests`).
+
 **Tests:** `TC-E08`, `TC-D9-R1`–`TC-D9-R5`, `TC-D10-R4`, `TC-MD-R7`.
 
 ### 2.9 InventoryEvent

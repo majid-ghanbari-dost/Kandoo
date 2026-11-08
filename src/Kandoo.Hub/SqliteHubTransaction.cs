@@ -22,7 +22,7 @@ internal sealed class SqliteHubTransaction : IHubTransaction
         using var command = Command("""
             SELECT store_id, product_id, name, normalized_name, similarity_key,
                    unit_price_rials, version, is_active, specification, product_tag_number,
-                   category, color, size, material, brand, barcode, purchase_price_rials
+                   category, color, size, material, brand, barcode, purchase_price_rials, group_id
             FROM products WHERE store_id = $store AND product_id = $product;
             """);
         Add(command, "$store", Uuid(storeId));
@@ -36,7 +36,7 @@ internal sealed class SqliteHubTransaction : IHubTransaction
         using var command = Command("""
             SELECT store_id, product_id, name, normalized_name, similarity_key,
                    unit_price_rials, version, is_active, specification, product_tag_number,
-                   category, color, size, material, brand, barcode, purchase_price_rials
+                   category, color, size, material, brand, barcode, purchase_price_rials, group_id
             FROM products ORDER BY store_id, product_id;
             """);
         using var reader = command.ExecuteReader();
@@ -55,16 +55,16 @@ internal sealed class SqliteHubTransaction : IHubTransaction
             INSERT INTO products
                 (store_id, product_id, name, normalized_name, similarity_key,
                  unit_price_rials, version, is_active, specification, product_tag_number,
-                 category, color, size, material, brand, barcode, purchase_price_rials)
+                 category, color, size, material, brand, barcode, purchase_price_rials, group_id)
             VALUES ($store, $product, $name, $normalized, $similarity, $price, $version, $active, $specification,
-                    $tag, $category, $color, $size, $material, $brand, $barcode, $purchasePrice)
+                    $tag, $category, $color, $size, $material, $brand, $barcode, $purchasePrice, $groupId)
             ON CONFLICT(store_id, product_id) DO UPDATE SET
                 name = excluded.name, normalized_name = excluded.normalized_name,
                 similarity_key = excluded.similarity_key, unit_price_rials = excluded.unit_price_rials,
                 version = excluded.version, is_active = excluded.is_active, specification = excluded.specification,
                 category = excluded.category, color = excluded.color, size = excluded.size,
                 material = excluded.material, brand = excluded.brand, barcode = excluded.barcode,
-                purchase_price_rials = excluded.purchase_price_rials;
+                purchase_price_rials = excluded.purchase_price_rials, group_id = excluded.group_id;
             """);
         Add(command, "$store", Uuid(product.StoreId));
         Add(command, "$product", product.ProductId);
@@ -83,7 +83,101 @@ internal sealed class SqliteHubTransaction : IHubTransaction
         Add(command, "$brand", product.Brand);
         Add(command, "$barcode", product.Barcode);
         Add(command, "$purchasePrice", product.PurchasePriceRials);
+        Add(command, "$groupId", product.GroupId);
         command.ExecuteNonQuery();
+    }
+
+    public IReadOnlyList<ProductGroup> GetProductGroups(Guid storeId)
+    {
+        using var command = Command("""
+            SELECT store_id, group_id, parent_group_id, name, is_active, created_at
+            FROM product_groups WHERE store_id = $store ORDER BY name, group_id;
+            """);
+        Add(command, "$store", Uuid(storeId));
+        using var reader = command.ExecuteReader();
+        var groups = new List<ProductGroup>();
+        while (reader.Read())
+        {
+            groups.Add(new ProductGroup(
+                Guid.Parse(reader.GetString(0)),
+                reader.GetString(1),
+                reader.IsDBNull(2) ? null : reader.GetString(2),
+                reader.GetString(3),
+                reader.GetInt32(4) != 0,
+                reader.GetString(5)));
+        }
+
+        return groups;
+    }
+
+    public ProductGroup? GetProductGroup(Guid storeId, string groupId)
+    {
+        using var command = Command("""
+            SELECT store_id, group_id, parent_group_id, name, is_active, created_at
+            FROM product_groups WHERE store_id = $store AND group_id = $group;
+            """);
+        Add(command, "$store", Uuid(storeId));
+        Add(command, "$group", groupId);
+        using var reader = command.ExecuteReader();
+        return reader.Read()
+            ? new ProductGroup(
+                Guid.Parse(reader.GetString(0)),
+                reader.GetString(1),
+                reader.IsDBNull(2) ? null : reader.GetString(2),
+                reader.GetString(3),
+                reader.GetInt32(4) != 0,
+                reader.GetString(5))
+            : null;
+    }
+
+    public string CreateProductGroup(Guid storeId, string groupId, string? parentGroupId, string name, DateTimeOffset now)
+    {
+        if (GetProductGroup(storeId, groupId) is not null)
+        {
+            return "DUPLICATE_GROUP_ID";
+        }
+
+        if (parentGroupId is not null && GetProductGroup(storeId, parentGroupId) is null)
+        {
+            return "UNKNOWN_PARENT_GROUP";
+        }
+
+        using var command = Command("""
+            INSERT INTO product_groups
+                (store_id, group_id, parent_group_id, name, is_active, created_at)
+            VALUES ($store, $group, $parent, $name, $active, $created);
+            """);
+        Add(command, "$store", Uuid(storeId));
+        Add(command, "$group", groupId);
+        Add(command, "$parent", parentGroupId);
+        Add(command, "$name", name);
+        Add(command, "$active", 1);
+        Add(command, "$created", Date(now));
+        command.ExecuteNonQuery();
+        return "CREATED";
+    }
+
+    public string AssignProductToGroup(Guid storeId, string productId, string? groupId)
+    {
+        var product = GetProduct(storeId, productId);
+        if (product is null)
+        {
+            return "UNKNOWN_PRODUCT";
+        }
+
+        if (groupId is not null && GetProductGroup(storeId, groupId) is null)
+        {
+            return "UNKNOWN_GROUP";
+        }
+
+        using var command = Command("""
+            UPDATE products SET group_id = $group WHERE store_id = $store AND product_id = $product;
+            """);
+        Add(command, "$group", groupId);
+        Add(command, "$store", Uuid(storeId));
+        Add(command, "$product", productId);
+        command.ExecuteNonQuery();
+        return groupId is null ? "UNASSIGNED" : "ASSIGNED";
     }
 
     public IReadOnlyList<ProductOperatorField> GetProductOperatorFields(Guid storeId, string productId)
@@ -811,7 +905,8 @@ internal sealed class SqliteHubTransaction : IHubTransaction
         reader.IsDBNull(13) ? null : reader.GetString(13),
         reader.IsDBNull(14) ? null : reader.GetString(14),
         reader.IsDBNull(15) ? null : reader.GetString(15),
-        reader.IsDBNull(16) ? null : reader.GetInt64(16));
+        reader.IsDBNull(16) ? null : reader.GetInt64(16),
+        reader.IsDBNull(17) ? null : reader.GetString(17));
 
     private static OperationRecord ReadOperation(SqliteDataReader reader) => new(
         Guid.Parse(reader.GetString(0)),
@@ -877,3 +972,11 @@ internal sealed class SqliteHubTransaction : IHubTransaction
         string? IssuedContentSha256,
         Guid? CustomerId);
 }
+
+public sealed record ProductGroup(
+    Guid StoreId,
+    string GroupId,
+    string? ParentGroupId,
+    string Name,
+    bool IsActive,
+    string CreatedAt);

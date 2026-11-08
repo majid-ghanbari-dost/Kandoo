@@ -28,7 +28,8 @@ public sealed record Product(
     string? Material = null,
     string? Brand = null,
     string? Barcode = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? PurchasePriceRials = null)
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? PurchasePriceRials = null,
+    string? GroupId = null)
 {
     /// <summary>Derived display value only; never persisted or inferred without a purchase price.</summary>
     [JsonIgnore]

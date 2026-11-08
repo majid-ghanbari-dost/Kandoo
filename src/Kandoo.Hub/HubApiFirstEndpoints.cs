@@ -29,6 +29,7 @@ public static partial class HubApiFirstEndpoints
             bool? include_retired,
             int? limit,
             string? cursor,
+            string? group_id,
             HttpContext context,
             IHubAccessStore access,
             IClock clock,
@@ -42,7 +43,7 @@ public static partial class HubApiFirstEndpoints
 
             try
             {
-                var page = catalog.List(store_id, query, include_retired == true, limit ?? 50, cursor);
+                var page = catalog.List(store_id, query, include_retired == true, limit ?? 50, cursor, group_id);
                 return Results.Json(new
                 {
                     status = "OK",
@@ -148,7 +149,8 @@ public static partial class HubApiFirstEndpoints
         size = product.Size,
         material = product.Material,
         brand = product.Brand,
-        barcode = product.Barcode
+        barcode = product.Barcode,
+        group_id = product.GroupId
     };
 
     private static object ProductBody(HubProductView view)

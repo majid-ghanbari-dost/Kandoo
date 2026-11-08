@@ -15,7 +15,8 @@ public sealed record ProductRegistrationInput(
     string? Specification = null,
     long? ProductTagNumber = null,
     IReadOnlyList<ProductOperatorField>? OperatorFields = null,
-    long? PurchasePriceRials = null)
+    long? PurchasePriceRials = null,
+    string? GroupId = null)
 {
     public ProductRegistrationInput Validate()
     {
@@ -57,6 +58,7 @@ public sealed record ProductRegistrationInput(
             Brand = Optional(Brand),
             Barcode = Optional(Barcode),
             Specification = Optional(Specification),
+            GroupId = Optional(GroupId),
             OperatorFields = ValidateOperatorFields(OperatorFields)
         };
     }
