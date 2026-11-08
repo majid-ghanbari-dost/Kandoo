@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('Workload', 'Test', 'Windows', 'Android')]
+    [ValidateSet('Workload', 'Test', 'Windows', 'Android', 'AndroidRelease')]
     [string]$Mode,
     [string]$ArtifactDirectory = 'artifacts'
 )
