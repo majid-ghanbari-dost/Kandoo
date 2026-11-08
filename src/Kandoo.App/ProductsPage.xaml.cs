@@ -1,3 +1,6 @@
+using System.Security.Cryptography;
+using System.Text.Json;
+
 namespace Kandoo.App;
 
 public partial class ProductsPage : ContentPage
