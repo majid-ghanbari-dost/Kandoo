@@ -1,0 +1,31 @@
+# Build outputs
+bin/
+obj/
+artifacts/
+**/bin
+**/obj
+
+# Visual Studio / MSBuild
+*.user
+*.userprefs
+*.suo
+*.DotSettings.user
+*.pubxml
+*.pubxml.user
+launchSettings.json
+app.config.*.transform
+web.config.*.transform
+
+# Local secrets and configuration (never commit credentials)
+secrets.json
+appsettings.*.json
+local.settings.json
+*.keystore
+*.jks
+*.p12
+*.pfx
+
+# IDE
+.vs/
+.idea/
+*.code-workspace

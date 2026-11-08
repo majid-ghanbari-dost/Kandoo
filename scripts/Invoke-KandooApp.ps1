@@ -73,6 +73,62 @@ try {
             Copy-Item -LiteralPath $apk.FullName -Destination $target -Force
             Write-ArtifactEvidence -Path $target
         }
+        'AndroidRelease' {
+            $keystore = Join-Path $artifactRoot 'kandoo-release.keystore'
+            $certReport = Join-Path $artifactRoot 'kandoo-app-c59-release-keystore-cert.txt'
+            $keytool = Get-Command 'keytool' -ErrorAction SilentlyContinue
+            if ($null -eq $keytool) {
+                $candidates = @(
+                    "${env:JAVA_HOME}\bin\keytool.exe",
+                    "${env:JAVA_HOME}\bin\keytool",
+                    'C:\Program Files\Android\jdk\bin\keytool.exe',
+                    'C:\Program Files\Java\jdk-17\bin\keytool.exe',
+                    'C:\Program Files\Java\jdk-21\bin\keytool.exe',
+                    '/usr/bin/keytool'
+                )
+                foreach ($candidate in $candidates) {
+                    if (Test-Path -LiteralPath $candidate) {
+                        $keytool = Get-Item -LiteralPath $candidate
+                        break
+                    }
+                }
+            }
+            if ($null -eq $keytool) {
+                throw 'C59 AndroidRelease build requires keytool to generate a release signing keystore.'
+            }
+
+            $storePass = [Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(18))
+            $keyPass = [Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(18))
+
+            & $keytool -genkeypair -alias kandoo-release -keyalg RSA -keysize 2048 -validity 3650 -keystore $keystore -storepass $storePass -keypass $keyPass -dname 'CN=Kandoo Digital Invoice, O=Kandoo' -noprompt
+            if ($LASTEXITCODE -ne 0) { throw 'keytool keystore generation failed.' }
+
+            $env:AndroidSigningKeyStore = $keystore
+            $env:AndroidSigningKeyAlias = 'kandoo-release'
+            $env:AndroidSigningKeyPass = $keyPass
+            $env:AndroidSigningStorePass = $storePass
+
+            Invoke-DotNet @(
+                'build', 'Kandoo.App.csproj',
+                '--configuration', 'Release', '--framework', 'net8.0-android')
+            $apk = Get-ChildItem -LiteralPath 'bin/Release/net8.0-android' -Recurse -Filter '*.apk' |
+                Sort-Object LastWriteTime -Descending | Select-Object -First 1
+            if ($null -eq $apk) {
+                throw 'C59 Android release build produced no APK.'
+            }
+
+            $signed = @(Get-ChildItem -LiteralPath 'bin/Release/net8.0-android' -Recurse -Filter '*-Signed.apk' | Sort-Object LastWriteTime -Descending)
+            if ($signed.Count -gt 0) { $apk = $signed[0] }
+
+            $target = Join-Path $artifactRoot 'kandoo-app-c59-android-release.apk'
+            Copy-Item -LiteralPath $apk.FullName -Destination $target -Force
+            Write-ArtifactEvidence -Path $target
+
+            & $keytool -list -v -keystore $keystore -alias kandoo-release -storepass $storePass |
+                Out-File -FilePath $certReport -Encoding utf8
+            if ($LASTEXITCODE -ne 0) { throw 'C59 release certificate report failed.' }
+            Write-ArtifactEvidence -Path $certReport
+        }
     }
 }
 finally {
