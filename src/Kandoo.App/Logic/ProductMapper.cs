@@ -67,7 +67,8 @@ public static class ProductMapper
 
     private static bool RequiredBoolean(JsonElement parent, string name)
     {
-        if (!parent.TryGetProperty(name, out var value) || value.ValueKind != JsonValueKind.Boolean)
+        if (!parent.TryGetProperty(name, out var value) ||
+            (value.ValueKind != JsonValueKind.True && value.ValueKind != JsonValueKind.False))
         {
             throw new JsonException($"Product field {name} must be a boolean.");
         }

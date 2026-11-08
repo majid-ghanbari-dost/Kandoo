@@ -117,7 +117,7 @@ public sealed class ProductTests
         var storeId = Guid.Parse("22222222-2222-2222-2222-222222222222");
         var handler = new StubProductHandler((request, _) =>
         {
-            Assert.False(request.RequestUri!.Query.Contains("group_id"));
+            Assert.DoesNotContain("group_id", request.RequestUri!.Query);
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent("{\"status\":\"OK\",\"items\":[]}", Encoding.UTF8, "application/json")
