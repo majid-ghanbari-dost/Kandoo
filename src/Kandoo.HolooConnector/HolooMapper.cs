@@ -131,32 +131,38 @@ public sealed record InvoiceItemRecord(
 public static class HolooMapper
 {
     public static CustomerRecord MapCustomer(IDictionary<string, string> row) => new(
-        row.GetValueOrDefault("C_Code", string.Empty),
-        row.GetValueOrDefault("C_Name"),
-        row.GetValueOrDefault("C_Family"),
-        row.GetValueOrDefault("C_Tell"),
-        row.GetValueOrDefault("C_Address"),
-        row.GetValueOrDefault("C_PostalCode"),
-        row.GetValueOrDefault("C_NationalCode"));
+        GetOrDefault(row, "C_Code", string.Empty),
+        GetOrDefault(row, "C_Name"),
+        GetOrDefault(row, "C_Family"),
+        GetOrDefault(row, "C_Tell"),
+        GetOrDefault(row, "C_Address"),
+        GetOrDefault(row, "C_PostalCode"),
+        GetOrDefault(row, "C_NationalCode"));
 
     public static ProductRecord MapArticle(IDictionary<string, string> row) => new(
-        row.GetValueOrDefault("A_Code", string.Empty),
-        row.GetValueOrDefault("A_Name"),
-        row.GetValueOrDefault("A_Country"),
+        GetOrDefault(row, "A_Code", string.Empty),
+        GetOrDefault(row, "A_Name"),
+        GetOrDefault(row, "A_Country"),
         ParseDecimal(row, "Buy_Price"),
-        row.GetValueOrDefault("Model"));
+        GetOrDefault(row, "Model"));
 
     public static InvoiceRecord MapFacture(IDictionary<string, string> row) => new(
-        row.GetValueOrDefault("F_Code", string.Empty),
-        row.GetValueOrDefault("F_Date"),
-        row.GetValueOrDefault("F_Customer"),
+        GetOrDefault(row, "F_Code", string.Empty),
+        GetOrDefault(row, "F_Date"),
+        GetOrDefault(row, "F_Customer"),
         ParseDecimal(row, "cash_amount") ?? ParseDecimal(row, "FNaghd"));
 
     public static InvoiceItemRecord MapFactArt(IDictionary<string, string> row) => new(
-        row.GetValueOrDefault("FA_Code", string.Empty),
-        row.GetValueOrDefault("FA_Article"),
+        GetOrDefault(row, "FA_Code", string.Empty),
+        GetOrDefault(row, "FA_Article"),
         ParseInt(row, "FA_Count"),
         ParseDecimal(row, "FA_Price"));
+
+    static string? GetOrDefault(IDictionary<string, string> row, string column) =>
+        row.TryGetValue(column, out var value) ? value : null;
+
+    static string GetOrDefault(IDictionary<string, string> row, string column, string fallback) =>
+        row.TryGetValue(column, out var value) ? value : fallback;
 
     static decimal? ParseDecimal(IDictionary<string, string> row, string column) =>
         row.TryGetValue(column, out var value) &&
