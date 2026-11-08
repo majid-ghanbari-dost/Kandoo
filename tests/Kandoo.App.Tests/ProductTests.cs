@@ -157,7 +157,7 @@ public sealed class ProductTests
         var source = new HubProductDataSource(new HttpClient(handler),
             new HubConnectionSettings("https://hub.invalid", storeId, "token-123"));
 
-        await Assert.ThrowsAssignableAsync<JsonException>(() => source.LoadProductsAsync(null));
+        await Assert.ThrowsAsync<JsonReaderException>(() => source.LoadProductsAsync(null));
     }
 
     [Fact]
