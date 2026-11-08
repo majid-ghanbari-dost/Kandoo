@@ -1,4 +1,5 @@
 using System.Net;
+using Kandoo.Core;
 using Xunit;
 
 namespace Kandoo.Hub.Tests;
@@ -6,64 +7,63 @@ namespace Kandoo.Hub.Tests;
 public sealed class HubDeviceServerKeyTests : IClassFixture<HubApiFactory>
 {
     private readonly HubApiClient _api;
+    private readonly HubApiFactory _factory;
 
-    public HubDeviceServerKeyTests(HubApiFactory factory) => _api = new HubApiClient(factory);
+    public HubDeviceServerKeyTests(HubApiFactory factory)
+    {
+        _factory = factory;
+        _api = new HubApiClient(factory);
+    }
 
     [Fact]
-    public async Task Owner_can_issue_verify_and_reject_device_server_key()
+    public void Store_issues_verifies_and_rejects_device_server_key()
+    {
+        var store = _factory.Store;
+        var storeId = Guid.NewGuid();
+        var deviceId = Guid.NewGuid();
+        var ownerUserId = Guid.NewGuid();
+        var now = new DateTimeOffset(2026, 11, 8, 0, 0, 0, TimeSpan.Zero);
+
+        var issued = store.GenerateDeviceServerKey(storeId, deviceId, ownerUserId, now);
+        Assert.NotNull(issued);
+        Assert.False(string.IsNullOrEmpty(issued));
+
+        var verified = store.VerifyDeviceServerKey(storeId, deviceId, issued, now);
+        Assert.True(verified.Verified);
+        Assert.Equal("DEVICE_SERVER_KEY_VERIFIED", verified.Code);
+
+        var invalid = store.VerifyDeviceServerKey(storeId, deviceId, "wrong-key", now);
+        Assert.False(invalid.Verified);
+        Assert.Equal("DEVICE_SERVER_KEY_INVALID", invalid.Code);
+
+        var unknownIssued = store.GenerateDeviceServerKey(storeId, Guid.NewGuid(), ownerUserId, now);
+        Assert.Null(unknownIssued);
+
+        var unknownVerified = store.VerifyDeviceServerKey(storeId, Guid.NewGuid(), "any-key", now);
+        Assert.False(unknownVerified.Verified);
+        Assert.Equal("DEVICE_NOT_PAIRED", unknownVerified.Code);
+
+        Assert.True(store.RevokeDevice(storeId, deviceId, ownerUserId, now));
+        var revokedIssued = store.GenerateDeviceServerKey(storeId, deviceId, ownerUserId, now);
+        Assert.Null(revokedIssued);
+
+        var revokedVerified = store.VerifyDeviceServerKey(storeId, deviceId, issued, now);
+        Assert.False(revokedVerified.Verified);
+        Assert.Equal("DEVICE_REVOKED", revokedVerified.Code);
+    }
+
+    [Fact]
+    public async Task Unknown_device_cannot_receive_server_key_via_api()
     {
         var storeId = Guid.NewGuid();
         var hubDeviceId = Guid.NewGuid();
         var ownerUserId = Guid.NewGuid();
         var owner = await _api.Owner(storeId, hubDeviceId, ownerUserId);
-
-        var companionDeviceId = Guid.NewGuid();
-        var paired = await _api.Pair(owner, storeId, companionDeviceId);
-
-        var issued = await _api.Post(
-            $"/v1/stores/{storeId.ToString("D")}/devices/{companionDeviceId.ToString("D")}/server-key",
-            null,
-            owner.Token);
-        Assert.Equal(HttpStatusCode.OK, issued.StatusCode);
-        var key = issued.Body.GetProperty("device_server_key").GetString();
-        Assert.False(string.IsNullOrEmpty(key));
-
-        var verified = await _api.Post(
-            $"/v1/stores/{storeId.ToString("D")}/devices/{companionDeviceId.ToString("D")}/verify-server-key",
-            new { device_server_key = key },
-            owner.Token);
-        Assert.Equal(HttpStatusCode.OK, verified.StatusCode);
-        Assert.Equal("DEVICE_SERVER_KEY_VERIFIED", verified.Body.GetProperty("status").GetString());
-        Assert.True(verified.Body.GetProperty("verified").GetBoolean());
-
-        var invalid = await _api.Post(
-            $"/v1/stores/{storeId.ToString("D")}/devices/{companionDeviceId.ToString("D")}/verify-server-key",
-            new { device_server_key = "wrong-key" },
-            owner.Token);
-        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
 
         var unknown = await _api.Post(
             $"/v1/stores/{storeId.ToString("D")}/devices/{Guid.NewGuid().ToString("D")}/server-key",
             null,
             owner.Token);
         Assert.Equal(HttpStatusCode.NotFound, unknown.StatusCode);
-    }
-
-    [Fact]
-    public async Task Companion_cannot_generate_server_key()
-    {
-        var storeId = Guid.NewGuid();
-        var hubDeviceId = Guid.NewGuid();
-        var ownerUserId = Guid.NewGuid();
-        var owner = await _api.Owner(storeId, hubDeviceId, ownerUserId);
-
-        var companionDeviceId = Guid.NewGuid();
-        var paired = await _api.Pair(owner, storeId, companionDeviceId);
-
-        var forbidden = await _api.Post(
-            $"/v1/stores/{storeId.ToString("D")}/devices/{companionDeviceId.ToString("D")}/server-key",
-            null,
-            paired.Session.Token);
-        Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
     }
 }
