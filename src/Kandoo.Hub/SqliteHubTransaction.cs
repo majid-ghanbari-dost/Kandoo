@@ -499,7 +499,7 @@ internal sealed class SqliteHubTransaction : IHubTransaction
         using var command = Command("""
             SELECT store_id, product_id, name, normalized_name, similarity_key,
                    unit_price_rials, version, is_active, specification, product_tag_number,
-                   category, color, size, material, brand, barcode, purchase_price_rials
+                   category, color, size, material, brand, barcode, purchase_price_rials, group_id
             FROM products WHERE store_id = $store AND product_tag_number = $tag;
             """);
         Add(command, "$store", Uuid(storeId));
