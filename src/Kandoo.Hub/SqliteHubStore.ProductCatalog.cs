@@ -112,6 +112,21 @@ public sealed partial class SqliteHubStore
         }
     }
 
+    public Product? GetProduct(Guid storeId, string productId)
+    {
+        if (storeId == Guid.Empty || string.IsNullOrWhiteSpace(productId))
+        {
+            return null;
+        }
+
+        lock (_gate)
+        {
+            ThrowIfDisposed();
+            using var transaction = new SqliteHubTransaction(_connection);
+            return transaction.GetProduct(storeId, productId);
+        }
+    }
+
     public IReadOnlyList<Product> ListProducts(Guid storeId)
     {
         if (storeId == Guid.Empty)
