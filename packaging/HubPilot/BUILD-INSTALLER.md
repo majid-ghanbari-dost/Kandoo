@@ -1,0 +1,47 @@
+# Kandoo Hub Windows Installer (C-65)
+
+## What this is
+A self-contained Windows installer for the Kandoo Hub, authored with
+[Inno Setup](https://jrsoftware.org/isinfo.php) (`KandooHub.Installer.iss`).
+The installer bundles the self-contained `win-x64` publish output of
+`src/Kandoo.Hub` (no .NET runtime required on the target), installs to
+`Program Files\Kandoo Hub`, adds a Start Menu shortcut, and launches
+`Start-KandooHub.ps1` after install. Hub data (database, logs, backups,
+captures) lives under `C:\ProgramData\Kandoo`, outside the program folder.
+
+## Build
+On a Windows machine with Inno Setup installed:
+
+```powershell
+# 1. Publish the self-contained Hub host.
+dotnet publish src/Kandoo.Hub/Kandoo.Hub.csproj `
+    --configuration Release --runtime win-x64 --self-contained true `
+    --output packaging\HubPilot\publish
+
+# 2. Compile the installer.
+iscc packaging\HubPilot\KandooHub.Installer.iss
+
+# 3. Result.
+packaging\HubPilot\Output\KandooHub-Setup.exe
+```
+
+The installer supports silent installation:
+
+```powershell
+KandooHub-Setup.exe /SILENT
+```
+
+## Contents
+- `KandooHub.Installer.iss` — Inno Setup authoring script.
+- `BUILD-INSTALLER.md` — this file.
+
+## Notes
+- The `publish\` folder is a build output and is **not** committed to the
+  repository; generate it with the `dotnet publish` command above before
+  compiling the installer.
+- Secrets such as `Hub__OwnerBootstrapProof` must be set in the target
+  environment and must never be committed to the package or the repo.
+- This is an authoring script; CI does not compile Inno Setup, so the script
+  is validated by review and by a successful `iscc` compilation locally.
+  The underlying Hub host and `Start-KandooHub.ps1` launcher remain covered
+  by the existing CI (C-14/C-22 smoke tests).
