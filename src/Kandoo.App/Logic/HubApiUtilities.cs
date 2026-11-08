@@ -4,7 +4,7 @@ using System.Text.Json;
 
 namespace Kandoo.App;
 
-internal static class HubApiUtilities
+public static class HubApiUtilities
 {
     public static StringContent JsonBody(object value) =>
         new(JsonSerializer.Serialize(value), Encoding.UTF8, "application/json");
