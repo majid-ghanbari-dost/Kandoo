@@ -127,6 +127,36 @@ public sealed partial class SqliteHubStore
         }
     }
 
+    public IReadOnlyList<ProductGroup> GetProductGroups(Guid storeId)
+    {
+        if (storeId == Guid.Empty)
+        {
+            throw new ArgumentException("A store is required.", nameof(storeId));
+        }
+
+        lock (_gate)
+        {
+            ThrowIfDisposed();
+            using var transaction = new SqliteHubTransaction(_connection);
+            return transaction.GetProductGroups(storeId);
+        }
+    }
+
+    public ProductGroup? GetProductGroup(Guid storeId, string groupId)
+    {
+        if (storeId == Guid.Empty || string.IsNullOrWhiteSpace(groupId))
+        {
+            return null;
+        }
+
+        lock (_gate)
+        {
+            ThrowIfDisposed();
+            using var transaction = new SqliteHubTransaction(_connection);
+            return transaction.GetProductGroup(storeId, groupId);
+        }
+    }
+
     public IReadOnlyList<ProductOperatorField> GetProductOperatorFields(Guid storeId, string productId)
     {
         if (storeId == Guid.Empty || string.IsNullOrWhiteSpace(productId))
