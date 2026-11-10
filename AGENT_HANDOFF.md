@@ -301,3 +301,36 @@ Core architecture includes:
 - **Zero C#, Windows, or Android source code** exists yet in this repository or any owner repository. The current `P-01` task is documentation-only; implementation requires a later explicit PM task (`ASM-06`).
 - Unrelated external demo artifacts (`auth.py` with fixed password, demo inspection scripts, tool-state JSON files, legacy bootstrap scripts) and secrets are **strictly excluded** from this repository.
 - Do not invent missing files or history.
+
+## Window-11 Final Handoff (H-07), 2026-11-10
+
+H-07 is a C# STRETCH task per ORDER 11 (PM, 2026-11-07): "Handoff + tag ledger (always last)". Closed with report commit + tag `w11-H-07` on `arena/ca78e14d-kandoo`. The earlier Persian engineering-report reconstruction (C-59..C-65 + incidents 1-4) was made after the task definition was lost; it satisfies and exceeds the actual ORDER 11 spec. The PO-approval gate and "stable-h-07" tag idea from that reconstruction are void; `w11-H-07` (lightweight, w11-* pattern) is used instead.
+
+### Window-11 tag and CI ledger
+
+| Task | Tag | Full commit SHA | CI run | Status |
+|---|---|---|---|---|
+| **C-59** | `w11-C-59` | `c974a8ce62bd2135a251f08dc9d4b2994d4f7769` | [42459975126](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42459975126) | GREEN — manager-ACCEPTED |
+| **C-60** | `w11-C-60` | `e6bf39cfc7943a5139e3290468ce276d90ac134f` | [42461927836](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42461927836) | GREEN — manager-ACCEPTED |
+| **C-61** | `w11-C-61` | `a0ab3f567e058f8ec88cf5a2c5ba5882162c135c` | [42465848589](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42465848589) | GREEN — manager-ACCEPTED |
+| **C-62** | `w11-C-62` | `ad51ab975ce443c07eecdc42cb407ae5a6a11627` | [42497849017](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42497849017) | GREEN — manager-ACCEPTED |
+| C-62 follow-up (sln registration) | — | `aa580acaebc662e3e5986c5554c3fe64b6316223` | [42500128966](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42500128966) — RED → fixed | GREEN after fix |
+| C-62 fix (HolooMapper GetValueOrDefault) | — | `49160d6455037b33bfec4fb7860f027007d495aa` | [42500381204](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42500381204) | GREEN — ubuntu + windows — manager-ACCEPTED |
+| **C-63** | `w11-C-63` | `7ce20672fcb0b86ef85f9ea9396f147d71362ee7` | [42470372406](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42470372406) | GREEN — manager-ACCEPTED |
+| **C-65** | `w11-C-65` | `a5848e39028b021b0a0df74ae5fe15d884ee203c` | [42471577629](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42471577629) | GREEN — manager-ACCEPTED |
+| **H-07** | `w11-H-07` | published after tagging | published after CI green | this publication |
+| **C-45b** | — (blocked, no tag) | — | — | MUST per ORDER 11; blocked on v1.1 addendum Draft 2 (2026-11-10, PM/PO review) and Cloud v1.1 advertisement |
+
+### Incidents 1-4 (sandbox recycles + stash loss)
+
+1. **Incident 1 — CONFIRMED:** local checkout recycled to base `712ce07` instead of `a5848e3`; W11 tags absent locally; C-59..C-65 content untracked.
+2. **Incident 2 — CONFIRMED (red event):** C-62 push rejected because remote was ahead (`a5848e3` vs local base `712ce07`). Recovered without force-push: reset local to remote and cherry-picked C-62 onto remote tip; tag `w11-C-62` unmoved.
+3. **Incident 3 — CONFIRMED:** local refs recycled again; `49160d6`/`ad51ab9` not locally reachable; recovered via read-only `git fetch origin` (no tag/branch moves).
+4. **Incident 4 — CONFIRMED:** stash loss — `stash@{0}` (3 pre-existing doc modifications) no longer valid; keep-stashed rule moot.
+
+### Delivery boundaries
+
+- **C-45b:** MUST per ORDER 11 (Hub side of v1.1 per D-C/P-09, activated only when the Cloud advertises v1.1). Blocked on the v1.1 addendum chain (Draft 2 issued 2026-11-10, PM/PO review). NOT a keep-or-close documentation decision.
+- `setup.exe` (Inno Setup authoring script `packaging/HubPilot/KandooHub.Installer.iss`): authored only, not built in CI.
+- Hub-side v1.1 field emission (U14): not implemented.
+- No push/merge/tag moves on `main`; all `w11-C-*` tags unmoved.
