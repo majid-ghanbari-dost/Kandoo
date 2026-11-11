@@ -121,7 +121,10 @@ public sealed class CanonicalJsonU7Tests
         // Build the probe string purely from codepoints. Never copy-paste the JSON column:
         // it contains invisible characters (e.g. ZWNJ) that would silently corrupt the input.
         var probe = string.Concat(vector.Codepoints.Select(cp => char.ConvertFromUtf32(cp)));
-        var input = JsonSerializer.Serialize(new { probe });
+
+        // Build the input document by JSON-escaping the probe ourselves so it round-trips to
+        // the exact probe chars, independent of any serializer defaults.
+        var input = $"{{\"probe\":\"{EscapeJsonInput(probe)}\"}}";
         using var document = JsonDocument.Parse(input);
         var element = document.RootElement.Clone();
 
@@ -131,5 +134,42 @@ public sealed class CanonicalJsonU7Tests
 
         Assert.Equal(vector.Utf8Hex, actualUtf8);
         Assert.Equal(vector.Sha256, actualSha256);
+    }
+
+    /// <summary>JSON-escapes a probe string for building a valid input document.</summary>
+    /// <remarks>
+    /// Escapes " and \ and control chars (U+0000..U+001F and DEL U+007F) as \u00XX uppercase;
+    /// leaves non-ASCII raw UTF-8 and / literal. The exact input escaping is irrelevant as
+    /// long as JsonDocument round-trips it to the original probe chars.
+    /// </remarks>
+    private static string EscapeJsonInput(string s)
+    {
+        var output = new StringBuilder(s.Length);
+        foreach (var c in s)
+        {
+            if (c == '"')
+            {
+                output.Append("\\\"");
+                continue;
+            }
+
+            if (c == '\\')
+            {
+                output.Append("\\\\");
+                continue;
+            }
+
+            if (c <= 0x1F || c == 0x7F)
+            {
+                output.Append('\\');
+                output.Append('u');
+                output.Append(((int)c).ToString("X4"));
+                continue;
+            }
+
+            output.Append(c);
+        }
+
+        return output.ToString();
     }
 }
