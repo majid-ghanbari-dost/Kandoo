@@ -667,7 +667,7 @@ public sealed class HubOperationService
         return document.RootElement.Clone();
     }
 
-    private static InvoiceV11 ReadV11(JsonElement payload, Guid storeId)
+    private InvoiceV11 ReadV11(JsonElement payload, Guid storeId)
     {
         string? customerName = null;
         List<HubReplicationPaymentV11>? payments = null;
