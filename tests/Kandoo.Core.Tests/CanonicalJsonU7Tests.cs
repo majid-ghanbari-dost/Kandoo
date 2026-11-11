@@ -129,7 +129,7 @@ public sealed class CanonicalJsonU7Tests
         var actualUtf8 = Convert.ToHexString(Encoding.UTF8.GetBytes(canonical)).ToLowerInvariant();
         var actualSha256 = CanonicalJson.Sha256Hex(element);
 
-        Assert.Equal(vector.Utf8Hex, actualUtf8, $"{vector.Id}: canonical UTF-8 bytes");
-        Assert.Equal(vector.Sha256, actualSha256, $"{vector.Id}: sha256");
+        Assert.Equal(vector.Utf8Hex, actualUtf8);
+        Assert.Equal(vector.Sha256, actualSha256);
     }
 }
