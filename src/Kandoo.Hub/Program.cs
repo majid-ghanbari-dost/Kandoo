@@ -35,6 +35,7 @@ builder.Services.AddSingleton<IHubAccessStore>(hubStore);
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<HubStatsService>();
 builder.Services.AddSingleton<IClock, SystemHubClock>();
+builder.Services.AddSingleton<HubReplicationOptions>();
 builder.Services.AddSingleton<HubOperationService>();
 builder.Services.AddSingleton(new HubProductCatalogService(hubStore));
 builder.Services.AddSingleton<IHubInvoicePrintAdapter, DisabledHubInvoicePrintAdapter>();

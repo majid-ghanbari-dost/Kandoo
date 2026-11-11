@@ -10,12 +10,14 @@ public sealed class HubOperationService
     private readonly IHubAccessStore _access;
     private readonly IClock _clock;
     private readonly DraftLockManager _locks;
+    private readonly HubReplicationOptions _replicationOptions;
 
-    public HubOperationService(IHubStore store, IHubAccessStore access, IClock clock)
+    public HubOperationService(IHubStore store, IHubAccessStore access, IClock clock, HubReplicationOptions replicationOptions)
     {
         _store = store;
         _access = access;
         _clock = clock;
+        _replicationOptions = replicationOptions ?? throw new ArgumentNullException(nameof(replicationOptions));
         _locks = new DraftLockManager(clock);
         _locks.ReplaceForPersistence(store.GetDraftLocks());
     }
@@ -379,6 +381,16 @@ public sealed class HubOperationService
             throw new DomainException("INVOICE_NOT_ISSUABLE");
         }
 
+        // v1.1 emission is gated on the Cloud advertising v1.1
+        // (HubReplicationOptions.PayloadV11Enabled). Invalid v1.1 field values
+        // are rejected here (400 VALIDATION_ERROR) before any state is mutated,
+        // per addendum section 5; recorded values are echoed back absent-omitted.
+        InvoiceV11? v11 = null;
+        if (_replicationOptions.PayloadV11Enabled)
+        {
+            v11 = ReadV11(request.Payload, request.StoreId);
+        }
+
         var next = checked(transaction.GetDisplayNumberHighWatermark(request.StoreId) + 1);
         var snapshot = HubJson.Element(new { invoice_id = invoiceId, display_number = next });
         var payload = CanonicalJson.Serialize(snapshot);
@@ -394,7 +406,7 @@ public sealed class HubOperationService
         transaction.SetDisplayNumberHighWatermark(request.StoreId, next);
         return Accepted(new
         {
-            invoice = InvoiceProjection(invoice),
+            invoice = v11 is not null ? (object)InvoiceProjectionV11(invoice, v11) : InvoiceProjection(invoice),
             @lock = LockProjection(draftLock),
             next_display_number = checked(next + 1)
         });
@@ -561,6 +573,178 @@ public sealed class HubOperationService
 
         using var document = JsonDocument.Parse(invoice.IssuedPayload);
         return document.RootElement.Clone();
+    }
+
+    private static readonly HashSet<string> V11PaymentTypes = new(StringComparer.Ordinal)
+    {
+        "card-reader", "card-to-card", "cash", "credit"
+    };
+
+    private sealed record InvoiceV11(string? CustomerName, List<HubReplicationPaymentV11>? Payments, string? CurrencyUnit, long? RemainingBalance);
+
+    /// <summary>Builds response_snapshot.response.invoice for a v1.1 issuance.</summary>
+    /// <remarks>
+    /// The explicit marker invoice_schema_version = "1.1" is always stamped when
+    /// emitting v1.1 (addendum section 4.1). The four optional fields are
+    /// recorded values only, echoed back as delivered by the store, and omitted
+    /// when absent (addendum sections 2.3 and 3.3).
+    /// </remarks>
+    private static JsonElement InvoiceProjectionV11(Invoice invoice, InvoiceV11 v11)
+    {
+        var issuedPayload = IssuedPayloadProjection(invoice);
+        var items = invoice.Items.Select(item => new Dictionary<string, object?>
+        {
+            ["invoice_item_id"] = item.InvoiceItemId,
+            ["line_number"] = item.LineNumber,
+            ["description"] = item.Description,
+            ["quantity_millis"] = item.QuantityMillis,
+            ["unit_price_rials"] = item.UnitPriceRials,
+            ["line_total_rials"] = item.LineTotalRials,
+        }).ToArray();
+
+        for (var index = 0; index < items.Length; index++)
+        {
+            if (invoice.Items[index].ProductId is string productId)
+            {
+                items[index]["product_id"] = productId;
+            }
+        }
+
+        var dict = new Dictionary<string, object?>
+        {
+            ["invoice_id"] = invoice.InvoiceId,
+            ["external_invoice_number"] = invoice.ExternalInvoiceNumber,
+            ["display_number"] = invoice.DisplayNumber,
+            ["status"] = invoice.Status.ToString().ToUpperInvariant(),
+            ["retired"] = invoice.RetiredAt is not null,
+        };
+
+        if (invoice.RetirementReason is RetirementReason retirementReason)
+        {
+            dict["retirement_reason"] = retirementReason.ToString().ToUpperInvariant();
+        }
+
+        if (invoice.IssuedAt is DateTimeOffset issuedAt)
+        {
+            dict["issued_at"] = issuedAt;
+        }
+
+        if (issuedPayload is not null)
+        {
+            dict["issued_payload"] = issuedPayload;
+        }
+
+        if (invoice.IssuedContentSha256 is not null)
+        {
+            dict["issued_content_sha256"] = invoice.IssuedContentSha256;
+        }
+
+        dict["items"] = items;
+        dict["invoice_schema_version"] = "1.1";
+
+        if (v11.CustomerName is not null)
+        {
+            dict["customer_name"] = v11.CustomerName;
+        }
+
+        if (v11.Payments is not null)
+        {
+            dict["payments"] = v11.Payments;
+        }
+
+        if (v11.CurrencyUnit is not null)
+        {
+            dict["currency_unit"] = v11.CurrencyUnit;
+        }
+
+        if (v11.RemainingBalance is long remainingBalance)
+        {
+            dict["remaining_balance"] = remainingBalance;
+        }
+
+        var json = JsonSerializer.Serialize(dict, HubJson.Options);
+        using var document = JsonDocument.Parse(json);
+        return document.RootElement.Clone();
+    }
+
+    private static InvoiceV11 ReadV11(JsonElement payload, Guid storeId)
+    {
+        string? customerName = null;
+        List<HubReplicationPaymentV11>? payments = null;
+        long? remainingBalance = null;
+
+        if (payload.TryGetProperty("customer_name", out var customerNameElement) &&
+            customerNameElement.ValueKind != JsonValueKind.Null)
+        {
+            if (customerNameElement.ValueKind != JsonValueKind.String)
+            {
+                throw new DomainException("VALIDATION_ERROR");
+            }
+
+            var name = customerNameElement.GetString() ?? string.Empty;
+            if (name.Length < 1 || name.Length > 255)
+            {
+                throw new DomainException("VALIDATION_ERROR");
+            }
+
+            customerName = name;
+        }
+
+        if (payload.TryGetProperty("payments", out var paymentsElement) &&
+            paymentsElement.ValueKind != JsonValueKind.Null)
+        {
+            if (paymentsElement.ValueKind != JsonValueKind.Array)
+            {
+                throw new DomainException("VALIDATION_ERROR");
+            }
+
+            payments = new List<HubReplicationPaymentV11>();
+            foreach (var payment in paymentsElement.EnumerateArray())
+            {
+                payments.Add(ReadV11Payment(payment));
+            }
+        }
+
+        if (payload.TryGetProperty("remaining_balance", out var remainingElement) &&
+            remainingElement.ValueKind != JsonValueKind.Null)
+        {
+            if (remainingElement.ValueKind != JsonValueKind.Number ||
+                !remainingElement.TryGetInt64(out var amount))
+            {
+                throw new DomainException("VALIDATION_ERROR");
+            }
+
+            remainingBalance = amount;
+        }
+
+        string? currencyUnit = null;
+        if (_replicationOptions.PayloadV11StoreCurrencies is not null &&
+            _replicationOptions.PayloadV11StoreCurrencies.TryGetValue(storeId, out var configured) &&
+            configured is not null)
+        {
+            if (configured is not "rial" and not "toman")
+            {
+                throw new DomainException("VALIDATION_ERROR");
+            }
+
+            currencyUnit = configured;
+        }
+
+        return new InvoiceV11(customerName, payments, currencyUnit, remainingBalance);
+    }
+
+    private static HubReplicationPaymentV11 ReadV11Payment(JsonElement payment)
+    {
+        if (payment.ValueKind != JsonValueKind.Object ||
+            !payment.TryGetProperty("type", out var type) || type.ValueKind != JsonValueKind.String ||
+            !V11PaymentTypes.Contains(type.GetString() ?? string.Empty) ||
+            !payment.TryGetProperty("amount", out var amount) || amount.ValueKind != JsonValueKind.Number ||
+            !amount.TryGetInt64(out var value))
+        {
+            throw new DomainException("VALIDATION_ERROR");
+        }
+
+        return new HubReplicationPaymentV11(type.GetString()!, value);
     }
 
     private static object LockProjection(DraftLock draftLock) => new

@@ -266,7 +266,7 @@ public sealed class RestoreProtocolTests
             var issue = Operation(storeId, oldWriter.DeviceId, "op-restore-3", new { invoice_id = issuedId });
             Assert.Equal(OperationExecutionStatus.Succeeded, original.IssueInvoice(issue, issuedId, clock.UtcNow).Status);
 
-            var operations = new HubOperationService(original, original, clock);
+            var operations = new HubOperationService(original, original, clock, new HubReplicationOptions());
             var activeDraft = Submit(operations, storeId, owner.Session, "op-restore-4", "invoice.draft_create", new { customer_phone = "+989121234567" });
             Assert.Equal("SUCCEEDED", activeDraft.Body.Status);
             var activeDraftId = activeDraft.Body.Response.GetProperty("invoice").GetProperty("invoice_id").GetGuid();

@@ -21,7 +21,7 @@ public sealed class ModeBReviewServiceTests : IDisposable
         _store = new SqliteHubStore($"Data Source={Path.Combine(_directory, "hub.db")};Pooling=False", clock: _clock);
         _operator = _store.IssueOwnerSession(
             _storeId, Guid.NewGuid(), Guid.NewGuid(), "c16-operator-session", T0, T0.AddHours(1));
-        _service = new ModeBReviewService(_store, new HubOperationService(_store, _store, _clock), _clock);
+        _service = new ModeBReviewService(_store, new HubOperationService(_store, _store, _clock, new HubReplicationOptions()), _clock);
     }
 
     [Fact]

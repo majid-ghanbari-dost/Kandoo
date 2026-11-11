@@ -29,8 +29,13 @@ public sealed class HubApiFactory : WebApplicationFactory<Program>
 {
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "kandoo-hub-api", Guid.NewGuid().ToString("N"));
 
-    public HubApiFactory()
+    public HubReplicationOptions ReplicationOptions { get; }
+
+    public HubApiFactory() : this(new HubReplicationOptions()) { }
+
+    public HubApiFactory(HubReplicationOptions replicationOptions)
     {
+        ReplicationOptions = replicationOptions;
         Directory.CreateDirectory(_directory);
         ConnectionString = $"Data Source={Path.Combine(_directory, "hub.db")};Pooling=False";
         TestStore = new SqliteHubStore(ConnectionString);
@@ -76,6 +81,7 @@ public sealed class HubApiFactory : WebApplicationFactory<Program>
             services.AddSingleton<IHubStore>(TestStore);
             services.AddSingleton<IHubAccessStore>(TestStore);
             services.AddSingleton<IHubSmsDeliveryGateway>(TestSms);
+            services.AddSingleton(ReplicationOptions);
             services.AddSingleton<HubOperationService>();
             services.AddSingleton(new HubProductCatalogService(TestStore));
             services.AddSingleton(provider => new ModeBReviewService(
