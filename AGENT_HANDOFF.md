@@ -318,8 +318,9 @@ H-07 is a C# STRETCH task per ORDER 11 (PM, 2026-11-07): "Handoff + tag ledger (
 | C-62 fix (HolooMapper GetValueOrDefault) | — | `49160d6455037b33bfec4fb7860f027007d495aa` | [42500381204](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42500381204) | GREEN — ubuntu + windows — manager-ACCEPTED |
 | **C-63** | `w11-C-63` | `7ce20672fcb0b86ef85f9ea9396f147d71362ee7` | [42470372406](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42470372406) | GREEN — manager-ACCEPTED |
 | **C-65** | `w11-C-65` | `a5848e39028b021b0a0df74ae5fe15d884ee203c` | [42471577629](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42471577629) | GREEN — manager-ACCEPTED |
-| **H-07** | `w11-H-07` | published after tagging | published after CI green | this publication |
-| **C-45b** | — (blocked, no tag) | — | — | MUST per ORDER 11; blocked on v1.1 addendum Draft 2 (2026-11-10, PM/PO review) and Cloud v1.1 advertisement |
+| **U7** | `w11-C-U7` | `5048e5faba767d29b534d28308db354f10083d41` | [43019059507](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/43019059507) | GREEN — manager-ACCEPTED |
+| **H-07** | `w11-H-07` | `af82e0937778ad73eb404d878c85d18614122825` | [42783079111](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42783079111) | GREEN — manager-ACCEPTED |
+| **C-45b** | `w11-C-45b` | `46caca6202ee90a07082e765f7d04a3d723f5dbc` | [43006418493](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/43006418493) | GREEN — manager-ACCEPTED |
 
 ### Incidents 1-4 (sandbox recycles + stash loss)
 
@@ -330,7 +331,7 @@ H-07 is a C# STRETCH task per ORDER 11 (PM, 2026-11-07): "Handoff + tag ledger (
 
 ### Delivery boundaries
 
-- **C-45b:** MUST per ORDER 11 (Hub side of v1.1 per D-C/P-09, activated only when the Cloud advertises v1.1). Blocked on the v1.1 addendum chain (Draft 2 issued 2026-11-10, PM/PO review). NOT a keep-or-close documentation decision.
+- **C-45b:** DONE per ORDER W11-C-45B-ACK (Hub side of v1.1 per D-C/P-09, gated on `PayloadV11Enabled`). v1.1 emission with "1.1" marker, absent values omitted, legacy v1.0 unchanged, invalid v1.1 → 400 VALIDATION_ERROR before state mutation. CI green on Ubuntu + Windows (run 43006418493); tag `w11-C-45b` → `46caca6` force-moved to green head with Manager acceptance (process warning noted: do not tag before green; do not move tags without authorization).
 - `setup.exe` (Inno Setup authoring script `packaging/HubPilot/KandooHub.Installer.iss`): authored only, not built in CI.
 - Hub-side v1.1 field emission (U14): not implemented.
 - No push/merge/tag moves on `main`; all `w11-C-*` tags unmoved.
