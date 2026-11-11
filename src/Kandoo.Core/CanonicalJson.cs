@@ -76,7 +76,86 @@ public static class CanonicalJson
             writer.Flush();
         }
 
-        return Encoding.UTF8.GetString(buffer.WrittenSpan);
+        return ApplyEscapingProfile(Encoding.UTF8.GetString(buffer.WrittenSpan));
+    }
+
+    /// <summary>Applies the addendum section 6 option (b) escaping profile.</summary>
+    /// <remarks>
+    /// Control chars U+0000..U+001F and DEL U+007F are emitted as \u00XX with UPPERCASE
+    /// hex digits; non-ASCII stays raw UTF-8; " -> \" ; \ -> \\ ; / is never escaped;
+    /// output is compact with no whitespace. The serializer already escapes " and \ and
+    /// leaves non-ASCII and / alone, so this pass normalizes control characters whether
+    /// the encoder left them raw or pre-escaped them (e.g. lowercase \u00xx), and is a
+    /// no-op for every other character.
+    /// </remarks>
+    private static string ApplyEscapingProfile(string json)
+    {
+        var output = new StringBuilder(json.Length);
+        for (var i = 0; i < json.Length; i++)
+        {
+            var c = json[i];
+
+            if (c == '\\' && i + 1 < json.Length)
+            {
+                var next = json[i + 1];
+                if (next is '"' or '\\')
+                {
+                    // Already-escaped \" or \\ : copy verbatim.
+                    output.Append('\\');
+                    output.Append(next);
+                    i += 2;
+                    continue;
+                }
+
+                if (next == 'u' && i + 6 <= json.Length && IsHex4(json, i + 2))
+                {
+                    // Already-escaped \uXXXX : normalize hex digits to uppercase.
+                    output.Append('\\');
+                    output.Append('u');
+                    for (var h = i + 2; h < i + 6; h++)
+                    {
+                        output.Append(char.ToUpperInvariant(json[h]));
+                    }
+
+                    i += 6;
+                    continue;
+                }
+
+                // A raw backslash the serializer did not escape (defensive).
+                output.Append('\\');
+                output.Append('\\');
+                i += 1;
+                continue;
+            }
+
+            if (c <= 0x1F || c == 0x7F)
+            {
+                // Control char or DEL: emit as \u00XX with uppercase hex.
+                output.Append('\\');
+                output.Append('u');
+                output.Append(((int)c).ToString("X4"));
+                i += 1;
+                continue;
+            }
+
+            output.Append(c);
+        }
+
+        return output.ToString();
+    }
+
+    private static bool IsHex4(string s, int start)
+    {
+        for (var i = start; i < start + 4; i++)
+        {
+            var ch = s[i];
+            if (!((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F')))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static void WriteElement(Utf8JsonWriter writer, JsonElement element, string? omittedRootProperty, bool sortState, bool isRoot)
