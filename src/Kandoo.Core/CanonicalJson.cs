@@ -1,22 +1,20 @@
-using System.Buffers;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Kandoo.Core;
 
 /// <summary>P-02 canonical JSON and SHA-256, with no file, network, or database dependency.</summary>
+/// <remarks>
+/// The escaping profile follows the contract addendum section 6 option (b): control chars
+/// U+0000..U+001F and DEL U+007F are emitted as \u00XX with UPPERCASE hex digits; non-ASCII
+/// stays raw UTF-8; " -> \" ; \ -> \\ ; / is never escaped; output is compact with no
+/// whitespace. This is the hashing profile for all payloads (entry_hash / batch fingerprints)
+/// and is not gated on PayloadV11Enabled.
+/// </remarks>
 public static class CanonicalJson
 {
-    private static readonly JsonWriterOptions WriterOptions = new()
-    {
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-        Indented = false,
-        SkipValidation = false
-    };
-
     private static readonly IReadOnlyDictionary<string, string> StateCollectionIds =
         new Dictionary<string, string>(StringComparer.Ordinal)
         {
@@ -69,113 +67,67 @@ public static class CanonicalJson
 
     private static string SerializeCore(JsonElement element, string? omittedRootProperty, bool sortState)
     {
-        var buffer = new ArrayBufferWriter<byte>();
-        using (var writer = new Utf8JsonWriter(buffer, WriterOptions))
-        {
-            WriteElement(writer, element, omittedRootProperty, sortState, true);
-            writer.Flush();
-        }
-
-        return ApplyEscapingProfile(Encoding.UTF8.GetString(buffer.WrittenSpan));
+        var sb = new StringBuilder();
+        WriteElement(sb, element, omittedRootProperty, sortState, true);
+        return sb.ToString();
     }
 
-    /// <summary>Applies the addendum section 6 option (b) escaping profile.</summary>
-    /// <remarks>
-    /// Control chars U+0000..U+001F and DEL U+007F are emitted as \u00XX with UPPERCASE
-    /// hex digits; non-ASCII stays raw UTF-8; " -> \" ; \ -> \\ ; / is never escaped;
-    /// output is compact with no whitespace. The serializer already escapes " and \ and
-    /// leaves non-ASCII and / alone, so this pass normalizes control characters whether
-    /// the encoder left them raw or pre-escaped them (e.g. lowercase \u00xx), and is a
-    /// no-op for every other character.
-    /// </remarks>
-    private static string ApplyEscapingProfile(string json)
+    /// <summary>Writes a JSON string value using the addendum section 6 option (b) profile.</summary>
+    private static void WriteEscapedString(StringBuilder sb, string s)
     {
-        var output = new StringBuilder(json.Length);
-        for (var i = 0; i < json.Length; i++)
+        sb.Append('"');
+        foreach (var c in s)
         {
-            var c = json[i];
-
-            if (c == '\\' && i + 1 < json.Length)
+            if (c == '"')
             {
-                var next = json[i + 1];
-                if (next is '"' or '\\')
-                {
-                    // Already-escaped \" or \\ : copy verbatim.
-                    output.Append('\\');
-                    output.Append(next);
-                    i += 2;
-                    continue;
-                }
-
-                if (next == 'u' && i + 6 <= json.Length && IsHex4(json, i + 2))
-                {
-                    // Already-escaped \uXXXX : normalize hex digits to uppercase.
-                    output.Append('\\');
-                    output.Append('u');
-                    for (var h = i + 2; h < i + 6; h++)
-                    {
-                        output.Append(char.ToUpperInvariant(json[h]));
-                    }
-
-                    i += 6;
-                    continue;
-                }
-
-                // A raw backslash the serializer did not escape (defensive).
-                output.Append('\\');
-                output.Append('\\');
-                i += 1;
-                continue;
+                sb.Append("\\\"");
             }
-
-            if (c <= 0x1F || c == 0x7F)
+            else if (c == '\\')
             {
-                // Control char or DEL: emit as \u00XX with uppercase hex.
-                output.Append('\\');
-                output.Append('u');
-                output.Append(((int)c).ToString("X4"));
-                i += 1;
-                continue;
+                sb.Append("\\\\");
             }
-
-            output.Append(c);
-        }
-
-        return output.ToString();
-    }
-
-    private static bool IsHex4(string s, int start)
-    {
-        for (var i = start; i < start + 4; i++)
-        {
-            var ch = s[i];
-            if (!((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F')))
+            else if (c <= 0x1F || c == 0x7F)
             {
-                return false;
+                // Control char or DEL: emit as \u00XX with uppercase hex digits.
+                sb.Append('\\');
+                sb.Append('u');
+                sb.Append(((int)c).ToString("X4"));
+            }
+            else
+            {
+                // Non-ASCII stays raw UTF-8; '/' stays literal.
+                sb.Append(c);
             }
         }
 
-        return true;
+        sb.Append('"');
     }
 
-    private static void WriteElement(Utf8JsonWriter writer, JsonElement element, string? omittedRootProperty, bool sortState, bool isRoot)
+    private static void WriteElement(StringBuilder sb, JsonElement element, string? omittedRootProperty, bool sortState, bool isRoot)
     {
         switch (element.ValueKind)
         {
             case JsonValueKind.Object:
-                WriteObject(writer, element, omittedRootProperty, sortState, isRoot);
+                WriteObject(sb, element, omittedRootProperty, sortState, isRoot);
                 break;
             case JsonValueKind.Array:
-                writer.WriteStartArray();
+                sb.Append('[');
+                var first = true;
                 foreach (var child in element.EnumerateArray())
                 {
-                    WriteElement(writer, child, null, sortState, false);
+                    if (!first)
+                    {
+                        sb.Append(',');
+                    }
+
+                    first = false;
+                    WriteElement(sb, child, null, sortState, false);
                 }
 
-                writer.WriteEndArray();
+                sb.Append(']');
                 break;
             case JsonValueKind.String:
-                writer.WriteStringValue(element.GetString());
+                WriteEscapedString(sb, element.GetString() ?? string.Empty);
                 break;
             case JsonValueKind.Number:
                 if (!element.TryGetInt64(out var number))
@@ -183,23 +135,23 @@ public static class CanonicalJson
                     throw new InvalidOperationException("P-02 hash-bearing JSON permits signed integers only.");
                 }
 
-                writer.WriteNumberValue(number);
+                sb.Append(number);
                 break;
             case JsonValueKind.True:
-                writer.WriteBooleanValue(true);
+                sb.Append("true");
                 break;
             case JsonValueKind.False:
-                writer.WriteBooleanValue(false);
+                sb.Append("false");
                 break;
             case JsonValueKind.Null:
-                writer.WriteNullValue();
+                sb.Append("null");
                 break;
             default:
                 throw new InvalidOperationException($"Unsupported JSON value kind: {element.ValueKind}.");
         }
     }
 
-    private static void WriteObject(Utf8JsonWriter writer, JsonElement element, string? omittedRootProperty, bool sortState, bool isRoot)
+    private static void WriteObject(StringBuilder sb, JsonElement element, string? omittedRootProperty, bool sortState, bool isRoot)
     {
         var properties = element.EnumerateObject().ToList();
         var names = new HashSet<string>(StringComparer.Ordinal);
@@ -212,7 +164,8 @@ public static class CanonicalJson
         }
 
         properties.Sort((left, right) => CompareCodePoints(left.Name, right.Name));
-        writer.WriteStartObject();
+        sb.Append('{');
+        var first = true;
         foreach (var property in properties)
         {
             if (isRoot && omittedRootProperty is not null && property.Name == omittedRootProperty)
@@ -220,54 +173,77 @@ public static class CanonicalJson
                 continue;
             }
 
-            writer.WritePropertyName(property.Name);
+            if (!first)
+            {
+                sb.Append(',');
+            }
+
+            first = false;
+
+            WriteEscapedString(sb, property.Name);
+            sb.Append(':');
+
             if (isRoot && sortState && property.Value.ValueKind == JsonValueKind.Array)
             {
                 if (property.Name == "operations")
                 {
-                    WriteOperationArray(writer, property.Value, sortState);
+                    WriteOperationArray(sb, property.Value, sortState);
                     continue;
                 }
 
                 if (StateCollectionIds.TryGetValue(property.Name, out var idField))
                 {
-                    WriteEntityArray(writer, property.Value, idField, sortState);
+                    WriteEntityArray(sb, property.Value, idField, sortState);
                     continue;
                 }
             }
 
-            WriteElement(writer, property.Value, null, sortState, false);
+            WriteElement(sb, property.Value, null, sortState, false);
         }
 
-        writer.WriteEndObject();
+        sb.Append('}');
     }
 
-    private static void WriteEntityArray(Utf8JsonWriter writer, JsonElement array, string idField, bool sortState)
+    private static void WriteEntityArray(StringBuilder sb, JsonElement array, string idField, bool sortState)
     {
         var entities = array.EnumerateArray().ToArray();
         Array.Sort(entities, (left, right) => CompareCodePoints(
             left.GetProperty(idField).GetString()!,
             right.GetProperty(idField).GetString()!));
-        writer.WriteStartArray();
+        sb.Append('[');
+        var first = true;
         foreach (var entity in entities)
         {
-            WriteElement(writer, entity, null, sortState, false);
+            if (!first)
+            {
+                sb.Append(',');
+            }
+
+            first = false;
+            WriteElement(sb, entity, null, sortState, false);
         }
 
-        writer.WriteEndArray();
+        sb.Append(']');
     }
 
-    private static void WriteOperationArray(Utf8JsonWriter writer, JsonElement array, bool sortState)
+    private static void WriteOperationArray(StringBuilder sb, JsonElement array, bool sortState)
     {
         var operations = array.EnumerateArray().ToArray();
         Array.Sort(operations, (left, right) => OperationSequence(left).CompareTo(OperationSequence(right)));
-        writer.WriteStartArray();
+        sb.Append('[');
+        var first = true;
         foreach (var operation in operations)
         {
-            WriteElement(writer, operation, null, sortState, false);
+            if (!first)
+            {
+                sb.Append(',');
+            }
+
+            first = false;
+            WriteElement(sb, operation, null, sortState, false);
         }
 
-        writer.WriteEndArray();
+        sb.Append(']');
     }
 
     private static long OperationSequence(JsonElement operation)
