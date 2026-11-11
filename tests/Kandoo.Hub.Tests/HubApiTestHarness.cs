@@ -33,7 +33,7 @@ public sealed class HubApiFactory : WebApplicationFactory<Program>
 
     public HubApiFactory() : this(new HubReplicationOptions()) { }
 
-    public HubApiFactory(HubReplicationOptions replicationOptions)
+    internal HubApiFactory(HubReplicationOptions replicationOptions)
     {
         ReplicationOptions = replicationOptions;
         Directory.CreateDirectory(_directory);

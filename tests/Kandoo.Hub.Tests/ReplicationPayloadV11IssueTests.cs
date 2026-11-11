@@ -67,17 +67,20 @@ public sealed class ReplicationPayloadV11IssueTests : IDisposable
     [Fact]
     public async Task C45b_IssueOmitsAbsentV11ValuesButStampsMarker()
     {
+        // No per-store currency configured, so currency_unit must be absent too.
+        using var absentFactory = new HubApiFactory(new HubReplicationOptions { PayloadV11Enabled = true });
+        using var absentApi = new HubApiClient(absentFactory);
         var storeId = Guid.Parse(Store);
-        var owner = await _api.Owner(storeId, Guid.NewGuid(), Guid.NewGuid());
-        var paired = await _api.Pair(owner, storeId, Guid.NewGuid());
-        var draft = await _api.Post($"/v1/stores/{storeId:D}/invoices/drafts", new
+        var owner = await absentApi.Owner(storeId, Guid.NewGuid(), Guid.NewGuid());
+        var paired = await absentApi.Pair(owner, storeId, Guid.NewGuid());
+        var draft = await absentApi.Post($"/v1/stores/{storeId:D}/invoices/drafts", new
         {
             operation_id = "c45b-absent-draft",
             service_type = "SALE",
             customer_phone = "+989120000101"
         }, paired.Session.Token);
         var invoiceId = draft.Body.GetProperty("response").GetProperty("invoice").GetProperty("invoice_id").GetGuid();
-        await _api.Post($"/v1/stores/{storeId:D}/invoices/{invoiceId:D}/items", new
+        await absentApi.Post($"/v1/stores/{storeId:D}/invoices/{invoiceId:D}/items", new
         {
             operation_id = "c45b-absent-item",
             service_type = "SALE",
@@ -86,7 +89,7 @@ public sealed class ReplicationPayloadV11IssueTests : IDisposable
             unit_price_rials = 2_000
         }, paired.Session.Token);
 
-        var issued = await _api.Post($"/v1/stores/{storeId:D}/invoices/{invoiceId:D}/issue", new
+        var issued = await absentApi.Post($"/v1/stores/{storeId:D}/invoices/{invoiceId:D}/issue", new
         {
             operation_id = "c45b-absent-issue",
             service_type = "SALE"
@@ -169,10 +172,10 @@ public sealed class ReplicationPayloadV11IssueTests : IDisposable
         {
             operation_id = "c45b-bad-issue",
             service_type = "SALE",
-            payments = "not-an-array"
+            customer_name = ""
         }, paired.Session.Token);
         Assert.Equal(HttpStatusCode.BadRequest, issued.StatusCode);
-        Assert.Equal("VALIDATION_ERROR", issued.Body.GetProperty("status").GetString());
+        Assert.Equal("VALIDATION_ERROR", issued.Body.GetProperty("code").GetString());
     }
 
     public void Dispose()
