@@ -122,7 +122,8 @@ public sealed class HubProductCatalogService
         string? query = null,
         bool includeRetired = false,
         int limit = 50,
-        string? cursor = null)
+        string? cursor = null,
+        string? groupId = null)
     {
         if (storeId == Guid.Empty || limit is < 1 or > 100 || (query?.Length ?? 0) > 128 || (cursor?.Length ?? 0) > 512)
         {
@@ -130,10 +131,12 @@ public sealed class HubProductCatalogService
         }
 
         var normalizedQuery = string.IsNullOrWhiteSpace(query) ? string.Empty : query.Trim();
-        var offset = DecodeCursor(storeId, normalizedQuery, includeRetired, cursor);
+        var normalizedGroup = string.IsNullOrWhiteSpace(groupId) ? string.Empty : groupId.Trim();
+        var offset = DecodeCursor(storeId, normalizedQuery, includeRetired, cursor, normalizedGroup);
         var inventory = _store.LoadInventoryLedger();
         var views = _store.ListProducts(storeId)
             .Where(product => includeRetired || product.IsActive)
+            .Where(product => normalizedGroup.Length == 0 || product.GroupId == normalizedGroup)
             .OrderBy(product => product.NormalizedName, StringComparer.Ordinal)
             .ThenBy(product => product.ProductId, StringComparer.Ordinal)
             .Select(product => new HubProductView(
@@ -145,7 +148,7 @@ public sealed class HubProductCatalogService
         var items = views.Skip(offset).Take(limit).ToArray();
         var nextOffset = offset + items.Length;
         var nextCursor = nextOffset < views.Length
-            ? EncodeCursor(storeId, normalizedQuery, includeRetired, nextOffset)
+            ? EncodeCursor(storeId, normalizedQuery, includeRetired, nextOffset, normalizedGroup)
             : null;
         return new HubProductPage(items, views.Length, nextCursor);
     }
@@ -159,7 +162,7 @@ public sealed class HubProductCatalogService
         }
 
         var normalized = ProductNameNormalizer.Normalize(name);
-        var offset = DecodeCursor(storeId, normalized, false, cursor, "CASCADE");
+        var offset = DecodeCursor(storeId, normalized, false, cursor, string.Empty, "CASCADE");
         var inventory = _store.LoadInventoryLedger();
         var views = _store.ListProducts(storeId)
             .Where(product => product.IsActive && product.NormalizedName == normalized)
@@ -172,7 +175,7 @@ public sealed class HubProductCatalogService
         var items = views.Skip(offset).Take(limit).ToArray();
         var nextOffset = offset + items.Length;
         var nextCursor = nextOffset < views.Length
-            ? EncodeCursor(storeId, normalized, false, nextOffset, "CASCADE")
+            ? EncodeCursor(storeId, normalized, false, nextOffset, string.Empty, "CASCADE")
             : null;
         return new HubProductPage(items, views.Length, nextCursor);
     }
@@ -182,6 +185,68 @@ public sealed class HubProductCatalogService
     public long GetStockMillis(Guid storeId, string productId) => _store.LoadInventoryLedger().StockMillis(storeId, productId);
     public IReadOnlyList<ProductOperatorField> GetOperatorFields(Guid storeId, string productId) =>
         _store.GetProductOperatorFields(storeId, productId);
+
+    public string CreateProductGroup(
+        Guid storeId, Guid deviceId, string operationId, string groupId, string? parentGroupId, string name)
+    {
+        if (string.IsNullOrWhiteSpace(groupId) || groupId.Length > 128)
+        {
+            throw new ArgumentException("A group ID from 1 through 128 characters is required.", nameof(groupId));
+        }
+
+        if (string.IsNullOrWhiteSpace(name) || name.Length > 256)
+        {
+            throw new ArgumentException("A group name from 1 through 256 characters is required.", nameof(name));
+        }
+
+        var payload = HubJson.Element(new
+        {
+            group_id = groupId,
+            parent_group_id = parentGroupId,
+            name = name.Trim()
+        });
+        var request = new OperationRequest(storeId, deviceId, operationId, "product.group.create", null, payload);
+        var result = _store.Execute(request, transaction =>
+        {
+            var concrete = (SqliteHubTransaction)transaction;
+            return concrete.CreateProductGroup(storeId, groupId, parentGroupId, name.Trim(), clockNow());
+        });
+        if (result.Status == OperationExecutionStatus.OperationIdConflict)
+        {
+            throw new InvalidOperationException("OPERATION_ID_CONFLICT");
+        }
+
+        return result.Response!;
+    }
+
+    public IReadOnlyList<ProductGroup> GetProductGroups(Guid storeId) => _store.GetProductGroups(storeId);
+
+    public ProductGroup? GetProductGroup(Guid storeId, string groupId) => _store.GetProductGroup(storeId, groupId);
+
+    public string AssignProductToGroup(
+        Guid storeId, Guid deviceId, string operationId, string productId, string? groupId)
+    {
+        if (string.IsNullOrWhiteSpace(productId))
+        {
+            throw new ArgumentException("A product ID is required.", nameof(productId));
+        }
+
+        var payload = HubJson.Element(new { product_id = productId, group_id = groupId });
+        var request = new OperationRequest(storeId, deviceId, operationId, "product.group.assign", null, payload);
+        var result = _store.Execute(request, transaction =>
+        {
+            var concrete = (SqliteHubTransaction)transaction;
+            return concrete.AssignProductToGroup(storeId, productId, groupId);
+        });
+        if (result.Status == OperationExecutionStatus.OperationIdConflict)
+        {
+            throw new InvalidOperationException("OPERATION_ID_CONFLICT");
+        }
+
+        return result.Response!;
+    }
+
+    private static DateTimeOffset clockNow() => DateTimeOffset.UtcNow;
 
     private static bool Matches(HubProductView view, string query)
     {
@@ -207,14 +272,14 @@ public sealed class HubProductCatalogService
             ProductNameNormalizer.Normalize(value).Contains(normalized, StringComparison.Ordinal));
     }
 
-    private static string EncodeCursor(Guid storeId, string query, bool includeRetired, int offset, string kind = "SEARCH")
+    private static string EncodeCursor(Guid storeId, string query, bool includeRetired, int offset, string groupId, string kind = "SEARCH")
     {
-        var state = new CursorState(storeId, query, includeRetired, offset, CursorSignature(storeId, query, includeRetired, offset, kind));
+        var state = new CursorState(storeId, query, includeRetired, offset, groupId, CursorSignature(storeId, query, includeRetired, offset, groupId, kind));
         var bytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(state, HubJson.Options));
         return Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
     }
 
-    private static int DecodeCursor(Guid storeId, string query, bool includeRetired, string? cursor, string kind = "SEARCH")
+    private static int DecodeCursor(Guid storeId, string query, bool includeRetired, string? cursor, string groupId, string kind = "SEARCH")
     {
         if (string.IsNullOrWhiteSpace(cursor))
         {
@@ -228,7 +293,8 @@ public sealed class HubProductCatalogService
             var state = JsonSerializer.Deserialize<CursorState>(Encoding.UTF8.GetString(Convert.FromBase64String(base64)), HubJson.Options)
                 ?? throw new ArgumentException("CURSOR_INVALID");
             if (state.StoreId != storeId || state.Query != query || state.IncludeRetired != includeRetired ||
-                state.Offset < 0 || state.Signature != CursorSignature(storeId, query, includeRetired, state.Offset, kind))
+                !string.Equals(state.GroupId, groupId, StringComparison.Ordinal) ||
+                state.Offset < 0 || state.Signature != CursorSignature(storeId, query, includeRetired, state.Offset, groupId, kind))
             {
                 throw new ArgumentException("CURSOR_INVALID");
             }
@@ -241,15 +307,16 @@ public sealed class HubProductCatalogService
         }
     }
 
-    private static string CursorSignature(Guid storeId, string query, bool includeRetired, int offset, string kind) =>
+    private static string CursorSignature(Guid storeId, string query, bool includeRetired, int offset, string groupId, string kind) =>
         CanonicalJson.Sha256Hex(HubJson.Element(new
         {
             store_id = storeId,
             query,
             include_retired = includeRetired,
             offset,
+            group_id = groupId,
             kind
         }));
 
-    private sealed record CursorState(Guid StoreId, string Query, bool IncludeRetired, int Offset, string Signature);
+    private sealed record CursorState(Guid StoreId, string Query, bool IncludeRetired, int Offset, string GroupId, string Signature);
 }

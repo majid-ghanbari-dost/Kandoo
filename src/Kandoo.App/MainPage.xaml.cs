@@ -205,6 +205,19 @@ public partial class MainPage : ContentPage
         }
     }
 
+    private async void OnProductsClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            var settings = ReadHubSettings();
+            await Navigation.PushAsync(new ProductsPage(settings));
+        }
+        catch (Exception exception) when (IsExpected(exception))
+        {
+            StatusLabel.Text = exception.Message;
+        }
+    }
+
     private async Task LoadDevicesAsync()
     {
         LoadDevicesButton.IsEnabled = false;

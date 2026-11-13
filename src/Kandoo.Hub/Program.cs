@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Text.Json;
 using Kandoo.Capture;
 using Kandoo.Core;
@@ -34,6 +35,7 @@ builder.Services.AddSingleton<IHubAccessStore>(hubStore);
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<HubStatsService>();
 builder.Services.AddSingleton<IClock, SystemHubClock>();
+builder.Services.AddSingleton<HubReplicationOptions>();
 builder.Services.AddSingleton<HubOperationService>();
 builder.Services.AddSingleton(new HubProductCatalogService(hubStore));
 builder.Services.AddSingleton<IHubInvoicePrintAdapter, DisabledHubInvoicePrintAdapter>();
@@ -272,7 +274,8 @@ app.MapPost("/v1/stores/{store_id}/products", (
                 request.Specification,
                 request.ProductTagNumber,
                 request.OperatorFields,
-                request.PurchasePriceRials).Validate();
+                request.PurchasePriceRials,
+                request.GroupId).Validate();
         result = catalog.Register(store_id, auth.Session!.DeviceId, request.OperationId, input);
     }
     catch (ArgumentException)
@@ -306,6 +309,161 @@ app.MapPost("/v1/stores/{store_id}/products", (
     }, HubJson.Options, statusCode: httpStatus);
 });
 
+app.MapPost("/v1/stores/{store_id}/product-groups", (
+    Guid store_id,
+    HubProductGroupRequest? request,
+    HttpContext context,
+    IHubAccessStore access,
+    IClock clock,
+    HubProductCatalogService catalog) =>
+{
+    var auth = Authenticate(context, store_id, access, clock);
+    if (!auth.IsAuthenticated)
+    {
+        return AuthError(auth.Code);
+    }
+
+    if (request is null || string.IsNullOrWhiteSpace(request.OperationId) ||
+        string.IsNullOrWhiteSpace(request.GroupId) || string.IsNullOrWhiteSpace(request.Name))
+    {
+        return HubHttp.Error(400, "VALIDATION_ERROR", "operation_id, group_id, and name are required.");
+    }
+
+    string result;
+    try
+    {
+        result = catalog.CreateProductGroup(
+            store_id, auth.Session!.DeviceId, request.OperationId, request.GroupId,
+            request.ParentGroupId, request.Name);
+    }
+    catch (ArgumentException)
+    {
+        return HubHttp.Error(400, "VALIDATION_ERROR", "Invalid group_id, parent_group_id, or name.");
+    }
+    catch (InvalidOperationException exception) when (exception.Message == "OPERATION_ID_CONFLICT")
+    {
+        return HubHttp.Error(409, "OPERATION_ID_CONFLICT", "The operation ID was already used for different content.");
+    }
+
+    return result switch
+    {
+        "CREATED" => Results.Json(new
+        {
+            status = "CREATED",
+            group_id = request.GroupId,
+            parent_group_id = request.ParentGroupId,
+            name = request.Name
+        }, HubJson.Options, statusCode: 200),
+        "DUPLICATE_GROUP_ID" => HubHttp.Error(409, "DUPLICATE_GROUP_ID", "The group ID already exists in this store."),
+        "UNKNOWN_PARENT_GROUP" => HubHttp.Error(409, "UNKNOWN_PARENT_GROUP", "The parent group does not exist in this store."),
+        _ => HubHttp.Error(500, "REVIEW", "The group could not be created.")
+    };
+});
+
+app.MapGet("/v1/stores/{store_id}/product-groups", (
+    Guid store_id,
+    HttpContext context,
+    IHubAccessStore access,
+    IClock clock,
+    HubProductCatalogService catalog) =>
+{
+    var auth = Authenticate(context, store_id, access, clock);
+    if (!auth.IsAuthenticated)
+    {
+        return AuthError(auth.Code);
+    }
+
+    return Results.Json(new
+    {
+        status = "OK",
+        groups = catalog.GetProductGroups(store_id).Select(group => new
+        {
+            group_id = group.GroupId,
+            parent_group_id = group.ParentGroupId,
+            name = group.Name,
+            is_active = group.IsActive,
+            created_at = group.CreatedAt
+        }).ToArray()
+    }, HubJson.Options);
+});
+
+app.MapGet("/v1/stores/{store_id}/product-groups/{group_id}", (
+    Guid store_id,
+    string group_id,
+    HttpContext context,
+    IHubAccessStore access,
+    IClock clock,
+    HubProductCatalogService catalog) =>
+{
+    var auth = Authenticate(context, store_id, access, clock);
+    if (!auth.IsAuthenticated)
+    {
+        return AuthError(auth.Code);
+    }
+
+    var group = catalog.GetProductGroup(store_id, group_id);
+    return group is null
+        ? HubHttp.Error(404, "UNKNOWN_GROUP", "The product group does not exist in this store.")
+        : Results.Json(new
+        {
+            status = "OK",
+            group_id = group.GroupId,
+            parent_group_id = group.ParentGroupId,
+            name = group.Name,
+            is_active = group.IsActive,
+            created_at = group.CreatedAt
+        }, HubJson.Options);
+});
+
+app.MapPost("/v1/stores/{store_id}/products/{product_id}/group", (
+    Guid store_id,
+    string product_id,
+    HubProductGroupAssignRequest? request,
+    HttpContext context,
+    IHubAccessStore access,
+    IClock clock,
+    HubProductCatalogService catalog) =>
+{
+    var auth = Authenticate(context, store_id, access, clock);
+    if (!auth.IsAuthenticated)
+    {
+        return AuthError(auth.Code);
+    }
+
+    if (request is null || string.IsNullOrWhiteSpace(request.OperationId))
+    {
+        return HubHttp.Error(400, "VALIDATION_ERROR", "operation_id is required.");
+    }
+
+    string result;
+    try
+    {
+        result = catalog.AssignProductToGroup(store_id, auth.Session!.DeviceId, request.OperationId,
+            product_id, request.GroupId);
+    }
+    catch (ArgumentException)
+    {
+        return HubHttp.Error(400, "VALIDATION_ERROR", "Invalid product or group.");
+    }
+    catch (InvalidOperationException exception) when (exception.Message == "OPERATION_ID_CONFLICT")
+    {
+        return HubHttp.Error(409, "OPERATION_ID_CONFLICT", "The operation ID was already used for different content.");
+    }
+
+    return result switch
+    {
+        "ASSIGNED" or "UNASSIGNED" => Results.Json(new
+        {
+            status = result,
+            product_id = product_id,
+            group_id = request.GroupId
+        }, HubJson.Options, statusCode: 200),
+        "UNKNOWN_PRODUCT" => HubHttp.Error(404, "UNKNOWN_PRODUCT", "The product does not exist in this store."),
+        "UNKNOWN_GROUP" => HubHttp.Error(404, "UNKNOWN_GROUP", "The group does not exist in this store."),
+        _ => HubHttp.Error(500, "REVIEW", "The product group could not be changed.")
+    };
+});
+
 app.MapPost("/v1/stores/{store_id}/devices/{device_id}/sessions", (
     Guid store_id,
     Guid device_id,
@@ -330,6 +488,94 @@ app.MapPost("/v1/stores/{store_id}/devices/{device_id}/sessions", (
             operation_id_namespace_unchanged = true
         }, HubJson.Options)
         : HubHttp.Error(result.Code == "DEVICE_REVOKED" ? 403 : 401, result.Code, "The device session cannot be resumed.");
+});
+
+app.MapPost("/v1/stores/{store_id}/devices/{device_id}/server-key", (
+    Guid store_id,
+    Guid device_id,
+    HttpContext context,
+    IHubAccessStore access,
+    IClock clock) =>
+{
+    var auth = Authenticate(context, store_id, access, clock);
+    if (!auth.IsAuthenticated)
+    {
+        return AuthError(auth.Code);
+    }
+
+    if (!IsOwner(auth))
+    {
+        return HubHttp.Error(403, "OWNER_REQUIRED", "An active owner session is required.");
+    }
+
+    var device = access.GetDevices(store_id).FirstOrDefault(d => d.DeviceId == device_id);
+    if (device is null)
+    {
+        return HubHttp.Error(404, "DEVICE_NOT_PAIRED", "The device is not registered in this store.");
+    }
+
+    if (device.PairingStatus == HubPairingStatus.Revoked)
+    {
+        return HubHttp.Error(409, "DEVICE_REVOKED", "A revoked device cannot receive a server key.");
+    }
+
+    var issued = access.GenerateDeviceServerKey(store_id, device_id, auth.Session!.OwnerUserId!.Value, clock.UtcNow);
+    if (issued is null)
+    {
+        return HubHttp.Error(404, "DEVICE_NOT_PAIRED", "The device is not registered in this store.");
+    }
+
+    return Results.Json(new
+    {
+        status = "DEVICE_SERVER_KEY_ISSUED",
+        device_id = device_id,
+        device_server_key = issued,
+        issued_at = clock.UtcNow
+    }, HubJson.Options);
+});
+
+app.MapPost("/v1/stores/{store_id}/devices/{device_id}/verify-server-key", (
+    Guid store_id,
+    Guid device_id,
+    VerifyDeviceServerKeyRequest? request,
+    HttpContext context,
+    IHubAccessStore access,
+    IClock clock) =>
+{
+    var auth = Authenticate(context, store_id, access, clock);
+    if (!auth.IsAuthenticated)
+    {
+        return AuthError(auth.Code);
+    }
+
+    if (!IsOwner(auth) && auth.Session!.DeviceId != device_id)
+    {
+        return HubHttp.Error(403, "STORE_ACCESS_DENIED", "Only the device owner or the device itself can verify the server key.");
+    }
+
+    var device = access.GetDevices(store_id).FirstOrDefault(d => d.DeviceId == device_id);
+    if (device is null)
+    {
+        return HubHttp.Error(404, "DEVICE_NOT_PAIRED", "The device is not registered in this store.");
+    }
+
+    if (device.PairingStatus == HubPairingStatus.Revoked)
+    {
+        return HubHttp.Error(403, "DEVICE_REVOKED", "A revoked device cannot verify a server key.");
+    }
+
+    if (request is null || string.IsNullOrWhiteSpace(request.DeviceServerKey))
+    {
+        return HubHttp.Error(400, "DEVICE_SERVER_KEY_INVALID", "A device server key is required.");
+    }
+
+    var result = access.VerifyDeviceServerKey(store_id, device_id, request.DeviceServerKey, clock.UtcNow);
+    return result.Code switch
+    {
+        "DEVICE_SERVER_KEY_VERIFIED" => Results.Json(new { status = result.Code, verified = true }, HubJson.Options),
+        "DEVICE_REVOKED" => HubHttp.Error(403, result.Code, "The device is revoked."),
+        _ => HubHttp.Error(400, result.Code, "The device server key is invalid.")
+    };
 });
 
 app.MapGet("/v1/stores/{store_id}/devices", (

@@ -527,6 +527,123 @@ public sealed partial class SqliteHubStore
         }
     }
 
+    public string? GenerateDeviceServerKey(Guid storeId, Guid deviceId, Guid ownerUserId, DateTimeOffset now)
+    {
+        lock (_gate)
+        {
+            ThrowIfDisposed();
+            using var transaction = _connection.BeginTransaction();
+            try
+            {
+                HubPairingStatus status;
+                using (var command = AccessCommand(transaction, """
+                    SELECT pairing_status FROM devices WHERE store_id = $store AND device_id = $device;
+                    """))
+                {
+                    AddAccess(command, "$store", AccessUuid(storeId));
+                    AddAccess(command, "$device", AccessUuid(deviceId));
+                    using var reader = command.ExecuteReader();
+                    if (!reader.Read())
+                    {
+                        transaction.Rollback();
+                        return null;
+                    }
+
+                    status = (HubPairingStatus)reader.GetInt32(0);
+                }
+
+                if (status == HubPairingStatus.Revoked)
+                {
+                    transaction.Rollback();
+                    return null;
+                }
+
+                var serverKey = HubToken.NewToken(32);
+                var serverKeyHash = HubToken.Hash(serverKey);
+                using (var command = AccessCommand(transaction, """
+                    UPDATE devices
+                    SET device_server_key_hash = $hash, server_key_issued_at = $issued
+                    WHERE store_id = $store AND device_id = $device;
+                    """))
+                {
+                    AddAccess(command, "$hash", serverKeyHash);
+                    AddAccess(command, "$issued", AccessDate(now));
+                    AddAccess(command, "$store", AccessUuid(storeId));
+                    AddAccess(command, "$device", AccessUuid(deviceId));
+                    if (command.ExecuteNonQuery() != 1)
+                    {
+                        transaction.Rollback();
+                        return null;
+                    }
+                }
+
+                InsertAudit(transaction, storeId, "DEVICE_SERVER_KEY_ISSUED", ownerUserId, deviceId, now);
+                transaction.Commit();
+                return serverKey;
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+    }
+
+    public DeviceServerKeyVerificationResult VerifyDeviceServerKey(
+        Guid storeId, Guid deviceId, string deviceServerKey, DateTimeOffset now)
+    {
+        lock (_gate)
+        {
+            ThrowIfDisposed();
+            using var transaction = _connection.BeginTransaction();
+            try
+            {
+                string? storedHash;
+                HubPairingStatus status;
+                using (var command = AccessCommand(transaction, """
+                    SELECT device_server_key_hash, pairing_status FROM devices
+                    WHERE store_id = $store AND device_id = $device;
+                    """))
+                {
+                    AddAccess(command, "$store", AccessUuid(storeId));
+                    AddAccess(command, "$device", AccessUuid(deviceId));
+                    using var reader = command.ExecuteReader();
+                    if (!reader.Read())
+                    {
+                        transaction.Rollback();
+                        return new DeviceServerKeyVerificationResult("DEVICE_NOT_PAIRED", false);
+                    }
+
+                    storedHash = reader.IsDBNull(0) ? null : reader.GetString(0);
+                    status = (HubPairingStatus)reader.GetInt32(1);
+                }
+
+                if (status == HubPairingStatus.Revoked)
+                {
+                    transaction.Rollback();
+                    return new DeviceServerKeyVerificationResult("DEVICE_REVOKED", false);
+                }
+
+                if (string.IsNullOrWhiteSpace(storedHash))
+                {
+                    transaction.Rollback();
+                    return new DeviceServerKeyVerificationResult("DEVICE_SERVER_KEY_INVALID", false);
+                }
+
+                var computedHash = HubToken.Hash(deviceServerKey);
+                var verified = HubToken.FixedTimeEquals(storedHash, computedHash);
+                transaction.Commit();
+                return new DeviceServerKeyVerificationResult(
+                    verified ? "DEVICE_SERVER_KEY_VERIFIED" : "DEVICE_SERVER_KEY_INVALID", verified);
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+    }
+
     public bool RevokeDevice(Guid storeId, Guid deviceId, Guid ownerUserId, DateTimeOffset now)
     {
         lock (_gate)
@@ -653,6 +770,8 @@ public sealed partial class SqliteHubStore
             """;
         command.ExecuteNonQuery();
         EnsureColumn("devices", "operator_level", "TEXT NULL");
+        EnsureColumn("devices", "device_server_key_hash", "TEXT NULL");
+        EnsureColumn("devices", "server_key_issued_at", "TEXT NULL");
         EnsureColumn("pairing_grants", "operator_level", "TEXT NULL");
     }
 

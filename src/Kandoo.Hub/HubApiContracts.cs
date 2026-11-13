@@ -54,9 +54,21 @@ public sealed record HubProductRegistrationRequest(
     string? Type = null,
     long? ProductTagNumber = null,
     IReadOnlyList<ProductOperatorField>? OperatorFields = null,
-    long? PurchasePriceRials = null);
+    long? PurchasePriceRials = null,
+    string? GroupId = null);
 
 public sealed record SessionResumeRequest(string? DeviceCredential);
+public sealed record VerifyDeviceServerKeyRequest(string? DeviceServerKey);
+
+public sealed record HubProductGroupRequest(
+    string? OperationId,
+    string? GroupId,
+    string? ParentGroupId,
+    string? Name);
+
+public sealed record HubProductGroupAssignRequest(
+    string? OperationId,
+    string? GroupId);
 
 public sealed record HubDeviceLevelRequest(string? OperatorLevel);
 

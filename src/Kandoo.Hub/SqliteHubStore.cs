@@ -733,6 +733,7 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore, IHubRep
         EnsureColumn("products", "brand", "TEXT NULL");
         EnsureColumn("products", "barcode", "TEXT NULL");
         EnsureColumn("products", "purchase_price_rials", "INTEGER NULL");
+        EnsureColumn("products", "group_id", "TEXT NULL");
         EnsureColumn("store_counters", "product_tag_high_watermark", "INTEGER NOT NULL DEFAULT 0");
         using var tagCommand = _connection.CreateCommand();
         tagCommand.CommandText = """
@@ -752,6 +753,20 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore, IHubRep
             BEFORE UPDATE ON store_counters
             WHEN NEW.product_tag_high_watermark < OLD.product_tag_high_watermark
             BEGIN SELECT RAISE(ABORT, 'PRODUCT_TAG_REGRESSION'); END;
+            CREATE TABLE IF NOT EXISTS product_groups (
+                store_id TEXT NOT NULL,
+                group_id TEXT NOT NULL,
+                parent_group_id TEXT NULL,
+                name TEXT NOT NULL,
+                is_active INTEGER NOT NULL,
+                created_at TEXT NOT NULL,
+                PRIMARY KEY (store_id, group_id),
+                FOREIGN KEY (store_id, parent_group_id) REFERENCES product_groups(store_id, group_id)
+            );
+            CREATE INDEX IF NOT EXISTS ux_product_groups_store_parent
+                ON product_groups(store_id, parent_group_id);
+            CREATE INDEX IF NOT EXISTS ux_product_groups_store_active_name
+                ON product_groups(store_id, name, is_active);
             """;
         tagCommand.ExecuteNonQuery();
     }

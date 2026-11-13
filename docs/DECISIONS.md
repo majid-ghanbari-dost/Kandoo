@@ -317,3 +317,28 @@ The following decisions require explicit action from the **Product Owner** (and 
 | **11. Cloud Credential and Replay Parameters (`P-04`)** | `D7` + `D8` + `SEC-1` + `ASM-19`/`ASM-21` | Opaque scoped tokens stored as hashes; rotation and activation exact-replay grace is 60 seconds; no JWT or private-key transport is prescribed. | Before production pairing, restore, or token rollout | Approve token TTLs, opaque-token hash/storage profile, renewal policy, revocation propagation, and replay-cache durability. |
 | **12. Production HTTP Retention, Cursor, and Rate-Limit Tuning (`P-04`)** | `D10` + `ASM-20` | Administrative idempotency is at least 24 hours with conflict-safe tombstones; domain dedup is permanent; cursors are opaque and bound; conservative documented limits apply. | Before multi-replica or production deployment | Approve retention/compaction, cursor encoding/signing and expiry, distributed rate-limit storage, and measured endpoint/batch limits. |
 | **13. Cloud Implementation and Cryptographic Profiles (`P-04`)** | `D2` + `D8` + `SEC-1` + `ASM-18`/`ASM-21` | OpenAPI YAML is source; Redocly 2.69.0 validates it; no generator, canonical-JSON library, key-envelope algorithm, or approval-signature algorithm is selected. | Before Cloud implementation and security rollout | Select ASP.NET OpenAPI/validation/CI tooling, a .NET canonical-JSON implementation proven against all P-02 vectors, SEC-1 envelope algorithms, paired-approval signature profile, and OTP implementation. |
+
+---
+
+## Window-11 (W11) C# implementation status, 2026-11-10
+
+Recorded per standing order SO-01 §1(a)-(c); branch `arena/ca78e14d-kandoo`; source of truth is `origin/arena/ca78e14d-kandoo`.
+
+| Task | Tag | Full commit SHA | CI run | Status |
+|---|---|---|---|---|
+| C-59 | `w11-C-59` | `c974a8ce62bd2135a251f08dc9d4b2994d4f7769` | [42459975126](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42459975126) | manager-ACCEPTED |
+| C-60 | `w11-C-60` | `e6bf39cfc7943a5139e3290468ce276d90ac134f` | [42461927836](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42461927836) | manager-ACCEPTED |
+| C-61 | `w11-C-61` | `a0ab3f567e058f8ec88cf5a2c5ba5882162c135c` | [42465848589](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42465848589) | manager-ACCEPTED |
+| C-62 | `w11-C-62` | `ad51ab975ce443c07eecdc42cb407ae5a6a11627` | [42497849017](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42497849017) | manager-ACCEPTED |
+| C-62 follow-up (sln reg) | — | `aa580acaebc662e3e5986c5554c3fe64b6316223` | [42500128966](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42500128966) red → fixed | manager-ACCEPTED after fix |
+| C-62 fix (HolooMapper) | — | `49160d6455037b33bfec4fb7860f027007d495aa` | [42500381204](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42500381204) | manager-ACCEPTED (ubuntu + windows) |
+| C-63 | `w11-C-63` | `7ce20672fcb0b86ef85f9ea9396f147d71362ee7` | [42470372406](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42470372406) | manager-ACCEPTED |
+| C-65 | `w11-C-65` | `a5848e39028b021b0a0df74ae5fe15d884ee203c` | [42471577629](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42471577629) | manager-ACCEPTED |
+| H-07 | `w11-H-07` | published after tagging | published after CI green | closed per ORDER 11 |
+| C-45b | — (blocked, no tag) | — | — | MUST per ORDER 11; blocked on v1.1 addendum Draft 2 (2026-11-10, PM/PO review) and Cloud v1.1 advertisement |
+
+### C-45b (MUST per ORDER 11)
+Hub side of v1.1 per D-C/P-09, activated only when the Cloud advertises v1.1. **Blocked** on the v1.1 addendum chain (Draft 2 issued 2026-11-10, PM/PO review) and Cloud v1.1 advertisement. This is NOT a keep-or-close documentation decision. `setup.exe` (Inno Setup authoring script `packaging/HubPilot/KandooHub.Installer.iss`) is authored only, not built in CI; Hub-side v1.1 field emission (U14) not implemented.
+
+### Incidents 1-4 (sandbox recycles + stash loss)
+Recorded in `AGENT_HANDOFF.md`; `stash@{0}` (3 pre-existing doc modifications) lost in incident 4 — keep-stashed rule moot.

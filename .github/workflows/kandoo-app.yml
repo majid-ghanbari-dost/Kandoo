@@ -85,6 +85,20 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Build Android Release APK (C-59)
+        shell: pwsh
+        run: scripts/Invoke-CiStep.ps1 -StepName 'Build Android Release APK' -ScriptPath scripts/Invoke-KandooApp.ps1 -ScriptArguments @('-Mode', 'AndroidRelease', '-ArtifactDirectory', 'artifacts')
+
+      - name: Upload Android Release APK and certificate (C-59)
+        uses: actions/upload-artifact@v4
+        with:
+          name: kandoo-app-c59-android-release-apk
+          path: |
+            artifacts/kandoo-app-c59-android-release.apk
+            artifacts/kandoo-app-c59-release-keystore-cert.txt
+          if-no-files-found: error
+          retention-days: 7
+
   android-emulator-smoke:
     name: Android 10 emulator launch + 15s liveness
     runs-on: ubuntu-latest

@@ -11,9 +11,9 @@
     <WindowsPackageType>None</WindowsPackageType>
     <ApplicationId>ir.kandoo.app</ApplicationId>
     <AndroidManifest>Platforms/Android/AndroidManifest.xml</AndroidManifest>
-    <ApplicationTitle>کندو</ApplicationTitle>
-    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
-    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationTitle>فاکتور دیجیتال کندو</ApplicationTitle>
+    <ApplicationDisplayVersion>1.1.0</ApplicationDisplayVersion>
+    <ApplicationVersion>2</ApplicationVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
     <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
     <AndroidPackageFormat Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == 'android'">apk</AndroidPackageFormat>

@@ -77,6 +77,8 @@ public sealed record HubSessionResumeResult(string Code, HubSessionIssued? Sessi
 
 public sealed record HubDeviceLevelChangeResult(string Code, HubDevice? Device = null);
 
+public sealed record DeviceServerKeyVerificationResult(string Code, bool Verified);
+
 public sealed record HubAuthenticationResult(
     string Code,
     HubSession? Session = null,
@@ -130,6 +132,9 @@ public interface IHubAccessStore
     IReadOnlyList<HubDevice> GetDevices(Guid storeId);
     HubDeviceLevelChangeResult ChangeDeviceLevel(
         Guid storeId, Guid deviceId, Guid ownerUserId, string operatorLevel, DateTimeOffset now);
+    string? GenerateDeviceServerKey(Guid storeId, Guid deviceId, Guid ownerUserId, DateTimeOffset now);
+    DeviceServerKeyVerificationResult VerifyDeviceServerKey(
+        Guid storeId, Guid deviceId, string deviceServerKey, DateTimeOffset now);
     bool RevokeDevice(Guid storeId, Guid deviceId, Guid ownerUserId, DateTimeOffset now);
     int DisconnectDevice(Guid storeId, Guid deviceId, DateTimeOffset now);
 }

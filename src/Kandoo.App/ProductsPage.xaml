@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Kandoo.App.ProductsPage"
+             Title="فهرست کالاها"
+             Style="{StaticResource PageStyle}">
+    <Grid RowDefinitions="Auto,*">
+        <VerticalStackLayout Grid.Row="0" Style="{StaticResource RootStackStyle}">
+            <Label Style="{StaticResource TitleStyle}" Text="فهرست کالاها" />
+            <Label Style="{StaticResource BodyStyle}" Text="لیست کالاها را از هاب واقعی بارگذاری می‌کند." />
+            <Entry x:Name="GroupIdEntry"
+                   Style="{StaticResource InputStyle}"
+                   Placeholder="فیلتر گروه (اختیاری)"
+                   SemanticProperties.Description="شناسه گروه برای فیلتر محصولات" />
+            <HorizontalStackLayout Style="{StaticResource ButtonRowStyle}">
+                <Button x:Name="LoadButton"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Text="بارگذاری کالاها"
+                        Clicked="OnLoadClicked"
+                        IsEnabled="False"
+                        SemanticProperties.Description="بارگذاری فهرست کالا از هاب" />
+            </HorizontalStackLayout>
+            <Label x:Name="StatusLabel" Style="{StaticResource CaptionStyle}" Text="تنظیمات Hub را وارد کنید." />
+        </VerticalStackLayout>
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout x:Name="ProductItems" Style="{StaticResource RowStackStyle}">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource RowStyle}">
+                            <VerticalStackLayout Style="{StaticResource RowStackStyle}">
+                                <Label Style="{StaticResource SectionTitleStyle}" Text="{Binding Name}" />
+                                <Label Style="{StaticResource BodyStyle}" Text="{Binding GroupDisplay}" />
+                                <Label Style="{StaticResource AmountStyle}" Text="{Binding PriceDisplay}" />
+                                <Label Style="{StaticResource CaptionStyle}" Text="{Binding ActiveDisplay}" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

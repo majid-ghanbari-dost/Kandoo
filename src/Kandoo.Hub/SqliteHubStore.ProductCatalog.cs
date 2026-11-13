@@ -58,7 +58,8 @@ public sealed partial class SqliteHubStore
                 input.Material,
                 input.Brand,
                 input.Barcode,
-                input.PurchasePriceRials);
+                input.PurchasePriceRials,
+                input.GroupId);
             concrete.SaveProduct(product);
             concrete.SaveProductOperatorFields(request.StoreId, productId, input.OperatorFields ?? Array.Empty<ProductOperatorField>());
             var stock = input.InitialStockMillis!.Value;
@@ -111,6 +112,21 @@ public sealed partial class SqliteHubStore
         }
     }
 
+    public Product? GetProduct(Guid storeId, string productId)
+    {
+        if (storeId == Guid.Empty || string.IsNullOrWhiteSpace(productId))
+        {
+            return null;
+        }
+
+        lock (_gate)
+        {
+            ThrowIfDisposed();
+            using var transaction = new SqliteHubTransaction(_connection);
+            return transaction.GetProduct(storeId, productId);
+        }
+    }
+
     public IReadOnlyList<Product> ListProducts(Guid storeId)
     {
         if (storeId == Guid.Empty)
@@ -123,6 +139,36 @@ public sealed partial class SqliteHubStore
             ThrowIfDisposed();
             using var transaction = new SqliteHubTransaction(_connection);
             return transaction.GetProducts().Where(product => product.StoreId == storeId).ToArray();
+        }
+    }
+
+    public IReadOnlyList<ProductGroup> GetProductGroups(Guid storeId)
+    {
+        if (storeId == Guid.Empty)
+        {
+            throw new ArgumentException("A store is required.", nameof(storeId));
+        }
+
+        lock (_gate)
+        {
+            ThrowIfDisposed();
+            using var transaction = new SqliteHubTransaction(_connection);
+            return transaction.GetProductGroups(storeId);
+        }
+    }
+
+    public ProductGroup? GetProductGroup(Guid storeId, string groupId)
+    {
+        if (storeId == Guid.Empty || string.IsNullOrWhiteSpace(groupId))
+        {
+            return null;
+        }
+
+        lock (_gate)
+        {
+            ThrowIfDisposed();
+            using var transaction = new SqliteHubTransaction(_connection);
+            return transaction.GetProductGroup(storeId, groupId);
         }
     }
 

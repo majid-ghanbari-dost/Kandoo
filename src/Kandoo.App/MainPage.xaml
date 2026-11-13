@@ -151,6 +151,11 @@
                         Text="بارگذاری صف"
                         Clicked="OnLoadClicked"
                         SemanticProperties.Description="بارگذاری صف بررسی" />
+                <Button x:Name="ProductsButton"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Text="فهرست کالاها (واقعی)"
+                        Clicked="OnProductsClicked"
+                        SemanticProperties.Description="نمایش فهرست کالا از هاب واقعی" />
                 <Label x:Name="StatusLabel"
                        Style="{StaticResource BodyStyle}"
                        Text="آماده" />
