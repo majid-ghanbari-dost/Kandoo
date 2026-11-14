@@ -48,7 +48,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 ; Self-contained Hub publish output (built in step 1 above).
-Source: "publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
+Source: "packaging\HubPilot\publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 ; Launcher and configuration shipped with the installer.
 Source: "packaging\HubPilot\Start-KandooHub.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "packaging\HubPilot\README.txt"; DestDir: "{app}"; Flags: ignoreversion
