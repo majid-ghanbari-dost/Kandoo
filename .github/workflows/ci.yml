@@ -221,11 +221,7 @@ jobs:
 
       - name: Install Inno Setup (C-65)
         shell: pwsh
-        run: |
-          $installer = "$env:TEMP\is-setup.exe"
-          Invoke-WebRequest -Uri "https://jrsoftware.org/download.php/is.exe" -OutFile $installer
-          $proc = Start-Process -FilePath $installer -ArgumentList '/SP-','/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
-          if ($proc.ExitCode -ne 0) { throw "Inno Setup installation failed with exit code $($proc.ExitCode)" }
+        run: choco install innosetup --yes
 
       - name: Copy Hub publish output for installer (C-65)
         shell: pwsh
@@ -236,10 +232,16 @@ jobs:
       - name: Build setup.exe installer (C-65)
         shell: pwsh
         run: |
-          $iscc = Get-ChildItem -Path 'C:\Program Files\Inno Setup*', 'C:\Program Files (x86)\Inno Setup*' -Recurse -Filter 'iscc.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+          $candidates = @(
+            "${env:ProgramData}\chocolatey\bin\iscc.exe",
+            "C:\Program Files\Inno Setup 6\iscc.exe",
+            "C:\Program Files (x86)\Inno Setup 6\iscc.exe"
+          )
+          $iscc = $null
+          foreach ($c in $candidates) { if (Test-Path -LiteralPath $c) { $iscc = $c; break } }
           if ($null -eq $iscc) { throw 'iscc.exe not found after Inno Setup installation' }
-          Write-Host "ISCC_PATH $($iscc.FullName)"
-          & $iscc.FullName packaging/HubPilot/KandooHub.Installer.iss
+          Write-Host "ISCC_PATH $iscc"
+          & $iscc packaging/HubPilot/KandooHub.Installer.iss
 
       - name: Upload C-65 setup.exe installer
         uses: actions/upload-artifact@v4
