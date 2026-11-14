@@ -231,7 +231,7 @@ jobs:
 
       - name: Build setup.exe installer (C-65)
         shell: pwsh
-        run: iscc packaging/HubPilot/KandooHub.Installer.iss
+        run: Push-Location -LiteralPath packaging/HubPilot; iscc KandooHub.Installer.iss; Pop-Location
 
       - name: Upload C-65 setup.exe installer
         uses: actions/upload-artifact@v4
