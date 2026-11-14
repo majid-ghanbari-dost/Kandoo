@@ -335,3 +335,19 @@ H-07 is a C# STRETCH task per ORDER 11 (PM, 2026-11-07): "Handoff + tag ledger (
 - `setup.exe` (Inno Setup authoring script `packaging/HubPilot/KandooHub.Installer.iss`): authored only, not built in CI.
 - Hub-side v1.1 field emission (U14): not implemented.
 - No push/merge/tag moves on `main`; all `w11-C-*` tags unmoved.
+
+## ORDER 14 Handoff (`arena/o14-cs-kandoo`, 2026-10-22)
+
+Branch `arena/o14-cs-kandoo`, branched from `712ce0711812f1dd4121014539c0d7bb6332d7d9` of `arena/456e429d-kandoo`. All work on this branch; no push to `main`; no tag moves.
+
+| Task | Tag | Full commit SHA | CI run | Status |
+|------|-----|-----------------|--------|--------|
+| **C-65** | `o14-C-65` | `373cd17` | [43619808896](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/43619808896) | Green — setup.exe steps removed, zip fallback retained |
+| **C-66** | — (blocked) | — | — | Blocked — owner test vectors not arrived; blocker recorded in `docs/reports/C-66-BLOCKED.md` |
+| **C-67** | `o14-C-67` | `97e2a9c` | [43620809823](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/43620809823) | Green — write-path verification test added |
+
+Decisions `D-A` through `D-K` recorded in `docs/DECISIONS.md` under "ORDER 14 Decisions". ORDER 14 close-out report in `docs/reports/O14-C-CLOSEOUT.md` (Persian) with one-line numeric results for C-59/C-63/C-62 and close-out table.
+
+Tag `o14-C-H` created at `4077374` after green CI run [43621437440](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/43621437440).
+
+HEAD: `4077374` (commit `docs(o14): add ORDER 14 D-A..D-K decisions, tag ledger, and close-out report`).
