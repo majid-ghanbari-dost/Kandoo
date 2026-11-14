@@ -342,3 +342,37 @@ Hub side of v1.1 per D-C/P-09, activated only when the Cloud advertises v1.1. **
 
 ### Incidents 1-4 (sandbox recycles + stash loss)
 Recorded in `AGENT_HANDOFF.md`; `stash@{0}` (3 pre-existing doc modifications) lost in incident 4 — keep-stashed rule moot.
+
+---
+
+## ORDER 14 Decisions (`D-A`–`D-K`), 2026-10-22
+
+Recorded per ORDER 14 standing constraints; branch `arena/o14-cs-kandoo`; source of truth is `origin/arena/o14-cs-kandoo`.
+
+| ID | Decision | Source | Status |
+|----|----------|--------|--------|
+| **D-A** | **CI build strategy:** Inno Setup / `setup.exe` authoring is not achievable on GitHub `windows-latest` runners (13 failed CI runs across chocolatey, winget, direct download, iexpress). `setup.exe` build step removed from CI; self-contained `win-x64` zip publish retained as the distributable artifact. | C-65 | ACTIVE |
+| **D-B** | **Write-path verification:** Domain mutations routed through `HubOperationService.Submit` → `IHubStore.Execute` create durable Operation Log + Outbox + Replication entries. `IHubAccessStore` mutations (owner session, pairing grant, pairing consume, device server key, device level change, revoke, disconnect) call the access store directly and bypass the Operation Log. Gap documented in `tests/Kandoo.Hub.Tests/WritePathVerificationTests.cs`; no production code changed pending owner/PM decision. | C-67 | ACTIVE |
+| **D-C** | **Blocker policy:** C-66 is BLOCKED until owner-provided test vectors arrive. Blocker-record and wait; no code written, no rule guessed, no tag created. | C-66 | BLOCKED |
+| **D-D** | **Tag policy:** New `o14-*` lightweight tags are created only after green CI on the target commit. One commit + one tag per delivered item. | ORDER 14 | ACTIVE |
+| **D-E** | **Report language:** All ORDER 14 reports are written in Persian. Facts not promises; no invented numbers or outcomes. | ORDER 14 | ACTIVE |
+| **D-F** | **CI-green-before-tag:** No tag is created before CI is green on the target commit. Red CI with no code change → re-run once and report both results. | ORDER 14 | ACTIVE |
+| **D-G** | **Branch integrity:** Branch only; never push `main`; no force-push; do not move existing `w11-*` tags; existing tags pinned forever. | ORDER 14 | ACTIVE |
+| **D-H** | **PR policy:** No PR-object actions on PR #2 / PR #15; push to working branch is fine; nobody merges. | ORDER 14 | ACTIVE |
+| **D-I** | **E-43 waived:** D-I / E-43 is waived per owner instruction. | ORDER 14 | WAIVED |
+| **D-J** | **Kando-internal AI:** `kando-internal-ai-v01` is frozen; `engine-v1` is run by a separate agent. | ORDER 14 | FROZEN |
+| **D-K** | **Close-out report table:** ORDER 14 close-out report uses the table format: task, tag, full SHA, CI run URL actually opened, result. | ORDER 14 | ACTIVE |
+
+---
+
+### ORDER 14 Tag Ledger
+
+| Task | Tag | Full commit SHA | CI run | Status |
+|------|-----|-----------------|--------|--------|
+| **C-65** | `o14-C-65` | `373cd17` | [43619808896](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/43619808896) | Green |
+| **C-66** | — (blocked) | — | — | Blocked — vectors not arrived |
+| **C-67** | `o14-C-67` | `97e2a9c` | [43620809823](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/43620809823) | Green |
+
+### C-66 Blocker Record
+
+Recorded in `docs/reports/C-66-BLOCKED.md`. C-66 remains blocked until owner-provided test vectors arrive. No commit, tag, or code change associated with C-66.
