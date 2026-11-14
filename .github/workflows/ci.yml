@@ -231,7 +231,14 @@ jobs:
 
       - name: Build setup.exe installer (C-65)
         shell: pwsh
-        run: Push-Location -LiteralPath packaging/HubPilot; iscc KandooHub.Installer.iss; Pop-Location
+        run: |
+          $iscc = Get-Command 'iscc' -ErrorAction SilentlyContinue
+          if ($null -eq $iscc) { $iscc = Get-ChildItem -Path 'C:\Program Files\Inno Setup 6\iscc.exe', 'C:\Program Files (x86)\Inno Setup 6\iscc.exe' -ErrorAction SilentlyContinue | Select-Object -First 1 }
+          Write-Host "ISCC_PATH $($iscc.Source)"
+          Push-Location -LiteralPath packaging/HubPilot
+          Get-ChildItem -LiteralPath publish -Recurse | Select-Object -First 10 | ForEach-Object { Write-Host "PUBLISH_FILE $($_.FullName)" }
+          & $iscc.Source KandooHub.Installer.iss
+          Pop-Location
 
       - name: Upload C-65 setup.exe installer
         uses: actions/upload-artifact@v4
