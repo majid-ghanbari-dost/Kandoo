@@ -219,6 +219,28 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Install Inno Setup (C-65)
+        shell: pwsh
+        run: choco install innosetup --yes
+
+      - name: Copy Hub publish output for installer (C-65)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path packaging/HubPilot/publish | Out-Null
+          Copy-Item -Path artifacts/Kandoo.Hub-win-x64\* -Destination packaging/HubPilot/publish/ -Recurse -Force
+
+      - name: Build setup.exe installer (C-65)
+        shell: pwsh
+        run: iscc packaging/HubPilot/KandooHub.Installer.iss
+
+      - name: Upload C-65 setup.exe installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: kandoo-hub-c65-setup-exe
+          path: packaging/HubPilot/Output/KandooHub-Setup.exe
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Assemble C-22 Windows pilot package
         shell: pwsh
         run: scripts/Invoke-CiStep.ps1 -StepName 'Assemble C-22 Windows pilot package' -ScriptPath scripts/New-HubPilotPackage.ps1 -ScriptArguments @('-PublishDirectory', 'artifacts/Kandoo.Hub-win-x64', '-PackageDirectory', 'artifacts/Kandoo.Hub-Pilot-win-x64')
