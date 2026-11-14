@@ -219,69 +219,6 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Install Inno Setup (C-65)
-        shell: pwsh
-        run: choco install innosetup --yes
-
-      - name: Copy Hub publish output for installer (C-65)
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path packaging/HubPilot/publish | Out-Null
-          Copy-Item -Path artifacts/Kandoo.Hub-win-x64\* -Destination packaging/HubPilot/publish/ -Recurse -Force
-
-      - name: Generate iexpress SED file (C-65)
-        shell: pwsh
-        run: |
-          $publishRoot = (Resolve-Path -LiteralPath 'packaging/HubPilot/publish').Path
-          $files = Get-ChildItem -LiteralPath $publishRoot -Recurse -File
-          $sed = @"
-[Version]
-Class=IEXPRESS
-SEDVersion=3
-
-[Options]
-PackagePurpose=InstallApp
-ShowInstallProgramWindow=1
-HideExtractAnimation=1
-UseLongFileName=1
-InsideCompressed=1
-CompressionType=MSZIP
-RebootMode=N
-TargetName=packaging\HubPilot\Output\KandooHub-Setup.exe
-FrozenTargetName=KandooHub-Setup.exe
-PostInstallCmd=<path>\Start-KandooHub.ps1
-SourceFiles=$($files.Count)
-"@
-          $i = 0
-          foreach ($file in $files) {
-            $relPath = $file.FullName.Substring($publishRoot.Length + 1)
-            $winPath = "packaging\HubPilot\publish\" + ($relPath -replace '/', '\')
-            $sed += "`r`nSource$i=$winPath"
-            $i++
-          }
-          $sed += "`r`n`r`n[Strings]"
-          $sed | Out-File -FilePath packaging/HubPilot/KandooHub.Installer.SED -Encoding utf8
-
-      - name: Build setup.exe installer (C-65)
-        shell: pwsh
-        run: iexpress /N /Q packaging/HubPilot/KandooHub.Installer.SED
-
-      - name: Upload C-65 setup.exe installer
-        uses: actions/upload-artifact@v4
-        with:
-          name: kandoo-hub-c65-setup-exe
-          path: packaging/HubPilot/Output/KandooHub-Setup.exe
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: Upload C-65 setup.exe installer
-        uses: actions/upload-artifact@v4
-        with:
-          name: kandoo-hub-c65-setup-exe
-          path: packaging/HubPilot/Output/KandooHub-Setup.exe
-          if-no-files-found: error
-          retention-days: 7
-
       - name: Assemble C-22 Windows pilot package
         shell: pwsh
         run: scripts/Invoke-CiStep.ps1 -StepName 'Assemble C-22 Windows pilot package' -ScriptPath scripts/New-HubPilotPackage.ps1 -ScriptArguments @('-PublishDirectory', 'artifacts/Kandoo.Hub-win-x64', '-PackageDirectory', 'artifacts/Kandoo.Hub-Pilot-win-x64')
@@ -341,4 +278,3 @@ SourceFiles=$($files.Count)
             tests/Kandoo.Cloud.Tests/TestResults/*.trx
             tests/Kandoo.Hub.Tests/TestResults/*.trx
           if-no-files-found: error
-# C-65 CI re-trigger
