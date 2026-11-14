@@ -232,8 +232,13 @@ jobs:
       - name: Build setup.exe installer (C-65)
         shell: pwsh
         run: |
-          $iscc = Get-ChildItem -Path 'C:\' -Recurse -Filter 'iscc.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
-          if ($null -eq $iscc) { throw 'iscc.exe not found anywhere on C:' }
+          $chocoLib = "${env:ProgramData}\chocolatey\lib\innosetup"
+          $iscc = $null
+          if (Test-Path -LiteralPath $chocoLib) {
+            $iscc = Get-ChildItem -LiteralPath $chocoLib -Recurse -Filter 'iscc.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+          }
+          if ($null -eq $iscc) { $iscc = Get-ChildItem -Path 'C:\Program Files\Inno Setup*', 'C:\Program Files (x86)\Inno Setup*' -Filter 'iscc.exe' -ErrorAction SilentlyContinue | Select-Object -First 1 }
+          if ($null -eq $iscc) { throw 'iscc.exe not found after Inno Setup installation' }
           Write-Host "ISCC_PATH $($iscc.FullName)"
           & $iscc.FullName packaging/HubPilot/KandooHub.Installer.iss
 
