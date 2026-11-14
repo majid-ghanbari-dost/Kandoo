@@ -232,16 +232,10 @@ jobs:
       - name: Build setup.exe installer (C-65)
         shell: pwsh
         run: |
-          $candidates = @(
-            "${env:ProgramData}\chocolatey\bin\iscc.exe",
-            "C:\Program Files\Inno Setup 6\iscc.exe",
-            "C:\Program Files (x86)\Inno Setup 6\iscc.exe"
-          )
-          $iscc = $null
-          foreach ($c in $candidates) { if (Test-Path -LiteralPath $c) { $iscc = $c; break } }
-          if ($null -eq $iscc) { throw 'iscc.exe not found after Inno Setup installation' }
-          Write-Host "ISCC_PATH $iscc"
-          & $iscc packaging/HubPilot/KandooHub.Installer.iss
+          $iscc = Get-ChildItem -Path 'C:\' -Recurse -Filter 'iscc.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($null -eq $iscc) { throw 'iscc.exe not found anywhere on C:' }
+          Write-Host "ISCC_PATH $($iscc.FullName)"
+          & $iscc.FullName packaging/HubPilot/KandooHub.Installer.iss
 
       - name: Upload C-65 setup.exe installer
         uses: actions/upload-artifact@v4
