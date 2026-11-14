@@ -223,17 +223,9 @@ jobs:
         shell: pwsh
         run: choco install innosetup --yes
 
-      - name: Debug: find iscc.exe (C-65)
+      - name: Install Inno Setup (C-65)
         shell: pwsh
-        run: |
-          Write-Host "=== Checking Program Files ==="
-          Get-ChildItem -Path 'C:\Program Files\Inno Setup*', 'C:\Program Files (x86)\Inno Setup*' -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "DIR $($_.FullName)" }
-          Get-ChildItem -Path 'C:\Program Files\Inno Setup*', 'C:\Program Files (x86)\Inno Setup*' -Recurse -Filter 'iscc.exe' -ErrorAction SilentlyContinue | Select-Object -First 10 | ForEach-Object { Write-Host "FOUND $($_.FullName)" }
-          Write-Host "=== Checking chocolatey lib ==="
-          Get-ChildItem -Path "${env:ProgramData}\chocolatey\lib\innosetup" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "LIB $($_.FullName)" }
-          Get-ChildItem -Path "${env:ProgramData}\chocolatey\lib\innosetup" -Recurse -Filter 'iscc.exe' -ErrorAction SilentlyContinue | Select-Object -First 10 | ForEach-Object { Write-Host "LIB_FOUND $($_.FullName)" }
-          Write-Host "=== Checking PATH ==="
-          Get-Command 'iscc' -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "CMD $($_.Source)" }
+        run: winget install InnoSetup.InnoSetup --silent --accept-package-agreements --accept-source-agreements
 
       - name: Copy Hub publish output for installer (C-65)
         shell: pwsh
