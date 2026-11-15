@@ -83,6 +83,7 @@ public sealed class ReplicationClientTests : IDisposable
             }
 
             firstHead = durable.Entries[^1].EntryHash;
+            hub.SaveDeviceSecret(storeId, writer.DeviceId, "durable-test-secret");
             var lostTransport = new LostFirstResponseTransport(new HttpCloudReplicationTransport(_http));
             var client = new HubCloudReplicationClient(hub, lostTransport, Options(1));
             var lost = await client.ReplicateAsync(storeId);
@@ -234,7 +235,7 @@ public sealed class ReplicationClientTests : IDisposable
         public bool IsWriterFenced(Guid storeId) => _fenced;
         public void MarkWriterFenced(Guid storeId, HubWriterIdentity writer, string reason) => _fenced = true;
 
-        public string? GetDeviceSecret(Guid storeId, Guid deviceId) => null;
+        public string? GetDeviceSecret(Guid storeId, Guid deviceId) => "test-device-secret";
 
         public void Acknowledge(Guid storeId, long throughSequence, string headEntryHash, DateTimeOffset acknowledgedAt)
         {
