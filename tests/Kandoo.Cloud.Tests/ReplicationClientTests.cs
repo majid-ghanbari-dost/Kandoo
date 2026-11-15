@@ -234,6 +234,8 @@ public sealed class ReplicationClientTests : IDisposable
         public bool IsWriterFenced(Guid storeId) => _fenced;
         public void MarkWriterFenced(Guid storeId, HubWriterIdentity writer, string reason) => _fenced = true;
 
+        public string? GetDeviceSecret(Guid storeId, Guid deviceId) => null;
+
         public void Acknowledge(Guid storeId, long throughSequence, string headEntryHash, DateTimeOffset acknowledgedAt)
         {
             var last = _batch.Entries![^1];
