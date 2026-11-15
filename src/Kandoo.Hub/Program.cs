@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Net.Http;
 using System.Text.Json;
 using Kandoo.Capture;
 using Kandoo.Core;
@@ -35,7 +36,43 @@ builder.Services.AddSingleton<IHubAccessStore>(hubStore);
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<HubStatsService>();
 builder.Services.AddSingleton<IClock, SystemHubClock>();
-builder.Services.AddSingleton<HubReplicationOptions>();
+builder.Services.AddSingleton<ICloudVersionClient>(sp =>
+{
+    var cloudUrl = builder.Configuration["Hub:CloudUrl"];
+    if (string.IsNullOrEmpty(cloudUrl))
+    {
+        return new CloudVersionClient(new HttpClient(), string.Empty);
+    }
+    return new CloudVersionClient(new HttpClient { BaseAddress = new Uri(cloudUrl.TrimEnd('/')) }, cloudUrl);
+});
+builder.Services.AddSingleton<HubReplicationOptions>(sp =>
+{
+    var options = new HubReplicationOptions();
+    var cloudUrl = builder.Configuration["Hub:CloudUrl"];
+    if (!string.IsNullOrEmpty(cloudUrl))
+    {
+        try
+        {
+            using var client = new HttpClient();
+            var response = client.GetAsync($"{cloudUrl.TrimEnd('/')}/health").GetAwaiter().GetResult();
+            if (response.IsSuccessStatusCode)
+            {
+                var content = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                using var document = JsonDocument.Parse(content);
+                if (document.RootElement.TryGetProperty("protocol_version", out var version)
+                    && version.GetString() == "1.1")
+                {
+                    options.PayloadV11Enabled = true;
+                }
+            }
+        }
+        catch
+        {
+            // Fail-closed: if Cloud is not reachable, v1.1 remains disabled.
+        }
+    }
+    return options;
+});
 builder.Services.AddSingleton<HubOperationService>();
 builder.Services.AddSingleton(new HubProductCatalogService(hubStore));
 builder.Services.AddSingleton<IHubInvoicePrintAdapter, DisabledHubInvoicePrintAdapter>();

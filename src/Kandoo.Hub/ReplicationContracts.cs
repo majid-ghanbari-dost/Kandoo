@@ -149,6 +149,13 @@ public interface ICloudReplicationTransport
     Task<CloudTransportResponse> SendAsync(ReplicationBatch batch, CancellationToken cancellationToken);
 }
 
+/// <summary>Discovers the Cloud API's advertised protocol version.</summary>
+public interface ICloudVersionClient
+{
+    /// <summary>Returns the protocol version advertised by Cloud, or null if undiscoverable.</summary>
+    Task<string?> GetAdvertisedProtocolVersionAsync(CancellationToken cancellationToken = default);
+}
+
 public sealed record HubReplicationResult(
     string Status,
     int Attempts,
