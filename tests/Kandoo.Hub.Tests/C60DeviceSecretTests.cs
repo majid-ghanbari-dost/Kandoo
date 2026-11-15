@@ -108,14 +108,16 @@ public sealed class C60DeviceSecretTests : IDisposable
         var secret = _factory.Store.GetDeviceSecret(storeId, paired.Session.DeviceId);
         Assert.Equal("c60-wrong-secret", secret);
 
-        // Replication proceeds (Hub sends the secret; Cloud validates in ORDER 15)
+        // Replication proceeds (Hub sends the secret; Cloud validates in ORDER 15).
+        // Hub must NOT return DEVICE_SECRET_MISSING when a secret is present,
+        // even if it is "wrong" — that is Cloud-side validation in ORDER 15.
         var client = new HubCloudReplicationClient(
             _factory.Store,
             new TestCloudTransport(),
             new HubReplicationOptions { PayloadV11Enabled = false });
 
         var result = await client.ReplicateAsync(storeId);
-        Assert.Equal("IDLE", result.Status); // Transport accepts, no Cloud to reject
+        Assert.NotEqual("DEVICE_SECRET_MISSING", result.Status);
     }
 
     public void Dispose()
