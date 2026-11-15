@@ -8,7 +8,7 @@
 
 | وظیفه | نتیجه | محدودیت‌های افشاشده |
 |-------|-------|---------------------|
-| C-45b | سبز — سی‌آی اجرا ۴۳۶۹۳۸۶۴۴۷۹ | Cloud /health protokol_version "1.1" را تبلیغ می‌کند؛ HubICloudVersionClient نسخه Cloud را کشف می‌کند؛ PayloadV11Enabled بر اساس تبلیغ Cloud تنظیم می‌شود؛ fail-closed اگر Cloud دسترس‌پذیر نباشد |
+| C-45b | سبز — سی‌آی اجرا ۴۳۶۹۳۸۶۴۴۷۹ | Cloud /health protocol_version "1.1" را تبلیغ می‌کند؛ HubICloudVersionClient نسخه Cloud را کشف می‌کند؛ PayloadV11Enabled بر اساس تبلیغ Cloud تنظیم می‌شود؛ fail-closed اگر Cloud دسترس‌پذیر نباشد |
 | C-60 | سبز — سی‌آی اجرا ۴۳۶۸۸۴۱۹۶۵۴ | کلید device_secret در ReplicationBatch؛ fail-closed (DEVICE_SECRET_MISSING / FENCED_READ_ONLY) هنگام فقدان کلید؛ تست معتبر/غایب/ناشناس کلید |
 | C-61 | سبز — سی‌آی اجرا ۴۳۶۹۳۸۶۴۴۷۹ | گروه‌محصول در GetProductByTag: ایجاد گروه، لیست گروه‌ها، حذف گروه، اختصاص محصول به گروه، قوانین نگهدارنده والد،inventoryization هم-store |
 | C-65 | سبز — سی‌آی اجرا ۴۳۶۱۹۸۰۸۸۹۶ | ساخت setup.exe (Inno Setup) روی رنرهای windows-latest ممکن نیست؛ فایل بسته zip win-x64 به عنوان Fallback حفظ شد |
@@ -23,7 +23,7 @@
 |-------|------------------|
 | C-59 | فایل بسته Android Release vs Debug و Cold-start emulator نیازمند ساخت Android است؛ در محیط فعلیavailable نیست (سی-α C-50 ۱۵ ثانیه cold-start برای Debug را ثبت کرد) |
 | C-63 | صفحات موجود: MainPage، ProductsPage، RoleSelectionPage، CrashReportPage (تأیید شده از src/Kandoo.App/*.xaml) |
-| C-62 | بنگر Holoo ۱۱ آبجکت / ۶۴۱ ستون (Customer، Article، Facture، FactArt، ArticlePrice، CustTell، MGroup، SGroup، TypeAnb، Unit، WShowArticleForSearchBig)؛ فیکچر تست bundle-sha256.tsv؛ CI W11-C-62: ۴۲۴۹۷۸۴۹۰۱۷ |
+| C-62 | بانک Holoo ۱۱ آبجکت / ۶۴۱ ستون (Customer، Article، Facture، FactArt، ArticlePrice، CustTell، MGroup، SGroup، TypeAnb، Unit، WShowArticleForSearchBig)؛ فیکچر تست bundle-sha256.tsv؛ CI W11-C-62: ۴۲۴۹۷۸۴۹۰۱۷ |
 
 ## ۴) دفتر تگ ORDER 14 (tag ledger)
 
