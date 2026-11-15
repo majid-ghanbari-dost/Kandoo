@@ -900,9 +900,10 @@ public sealed partial class SqliteHubStore
                 // Ensure the device row exists before saving its secret
                 using var ensureCmd = _connection.CreateCommand();
                 ensureCmd.Transaction = transaction;
-                ensureCmd.CommandText = "INSERT OR IGNORE INTO devices (store_id, device_id, device_role, pairing_status, label, platform) VALUES ($store, $device, 0, 1, '', '')";
+                ensureCmd.CommandText = "INSERT OR IGNORE INTO devices (store_id, device_id, device_role, pairing_status, label, platform, credential_hash, paired_at) VALUES ($store, $device, 0, 1, '', '', '', $now)";
                 ensureCmd.Parameters.AddWithValue("$store", storeId.ToString("D"));
                 ensureCmd.Parameters.AddWithValue("$device", deviceId.ToString("D"));
+                ensureCmd.Parameters.AddWithValue("$now", DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture));
                 ensureCmd.ExecuteNonQuery();
 
                 using var command = AccessCommand(transaction, "UPDATE devices SET device_secret = $secret WHERE store_id = $store AND device_id = $device;");
