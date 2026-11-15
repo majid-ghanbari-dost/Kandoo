@@ -1,0 +1,2 @@
+# E-11 canonical JSON fixtures are hash-covered byte sequences; preserve LF on every OS.
+tests/Kandoo.Core.Tests/Fixtures/E11/contracts/**/*.json -text

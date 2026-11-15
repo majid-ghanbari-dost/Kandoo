@@ -2,7 +2,7 @@
 
 **Repository:** `majid-ghanbari-dost/Kandoo` (Parent Platform Repository)  
 **Baseline:** Board v4 + Amendment v4.1 + Amendment v4.2 (`R-0`)  
-**Last updated:** `2026-10-22`
+**Last updated:** `2026-10-30` (PM Record — Owner decisions)
 
 > **Governance Rule:** Frozen decisions are not reopened without direct contradictory evidence or explicit Product Owner revision. Where Amendments `v4.1` or `v4.2` modify an earlier `Board v4` clause, the latest amendment governs. Whenever a detail is unspecified and the PM is unavailable, take the conservative fail-closed option (`REVIEW` / feature gate) and record it under [Assumptions](#assumptions).
 
@@ -122,19 +122,19 @@
   - *Board v4 + Clarified in v4.1:* Acquiring a `DRAFT` invoice in progress locks `(store_id, customer_phone)` to that single `device_id`. A second `device_id` attempting to open a concurrent `DRAFT` for the same phone receives an immediate **hard error**.
   - Resending the **same `operation_id`** from the owning device follows standard idempotency (`D10`) rather than failing the lock.
   - Lock releases immediately upon **issue**, **cancel**, **client disconnect**, or **inactivity timeout**.
-  - *Amended in v4.2 (governing):* Default abandoned-draft lock timeout is **5 minutes (configurable)** (replacing the 15-minute v4.1 proposal), pending final Owner confirmation.
+  - *Amended in v4.2 and confirmed by Owner in `P-0104r` (`2026-10-23`):* Default abandoned-draft lock timeout is **5 minutes / 300 seconds (configurable)**. Only a newly Hub-accepted draft item, `quantity_millis`, or customer change restarts the inactivity window; an open screen, passive heartbeat, rejected operation, or no-effect replay does not.
   - **Sequential purchases** with the same phone number immediately after issue/cancel remain fully allowed.
-- **Status:** **AMENDED (v4.2) — OPEN ON TIMEOUT CONFIRMATION (`5 min` default)**
-- **Test Criterion:** Concurrency tests verify: (1) Device `D1` opens `DRAFT` for phone `P`, and Device `D2` receives hard conflict error for `P`; (2) `D1` retrying same `operation_id` succeeds idempotently; (3) after `issue`, `cancel`, disconnect signal, or simulated clock advance past `LockTimeout` (`Default = 5m`), `D2` immediately acquires a new `DRAFT` for `P`.
+- **Status:** **AMENDED (v4.2 + P-0104r) — ACTIVE / OWNER CONFIRMED**
+- **Test Criterion:** Concurrency tests verify: (1) Device `D1` opens `DRAFT` for phone `P`, and Device `D2` receives hard conflict error for `P`; (2) `D1` retrying same `operation_id` succeeds idempotently without renewing inactivity state; (3) a Hub-accepted draft change restarts the 300-second window while an open screen/passive heartbeat does not; (4) after `issue`, `cancel`, disconnect signal, or simulated clock advance past `LockTimeout` (`Default = 5m`), `D2` immediately acquires a new `DRAFT` for `P`.
 
 ---
 
 ### `D12` — Dual Invoice Numbering (`invoice_id` + Hub Sequential `display_number`)
 - **Owner:** Product Owner
 - **Reason:** Distributed/offline systems need opaque collision-free primary keys, whereas store operators and customers expect clean, sequential store invoice numbers distinct from third-party POS receipt numbers.
-- **Consequence:** Every invoice carries both an opaque internal unique `invoice_id` and a **Store Hub-allocated sequential `display_number`**. External printed receipt numbers captured in Mode `B` stay strictly inside `header.invoice_number` with `untrusted` provenance.
-- **Status:** **ACTIVE — FROZEN** (Board v4)
-- **Test Criterion:** Multi-device concurrent test submits parallel invoice creations through the Hub and asserts strictly unique, gap-controlled monotonic `display_number` allocation distinct from both `invoice_id` and `header.invoice_number`, preserved across Hub restart/restore.
+- **Consequence:** Every invoice has an opaque internal unique `invoice_id`. Every **successfully issued** invoice also has a **Store Hub-allocated, gapless, store-sequential `display_number`**; every pre-issuance or retired draft has `display_number=null`. The Owner-approved `P-0104r` revision allocates the number only in the successful `ISSUE` transaction, so draft creation, validation, cancellation, timeout, failed issue, and replay consume no number. Issued numbers are never reused, and the issued-only high watermark survives restart/restore. External printed receipt numbers captured in Mode `B` stay strictly inside `header.invoice_number` with `untrusted` provenance.
+- **Status:** **ACTIVE — FROZEN WITH OWNER-APPROVED `P-0104r` REVISION** (Board v4; revised `2026-10-23`)
+- **Test Criterion:** Multi-device tests create null-numbered drafts without advancing the high watermark, then submit parallel `ISSUE` commands through the Hub and assert strictly unique, gapless, monotonic `display_number` allocation distinct from both `invoice_id` and `header.invoice_number`. Cancelled/timed-out drafts and failed issues consume nothing; exact issue replay adds nothing; the sequence is preserved across Hub restart/restore.
 
 ---
 
@@ -182,8 +182,9 @@
    - **No free cloud service** is recommended or used anywhere in the workflow.
    - A small domestic or non-US **VPS with Docker** is used **only when a public address is strictly needed**.
    - Portability kit (`P-10`, `< 1 hour` migration) remains mandatory.
-2. **`D11` Amended (Replaces `v4.1` Timeout Default — ACTIVE PENDING OWNER CONFIRMATION):**
-   - Abandoned-`DRAFT` per-phone lock timeout default reduced from `15` minutes to **`5` minutes (configurable)**, pending Owner confirmation of operational meaning.
+2. **`D11` Amended (Replaces `v4.1` Timeout Default — ACTIVE; OWNER-CONFIRMED BY `P-0104r`):**
+   - Abandoned-`DRAFT` per-phone lock timeout default reduced from `15` minutes to **`5` minutes (300 seconds, configurable)**.
+   - Only a newly Hub-accepted draft item, quantity, or customer change restarts the inactivity window; opening/viewing, passive heartbeats, polling, rejected operations, and no-effect replays do not. No API endpoint extends a lock.
    - Sequential purchases with the same phone number remain allowed.
 3. **`SEC-1` Reframed (ACTIVE):**
    - Core security objective: **the server holds as little readable private store data as possible**.
@@ -203,6 +204,64 @@
 
 ---
 
+## PM Record — Owner Decisions (`2026-10-29`)
+
+PM RECORD - Owner decisions, 29 Oct 2026 (add to docs/DECISIONS.md; do not change any code)
+
+U-01 open questions, answered by the Product Owner:
+1. Free-form fields: core fields (name, type, color, price, numeric tag, stock) are used for cross-store matching; operator-defined fields stay store-private. Product creation must not feel confusing to the operator.
+2. Phone vs Windows: same order and logic, field-by-field reveal; layout differs. Build it, test the experience with an operator, change if confusing.
+3. Service tabs: Sale, Rental, Other services are all VISIBLE; only Sale is ACTIVE in the MVP; the other two are visible but disabled.
+4. Customer-side ordering is NOT built in the MVP. Later: customer order arrives as "pending" in the operator queue with notification on Windows and phone.
+5. Cascading options: only from existing products of the same store with the same name; operator-defined fields follow the same rule.
+
+Other decisions:
+- SMS provider: Faraz SMS. Adapter stays disabled by default. No credentials in any repo.
+- Store verification (post-MVP): two tiers. Unverified stores may use Kandoo for digital invoices but are not listed in public search. Verified stores get a "verified" badge and appear in search. Early verification is manual. Automatic license lookup needs an official integration; NOT assumed available.
+- "Beside other software" path has two phases: (a) digital invoice + customer data collection from print capture; (b) shadow store built from the other software's data with manager permission. Phase (b) is blocked on Holoo data access and legal review.
+- Customer side needs only mobile-number verification.
+- Roles for phone operators: seller, operator, manager. Android is NOT in the first MVP.
+
+---
+
+## PM Record — Owner Decisions (`2026-10-30`)
+
+PM RECORD - Owner decisions, 30 Oct 2026 (recorded verbatim;
+do not change any code)
+1. Tax: Kandoo does NOT integrate with any tax or judicial
+   authority. Tax is only a ready-made export produced by the
+   accounting module. Responsibility belongs to the store
+   manager. Product Owner's decision; no agent writes any
+   legal claim about it (lawyer reviews wording later).
+2. Accounting is the top-quality module. Principle: zero
+   jargon by default (no "debit/credit" unless the user turns
+   on professional view), most work automatic, each invoice
+   creates its entries automatically.
+3. Placement: light management accounting (read-only,
+   derived from Hub events) belongs to MVP-2 (Kandoo as the
+   store's primary software). It is NOT part of MVP-1 (beside
+   other software). Full double-entry accounting comes after.
+4. Product form: add an OPTIONAL "purchase price" field.
+   Profit is shown only for products that have it; never
+   guessed.
+5. Hub must keep every monetary fact as an immutable event
+   with time and actor; cancellations and returns are new
+   events, never edits. Every invoice has a unique id.
+6. Do not start accounting code yet. Design first (PM),
+   accountant interviews (owner).
+
+---
+
+## PM ORDER 9 — Recorded Decisions (`2026-11-03`)
+
+D1. One app, several roles: on first run the user picks store, customer, or both and can switch later. Customer mode is Android-only for now. Customer mode is part of the MVP in a minimal form (role choice, OTP login, invoice list per store, invoice page, "new invoice" banner); buying from stores comes later.
+D2. Production Cloud for the pilot = PHP 8.1+ and MariaDB 10.6 on a shared host (e.g., plan E1: no shell/Composer assumed, config outside web root, outbound HTTPS to api.iranpayamak.com, cron every minute, shared outbound IP so never rely on IP allow-listing). The existing .NET Cloud is FROZEN as-is and kept for later.
+D3. All SMS are sent ONLY by the Cloud. The Hub never holds the SMS key.
+D4. SMS policy (provider confirmed): fixed notification pattern (no variables), OTP pattern (one variable "code"); limits: 2 OTP per number per rolling 24 h, 3 wrong entries per request, a device may use at most 3 numbers per day, per-IP limits. Domain/base address is configuration (a "base URL" setting), never hardcoded.
+D5. Hosting limits to design for: DB about 200-300 MB, about 2000 visits/day on the first plan, nightly DB backup by our own cron; the Cloud keeps only the public/compact form of each invoice (the Hub holds the master copy).
+
+---
+
 ## Assumptions
 
 Per Global Rule 5 (*Missing decision: take conservative option, record in `docs/DECISIONS.md` under "Assumptions"*), the following conservative baselines govern until superseded by an explicit Owner/PM decision:
@@ -212,16 +271,108 @@ Per Global Rule 5 (*Missing decision: take conservative option, record in `docs/
 3. **`ASM-03` — Exact Post-Commit SHA Recording:** Because a Git commit SHA-1 cannot self-reference its own file contents, `R-0` records the primary content commit SHA in an immediate follow-up `docs(r-0)` metadata commit within the same `R-0` PR commit group, with annotated tag `stable-r-0` pointing to the branch tip.
 4. **`ASM-04` — Conservative Scope of `P-01`–`P-04` Descriptions:** High-level descriptions of `P-01`–`P-04` in `docs/MASTER_HANDOFF.md` reflect only established Board v4 / v4.1 / v4.2 and E-01 / E-09 architectural requirements. Specific C# package choices, UI frameworks, database schemas, and endpoints are deferred until each task's authoritative PM specification is issued.
 5. **`ASM-05` — Fail-Closed Handling of Open Owner Decisions:** Until items in [Open](#open) are resolved by the Owner, all future platform code must keep SMS on the local stub (`D4`), run exclusively in local Docker Compose with synthetic data (`D5`), expose the `5-minute` draft lock timeout as a configuration setting (`D11`), and block live public customer pages if signed lawyer-approved copy is absent (`D14`).
+6. **`ASM-06` — Authoritative Documentation-Only Scope of This `P-01` (`2026-10-22`):** The current PM task defines `P-01` as the domain-model specification and expressly excludes C# implementation. It supersedes the provisional `P-01` C# bootstrap description inherited from the `R-0` roadmap for this task only. The earlier bootstrap/contract implementation scope is deferred to a later explicit PM task; no implementation is claimed by `docs/domain-model.md`.
+7. **`ASM-07` — Conservative Product Duplicate Handling (`P-01`):** Until a broader matching algorithm is approved, active products in one store reject an exact `normalized_name` duplicate. Equal conservative `similarity_key` values with different normalized names return a structured warning and create nothing until the operator explicitly acknowledges the identified candidate in a new operation. No duplicate path silently merges, overwrites, or reuses a product ID; matching never crosses store boundaries.
+8. **`ASM-08` — Strict Idempotency Replay Matching (`P-01`):** An idempotent replay must match `(store_id, operation_id, device_id, operation_type, request_hash)`. Reusing the store-scoped operation ID with any different component returns `OPERATION_ID_CONFLICT` and has no domain effects. The operation record and its effects/response snapshot commit atomically.
+9. **`ASM-09` — Pre-Issuance Retirement and Active-Lock Ownership (`P-01`; activity clause revised by `P-0104r`):** Cancellation and timeout retire a pre-issuance draft through platform `retired_at` / `retirement_reason` metadata rather than adding a Canonical Invoice lifecycle status. Only the device holding an active, unexpired per-phone lock may mutate, cancel, or issue that draft. Timeout never leaves residual write rights for the old device. The Owner confirmed the 300-second configurable default and that only a newly Hub-accepted draft item, `quantity_millis`, or customer change restarts inactivity; an open screen, passive heartbeat, rejected operation, or no-effect replay does not. Former Open item 3 is closed.
+10. **`ASM-10` — Display-Number Allocation and Gaps (`P-01`; original posture SUPERSEDED by Owner-approved `P-0104r`):** The former first-durable-persistence rule and cancelled/timed-out-draft gap posture are withdrawn. The Store Hub allocates `display_number` only at successful `ISSUE`; all pre-issuance/retired drafts remain null-numbered and consume nothing. Successful issued numbers are gapless, strictly increasing, and never reused, and only successful issue advances the restart/restore high watermark. Former Open item 6 is closed.
+11. **`ASM-11` — Explicit Tenant Scope and Customer-Only Global History (`P-01`):** Store reads require explicit store scope and active membership; device-originated mutations additionally require an active device paired to that store. Shared `Business` ownership grants no sibling-store access. Global `CustomerProfile` links never authorize store operators to read cross-store history: only the verified customer self through the registered global user and OTP-backed session may do so. Public tokens authorize only one issued invoice view.
+12. **`ASM-12` — Verified-Phone Customer/Profile Linking (`P-01`):** Customer phones are normalized to E.164 syntax before matching and `(store_id, phone)` identifies one store-level Customer. A `CLAIMED` Customer has no global profile link. OTP verification creates or reuses the globally unique verified-phone `CustomerProfile`, and `VERIFIED` requires an exact normalized-phone match between Customer and profile. No customer identity or global profile is inferred from OCR/printed content.
+13. **`ASM-13` — Documentation-Only Scope and Canonical Hash Profile of This `P-02` (`2026-10-22`):** The current PM task defines `P-02` as the sync/replication protocol specification and expressly excludes C# implementation. It supersedes the provisional `P-02` Store Hub implementation wording inherited from the `R-0` roadmap for this task only. `kandoo.sync.v0` and its test-vector hashes use UTF-8 canonical JSON with Unicode-code-point-sorted object keys, preserved array order (after specified state-collection sorting), compact separators, JSON integers, and lowercase SHA-256. This does not change Canonical Invoice v0 or claim a protocol implementation.
+14. **`ASM-14` — Conservative Pairing and Session Baseline (`P-02`):** Owner-created pairing QR grants are single-use, store/Hub bound, `COMPANION`-only, and expire after `300` seconds by default. They cannot activate a second Hub. Sessions are Hub-issued with explicit expiry and bound to the paired device credential; renewal does not change operation identity. Revocation invalidates sessions and releases owned locks as `DISCONNECT`. Sessions are runtime state and are never restored onto a replacement Hub.
+15. **`ASM-15` — Ordered Atomic Replication, Durable Retry, and Backpressure (`P-02`):** `operation_seq` is contiguous per store and continues across authorized writer epochs. Cloud ingest batches are atomic, validate ascending sequences and hashes, acknowledge exact duplicates without effects, and reject gaps/out-of-order/conflicting entries without partial projection. One ordered upload stream per store retries unchanged entries with a configurable `1s` doubling to `60s` ceiling plus jitter and obeys advertised throttle/batch limits. Unacknowledged entries are never discarded; before local durable capacity is exhausted, new mutations fail explicitly rather than overwriting the outbox.
+16. **`ASM-16` — Restore Activation and Writer Fencing (`P-02`):** OTP plus recovery-key proof or previously paired-device approval is required before restore export. A replacement writer activates only after contiguous log verification and exact replayed-state hash match; activation increments `writer_epoch`, preserves idempotency/numbering state, fences the old writer to read-only, and never restores old sessions. Divergent suffixes from fenced writers are quarantined for reviewed recovery rather than auto-merged. Disk-only unsynced entries are reported as unrecovered, never as a lossless restore.
+17. **`ASM-17` — Time Authority and Partial-Delivery Handling (`P-02`):** Client timestamps are informational; Hub time governs LAN ordering and D11 expiry, while operation sequence and hash chain govern replication. Excessive Hub/Cloud clock skew requires operational review without rewriting accepted history. Incomplete/truncated batches apply no partial projection; a committed batch with a lost response is retried unchanged and acknowledged idempotently.
+18. **`ASM-18` — Documentation-Only Scope and HTTP Path Versioning (`P-04`, `2026-10-22`):** The current PM task defines `P-04` as the Cloud API contract and expressly excludes implementation. It supersedes the provisional Cloud API implementation wording inherited from the `R-0` roadmap for this task only. `docs/openapi.yaml` is the normative OpenAPI 3.1 contract and uses `/v1` path versioning so routing, client base URLs, access policy, and parallel migration do not depend on a custom version header. HTTP `/v1`, `kandoo.sync.v0`, and Canonical Invoice `schema_version: "0"` remain independent versions.
+19. **`ASM-19` — Conservative Cloud Credential, Pairing, and Revocation Baseline (`P-04`):** Cloud uses opaque, scoped per-device bearer credentials rather than prescribing JWT; servers must store only token hashes. Registration is the sole pre-Hub bootstrap. The Hub generates raw pairing QR/nonces locally and Cloud retains only SHA-256 fingerprints and replicated Hub outcomes, so offline LAN pairing and late replication remain valid. Pairing and revocation are companion-only; Hub replacement requires authorized restore. Companion Cloud tokens cannot perform domain writes. Rotation and successful restore activation each permit only identical-request/same-key replay for 60 seconds to recover a lost response.
+20. **`ASM-20` — HTTP Idempotency, Cursor, Empty-Batch, and Rate Baseline (`P-04`):** Every POST requires a 1–128-character safe `Idempotency-Key`. Administrative/bootstrap idempotency records are retained for at least 24 hours with conflict-safe tombstones, while domain operation/log deduplication is permanent. Batch keys equal `batch_id`; single-entry mutation keys and acknowledgments equal the contained `operation_id`. Empty wire batches remain representable so writer fencing occurs first: stale writers receive `WRITER_FENCED`, while active-writer empty batches receive `INCOMPLETE_BATCH` with no effects. Lists use opaque store/filter-bound cursors with default 50/maximum 100; batches default to at most 100 entries/1 MiB and the group-specific documented limits until production tuning is approved.
+21. **`ASM-21` — Conservative Restore, Delivery, and Legal-Gate Boundary (`P-04`):** Restore v1 exports the full log from genesis only after OTP plus SEC-1 second factor. OTP-only preflight returns binding data without export and does not consume the OTP verification token; successful two-factor authorization consumes it. Activation reports Cloud-high-watermark-only recovery and exposes its 60-second replay deadline. SMS remains a deterministic stub with no external calls. Store registration requires digital acceptance of the configured lawyer-approved onboarding agreement, and public rendering requires approved copy; SMS-stub/QR/share-link creation itself is not a public-rendering legal gate. Every malformed, invalid, or unknown public token has the same 404 response.
+22. **`ASM-22` — Unified Scaled-Integer Quantity Encoding (`P-0104r`, `2026-10-23`):** All domain, sync, hash-bearing payload, and applicable API quantity values use signed integer thousandths with explicit field names `quantity_millis` for positive invoice-item quantities, `quantity_delta_millis` for non-zero signed inventory movements, and `stock_millis` for derived stock projections (`1000 = 1.000`; `-2000 = -2.000`). Stock and line arithmetic use exact signed-integer arithmetic with explicit overflow/range validation at implementation boundaries; binary floating point, locale-sensitive parsing, and decimal-string quantity encodings are forbidden. This preserves the integer-only canonical JSON hash profile, avoids binary rounding and locale ambiguity, supports exact thousandths and signed ledger corrections, and gives P-05–P-09 one simple validation rule. Existing integer Rial fields such as `unit_price_rials`, `line_total_rials`, and `total_rials` remain unscaled and unchanged.
+23. **`ASM-23` — Conservative E-11 Consumer Boundary (`C-07`, `2026-10-24`):** The E-11 schema and seven JSON goldens/manifest are test fixtures only; no Python implementation is copied. The C# consumer rejects duplicate keys, non-canonical integer number tokens, invalid required structure, premature display numbers, negative core monetary amounts, and issued-content hash mismatches. Every accepted source state, including `ISSUED` and `REVOKED`, maps only to a `REVIEW` queue entity and never invokes native issuance or inventory effects. Optional ACC-0 tax/discount/rounding fields remain structural-only and are not given new accounting semantics.
+24. **`ASM-24` — Cloud PostgreSQL and Portable CI Baseline (`C-05`, `2026-10-24`):** Production Cloud ingest has no in-memory store fallback; store state, log entries, and batch idempotency fingerprints persist in PostgreSQL transactions with per-store row locking. Linux CI uses a synthetic PostgreSQL 16 service container. Windows CI uses a real local PostgreSQL 15.3.0 embedded test process with a free port and no service container, so the same CLOUD vectors execute rather than being skipped or routed to an in-memory substitute.
+25. **`ASM-25` — Single-Invoice Public Preview and D14 Gate (`C-06`, `2026-10-24`):** `/i/{token}` is an anonymous capability read of exactly one persisted issued/terminal invoice projection; tokens are generated from 16 CSPRNG bytes, malformed and unknown tokens share one 404, and no history/list or cross-store fallback exists. Development/Testing previews render the explicitly marked `needs lawyer approval` placeholder only. Production continues to fail closed with `LEGAL_COPY_UNAVAILABLE`; C-06 does not claim an approved-copy production path, and the placeholder is not legal copy or an approval claim.
+26. **`ASM-26` — Hub API Credential and LAN Execution Boundary (`C-08`, `2026-10-25`):** The Hub API uses opaque bearer session tokens and device credentials returned once and persisted only as SHA-256 hashes; QR proofs are single-use, 128-bit minimum, hashed at rest, and never included in audit events. Owner bootstrap requires explicit configuration and is unavailable otherwise. QR pairing can create only `COMPANION` devices. `LAN-HUB-001` and strict Hub-off/D7 client behavior remain outside the Hub API test harness; the Hub fail-closed responsibility is to reject unpaired, revoked, expired, wrong-store, and wrong-device mutation attempts. Authenticated OCC/lock rejections use durable operation responses and outbox entries, while transport/authentication/shape failures create none.
+27. **`ASM-27` — Provider-Agnostic SMS Stub and Delivery Limits (`C-09`, `2026-10-25`):** Invoice SMS uses the existing verified single-invoice public link and the Persian `invoice_fa_v1` template; it never mints a delivery token or exposes history. `ISmsProvider` and `ISmsSubscriptionMetadata` are the only provider/subscription boundaries, and the sole implementation provider is the deterministic no-network/no-secret stub. PostgreSQL reservations make store-scoped `operation_id` deduplication, quota use, and per-invoice/per-recipient one-minute abuse counters atomic. `PENDING` retries do not call the provider again, exact `SENT` retries return the original result, changed fingerprints conflict, and failed quota/rate checks have no provider effect. Production provider selection remains Open item 1.
+28. **`ASM-28` — Durable Hub-to-Cloud Replication (`C-10`, `2026-10-25`):** Each accepted Hub operation and its immutable hash-chained replication entry commit in one SQLite transaction. One ordered upload stream per store posts the unchanged batch to the existing Cloud ingest endpoint; Cloud remains a replica/projection and never re-executes commands. Lost responses/network/temporary failures and throttling retain the durable outbox for bounded retries, with advertised batch limits applied after throttling. Only an `ACCEPTED`/`DUPLICATE` acknowledgement matching the final sequence and head hash acknowledges entries. Gaps return the required resume sequence, corruption/order/conflicts stop for review, and `WRITER_FENCED` persists read-only mode while preserving unsynced entries. C-10 tests execute CLOUD-001–008 through the in-process Cloud/PostgreSQL endpoint and separately prove duplicate-free retry across actual SQLite store recreation.
+29. **`ASM-29` — Verified Customer Accounts and Claims (`C-11`, `2026-10-25`):** Customer OTP uses the existing `ISmsProvider` abstraction and deterministic no-network stub only. PostgreSQL enforces normalized-phone issue windows, five-minute challenge expiry, five wrong-attempt lockout, strict operation-key replay, and atomic verification/account/session creation; raw OTPs and bearer tokens are never persisted. A verified account owns one normalized phone. Public-invoice claims are separate customer records and never rewrite Hub-replicated invoice state. Authenticated history selects only projected/claimed invoices for that verified phone and includes explicit store identity; no caller-supplied phone is trusted. Anonymous `/i/{token}` single-invoice reads remain unchanged and grant neither history nor account access.
+30. **`ASM-30` — Verified Cloud-to-Fresh-Hub Restore (`C-12`, `2026-10-26`):** Restore authorization requires a verified OTP proof plus either recovery-key proof or manifest/request/device-bound approval from a previously paired device behind `IRestoreSecondFactorVerifier`; SMS alone and SMS-shaped second factors produce no export grant. PostgreSQL exports the complete contiguous hash-validated log and canonical replay projection only for an authorization grant bound to the unchanged manifest. A fresh SQLite Hub stages devices, products, inventory, invoices/items, operations, locks, display counters, and acknowledged replication history in one transaction, recomputes the canonical state hash before commit, and rolls back on mismatch. Runtime sessions and retry timestamps are excluded. Cloud writer activation rechecks the old epoch and state hash, increments the epoch, and fences the old writer. Known operations above the Cloud watermark are explicitly unrecoverable, listed in the result, and block activation until the owner acknowledges the loss; no silent full-recovery claim is permitted.
+31. **`ASM-31` — Durable Product Tags and Catalog Creation (`C-13`, `2026-10-26`):** The no-UI `HubProductCatalogService` requires product name, non-negative integer Rial price, and non-negative initial `stock_millis`; blank optional category/color/size/material/brand/barcode/specification values are ignored. Creation uses the existing NFKC Arabic/Persian/ZWNJ normalization and exact/near-duplicate rules; warnings allocate no tag and require candidate-specific acknowledgement. A successful idempotent `product.create` atomically writes the product, any nonzero initial inventory receipt, dedicated per-store tag high watermark, operation, and outbox entry. Positive tags are generated only by that watermark, unique per store, independent of display/operation counters, immutable through soft retirement, and included with their watermark in restore; conflicts fail rather than renumber. Stock remains the append-only inventory sum. QR labels use the documented canonical JSON store/tag payload and optional calculated Luhn digit, never a credential or sale capability. UI, free-form cascading fields, and physical QR rendering remain outside C-13.
 
 ---
 
 ## Open
 
-The following decisions require explicit action from the **Product Owner** (and Lawyer where noted) and must **not** be invented by developers:
+The following decisions require explicit action from the **Product Owner** (and Lawyer where noted) and must **not** be invented by developers. Owner-approved `P-0104r` (`2026-10-23`) closed former **Open item 3** (300-second default plus accepted-change-only inactivity) and former **Open item 6** (issue-time gapless display numbering). Original item numbers are retained below, so items 3 and 6 are intentionally absent.
 
 | Item | Related Decision | Current Conservative Posture | Blocking Gate | Action Needed from Owner |
 | --- | --- | --- | --- | --- |
 | **1. SMS Provider** | `D4` (v4.1) | Use local deterministic `StubSmsSender`; no external gateway credentials in repo. | Before `P-08` (real SMS delivery) | Select domestic/international SMS provider, pricing tier, and sender line policy. |
 | **2. Host** | `D5` (v4.1 / v4.2) | Local Docker Compose with synthetic data only; zero free cloud services. | Before any public pilot / `P-08`–`P-10` external exposure | Choose domestic or non-US Docker-capable VPS vendor for public endpoints. |
-| **3. Lock Timeout Confirmation** | `D11` (v4.2) | Default configured to **`5 minutes`** (`TimeSpan.FromMinutes(5)`), configurable per store/hub. | Before production multi-device rollout (`P-02` configurable default) | Confirm `5 minutes` default and whether operator UI heartbeat extends active editing vs. strict creation-to-issue TTL. |
 | **4. Legal Wording (`D14`, by Lawyer)** | `D14` + `SEC-1` + Truthfulness Rule | Product named `"Kandoo digital invoice"`; zero legal claims written by developers; customer pages gated. | Hard release gate before `P-09` public customer views & store onboarding release | Provide lawyer-drafted/approved customer invoice notice and digitally signed store installation custody/encryption agreement matching tested MVP capabilities. |
+| **5. Product Near-Duplicate Matcher (`P-01`)** | `D9` + `ASM-07` | Exact normalized duplicates reject; equal conservative similarity keys warn and require candidate-specific acknowledgement; no automatic merge. | Before adding broader fuzzy matching to product-catalog implementation | Confirm whether spacing/hyphen equivalence is sufficient for the first increment or approve a deterministic additional algorithm, threshold, and Persian/Latin test fixtures. |
+| **7. Pairing and Session Lifetimes (`P-02`)** | `D7` + `ASM-14` | Single-use companion QR expires after `300s`; sessions have explicit Hub-issued configurable expiry and are bound to the device. | Before production pairing/session UX is finalized | Confirm QR validity and session renewal/absolute-lifetime requirements for store operations. |
+| **8. Replication and Outbox Tuning (`P-02`)** | `D7` + `ASM-15` | Retry `1s` doubling to `60s` with jitter; one ordered stream; obey Cloud limits; never discard unacknowledged entries. | Before production rollout on target Hub hardware | Approve batch byte/entry limits, retry ceilings, soft sync-warning threshold, and hard durability-capacity behavior. |
+| **9. Clock-Skew Incident Threshold (`P-02`)** | `D7` + `D11` + `ASM-17` | Client time never controls expiry/order; sequence/hash governs replication; excessive Hub/Cloud skew is review. | Before production monitoring/runbook completion | Define acceptable Hub/Cloud skew, detection method, alerting, and operator remediation thresholds. |
+| **10. Fenced-Writer Divergent Suffix Recovery (`P-02`)** | `D8` + `ASM-16` | Old writer stays read-only; divergent unsynced entries are quarantined and never auto-merged. | Before a production two-Hub/disk-recovery incident runbook is approved | Specify owner-facing review/export/reconciliation procedure without reusing sequences or overwriting the active writer. |
+| **11. Cloud Credential and Replay Parameters (`P-04`)** | `D7` + `D8` + `SEC-1` + `ASM-19`/`ASM-21` | Opaque scoped tokens stored as hashes; rotation and activation exact-replay grace is 60 seconds; no JWT or private-key transport is prescribed. | Before production pairing, restore, or token rollout | Approve token TTLs, opaque-token hash/storage profile, renewal policy, revocation propagation, and replay-cache durability. |
+| **12. Production HTTP Retention, Cursor, and Rate-Limit Tuning (`P-04`)** | `D10` + `ASM-20` | Administrative idempotency is at least 24 hours with conflict-safe tombstones; domain dedup is permanent; cursors are opaque and bound; conservative documented limits apply. | Before multi-replica or production deployment | Approve retention/compaction, cursor encoding/signing and expiry, distributed rate-limit storage, and measured endpoint/batch limits. |
+| **13. Cloud Implementation and Cryptographic Profiles (`P-04`)** | `D2` + `D8` + `SEC-1` + `ASM-18`/`ASM-21` | OpenAPI YAML is source; Redocly 2.69.0 validates it; no generator, canonical-JSON library, key-envelope algorithm, or approval-signature algorithm is selected. | Before Cloud implementation and security rollout | Select ASP.NET OpenAPI/validation/CI tooling, a .NET canonical-JSON implementation proven against all P-02 vectors, SEC-1 envelope algorithms, paired-approval signature profile, and OTP implementation. |
+
+---
+
+## Window-11 (W11) C# implementation status, 2026-11-10
+
+Recorded per standing order SO-01 §1(a)-(c); branch `arena/ca78e14d-kandoo`; source of truth is `origin/arena/ca78e14d-kandoo`.
+
+| Task | Tag | Full commit SHA | CI run | Status |
+|---|---|---|---|---|
+| C-59 | `w11-C-59` | `c974a8ce62bd2135a251f08dc9d4b2994d4f7769` | [42459975126](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42459975126) | manager-ACCEPTED |
+| C-60 | `w11-C-60` | `e6bf39cfc7943a5139e3290468ce276d90ac134f` | [42461927836](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42461927836) | manager-ACCEPTED |
+| C-61 | `w11-C-61` | `a0ab3f567e058f8ec88cf5a2c5ba5882162c135c` | [42465848589](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42465848589) | manager-ACCEPTED |
+| C-62 | `w11-C-62` | `ad51ab975ce443c07eecdc42cb407ae5a6a11627` | [42500381204](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42500381204) | manager-ACCEPTED |
+| C-62 follow-up (sln reg) | — | `aa580acaebc662e3e5986c5554c3fe64b6316223` | [42500128966](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42500128966) red → fixed | manager-ACCEPTED after fix |
+| C-62 fix (HolooMapper) | — | `49160d6455037b33bfec4fb7860f027007d495aa` | [42500381204](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42500381204) | manager-ACCEPTED (ubuntu + windows) |
+| C-63 | `w11-C-63` | `7ce20672fcb0b86ef85f9ea9396f147d71362ee7` | [42470372406](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42470372406) | manager-ACCEPTED |
+| C-65 | `w11-C-65` | `a5848e39028b021b0a0df74ae5fe15d884ee203c` | [42471577629](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42471577629) | manager-ACCEPTED |
+| H-07 | `w11-H-07` | published after tagging | published after CI green | closed per ORDER 11 |
+| C-45b | — (blocked, no tag) | — | — | MUST per ORDER 11; blocked on v1.1 addendum Draft 2 (2026-11-10, PM/PO review) and Cloud v1.1 advertisement |
+
+### C-45b (MUST per ORDER 11)
+Hub side of v1.1 per D-C/P-09, activated only when the Cloud advertises v1.1. **Blocked** on the v1.1 addendum chain (Draft 2 issued 2026-11-10, PM/PO review) and Cloud v1.1 advertisement. This is NOT a keep-or-close documentation decision. `setup.exe` (Inno Setup authoring script `packaging/HubPilot/KandooHub.Installer.iss`) is authored only, not built in CI; Hub-side v1.1 field emission (U14) not implemented.
+
+### Incidents 1-4 (sandbox recycles + stash loss)
+Recorded in `AGENT_HANDOFF.md`; `stash@{0}` (3 pre-existing doc modifications) lost in incident 4 — keep-stashed rule moot.
+
+---
+
+## ORDER 14 Decisions (`D-A`–`D-K`), 2026-10-22
+
+Recorded per ORDER 14 standing constraints; branch `arena/o14-cs-kandoo`; source of truth is `origin/arena/o14-cs-kandoo`.
+
+| ID | Decision | Source | Status |
+|----|----------|--------|--------|
+| **D-A** | **CI build strategy:** Inno Setup / `setup.exe` authoring is not achievable on GitHub `windows-latest` runners (13 failed CI runs across chocolatey, winget, direct download, iexpress). `setup.exe` build step removed from CI; self-contained `win-x64` zip publish retained as the distributable artifact. | C-65 | ACTIVE |
+| **D-B** | **Write-path verification:** Domain mutations routed through `HubOperationService.Submit` → `IHubStore.Execute` create durable Operation Log + Outbox + Replication entries. `IHubAccessStore` mutations (owner session, pairing grant, pairing consume, device server key, device level change, revoke, disconnect) call the access store directly and bypass the Operation Log. Gap documented in `tests/Kandoo.Hub.Tests/WritePathVerificationTests.cs`; no production code changed pending owner/PM decision. | C-67 | ACTIVE |
+| **D-C** | **Blocker policy:** C-66 is BLOCKED until owner-provided test vectors arrive. Blocker-record and wait; no code written, no rule guessed, no tag created. | C-66 | BLOCKED |
+| **D-D** | **Tag policy:** New `o14-*` lightweight tags are created only after green CI on the target commit. One commit + one tag per delivered item. | ORDER 14 | ACTIVE |
+| **D-E** | **Report language:** All ORDER 14 reports are written in Persian. Facts not promises; no invented numbers or outcomes. | ORDER 14 | ACTIVE |
+| **D-F** | **CI-green-before-tag:** No tag is created before CI is green on the target commit. Red CI with no code change → re-run once and report both results. | ORDER 14 | ACTIVE |
+| **D-G** | **Branch integrity:** Branch only; never push `main`; no force-push; do not move existing `w11-*` tags; existing tags pinned forever. | ORDER 14 | ACTIVE |
+| **D-H** | **PR policy:** No PR-object actions on PR #2 / PR #15; push to working branch is fine; nobody merges. | ORDER 14 | ACTIVE |
+| **D-I** | **E-43 waived:** D-I / E-43 is waived per owner instruction. | ORDER 14 | WAIVED |
+| **D-J** | **Kando-internal AI:** `kando-internal-ai-v01` is frozen; `engine-v1` is run by a separate agent. | ORDER 14 | FROZEN |
+| **D-K** | **Close-out report table:** ORDER 14 close-out report uses the table format: task, tag, full SHA, CI run URL actually opened, result. | ORDER 14 | ACTIVE |
+
+---
+
+### ORDER 14 Tag Ledger
+
+| Task | Tag | Full commit SHA | CI run | Status |
+|------|-----|-----------------|--------|--------|
+| **C-65** | `o14-C-65` | `373cd17` | [43619808896](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/43619808896) | Green |
+| **C-66** | — (blocked) | — | — | Blocked — vectors not arrived |
+| **C-67** | `o14-C-67` | `97e2a9c` | [43620809823](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/43620809823) | Green |
+
+### C-66 Blocker Record
+
+Recorded in `docs/reports/C-66-BLOCKED.md`. C-66 remains blocked until owner-provided test vectors arrive. No commit, tag, or code change associated with C-66.
