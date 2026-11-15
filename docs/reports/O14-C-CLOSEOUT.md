@@ -32,9 +32,9 @@
 | C-45b | `o14-C-45b` | `38c86ec6523642669a97b55b11fdcb1c7f607798` | [۴۳۶۹۳۸۶۴۴۷۹](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/43693864479) | سبز |
 | C-60 | `o14-C-60` | `feeea88ce872bc8966ffc1ad9e0487761618fa64` | [۴۳۶۸۸۴۱۹۶۵۴](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/43688419654) | سبز |
 | C-61 | `o14-C-61` | `38c86ec6523642669a97b55b11fdcb1c7f607798` | [۴۳۶۹۳۸۶۴۴۷۹](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/43693864479) | سبز |
-| C-65 | `o14-C-65` | `373cd17` | [۴۳۶۱۹۸۰۸۸۹۶](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/43619808896) | سبز |
+| C-65 | `o14-C-65` | `373cd177e1758263ca16a88d95c7a0703c6efffb` | [۴۳۶۱۹۸۰۸۸۹۶](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/43619808896) | سبز |
 | C-66 | — (مسدود) | — | — | مسدود — وکتورهای تست دریافت نشده |
-| C-67 | `o14-C-67` | `97e2a9c` | [۴۳۶۲۰۸۰۹۸۲۳](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/43620809823) | سبز |
+| C-67 | `o14-C-67` | `97e2a9c36dd60766e864d0d3e1f88e17769e4b25` | [۴۳۶۲۰۸۰۹۸۲۳](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/43620809823) | سبز |
 
 ## ۵) تصمیمات D-A تا D-K
 
@@ -42,8 +42,8 @@
 
 ## ۶) وضعیت نهایی شاخه (final branch state)
 
-- **سر شاخه فعلی:** `38c86ec6523642669a97b55b11fdcb1c7f607798` (کامیت C-45b + تگ o14-C-45b و o14-C-61)
-- **تگ‌های ORDER 14:** `o14-C-45b` → `38c86ec6523642669a97b55b11fdcb1c7f607798`، `o14-C-60` → `feeea88ce872bc8966ffc1ad9e0487761618fa64`، `o14-C-61` → `38c86ec6523642669a97b55b11fdcb1c7f607798`، `o14-C-65` → `373cd17`، `o14-C-67` → `97e2a9c`؛ هیچ تگی جابجا نشده است.
+- **سر شاخه فعلی:** `ac00cc17` (کامیت گزارش پایانی ORDER 14 C-CLOSEOUT)
+- **تگ‌های ORDER 14:** `o14-C-45b` → `38c86ec6523642669a97b55b11fdcb1c7f607798`، `o14-C-60` → `feeea88ce872bc8966ffc1ad9e0487761618fa64`، `o14-C-61` → `38c86ec6523642669a97b55b11fdcb1c7f607798`، `o14-C-65` → `373cd177e1758263ca16a88d95c7a0703c6efffb`، `o14-C-67` → `97e2a9c36dd60766e864d0d3e1f88e17769e4b25`؛ هیچ تگی جابجا نشده است.
 - **main:** هیچ push، merge یا PR به شاخه `main` انجام نشده است.
 - **تگ جدید:** `o14-C-H` فقط پس از سی‌آی سبز روی کامیت پایانی ایجاد می‌شود.
 
