@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text.Json;
 using Kandoo.Hub;
 using Xunit;
