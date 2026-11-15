@@ -125,6 +125,16 @@ public sealed class HubCloudReplicationClient
             return new HubReplicationResult("IDLE", 0, depth, 0);
         }
 
+        // C-60: per-device secret — fail closed when missing
+        var deviceSecret = _source.GetDeviceSecret(storeId, batch.WriterDeviceId);
+        if (string.IsNullOrEmpty(deviceSecret))
+        {
+            return new HubReplicationResult(
+                "DEVICE_SECRET_MISSING", 0, depth, 0, "DEVICE_SECRET_MISSING",
+                Mode: "FENCED_READ_ONLY");
+        }
+
+        batch.DeviceSecret = deviceSecret;
         var outbound = HubReplicationPayloadV11.Apply(batch, _options);
         CloudTransportResponse response;
         try

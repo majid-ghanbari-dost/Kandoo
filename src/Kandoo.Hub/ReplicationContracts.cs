@@ -108,6 +108,10 @@ public sealed class ReplicationBatch
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<HubInvoiceReplicationPayloadV11>? InvoicePayloads { get; set; }
 
+    [JsonPropertyName("device_secret")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? DeviceSecret { get; set; }
+
     public static ReplicationBatch Create(HubWriterIdentity writer, Guid storeId, IReadOnlyList<ReplicationLogEntry> entries)
     {
         if (entries.Count == 0)
@@ -135,6 +139,7 @@ public interface IHubReplicationSource
     int GetOutboxDepth(Guid storeId);
     bool IsWriterFenced(Guid storeId);
     void MarkWriterFenced(Guid storeId, HubWriterIdentity writer, string reason);
+    string? GetDeviceSecret(Guid storeId, Guid deviceId);
 }
 
 public sealed record CloudTransportResponse(HttpStatusCode HttpStatus, JsonElement? Body, TimeSpan? RetryAfter = null);
