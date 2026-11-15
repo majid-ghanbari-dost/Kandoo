@@ -897,6 +897,13 @@ public sealed partial class SqliteHubStore
             using var transaction = _connection.BeginTransaction();
             try
             {
+                // Ensure the device row exists before saving its secret
+                using var ensureCmd = _connection.CreateCommand();
+                ensureCmd.CommandText = "INSERT OR IGNORE INTO devices (store_id, device_id, device_role, pairing_status, label, platform) VALUES ($store, $device, 0, 1, '', '')";
+                ensureCmd.Parameters.AddWithValue("$store", storeId.ToString("D"));
+                ensureCmd.Parameters.AddWithValue("$device", deviceId.ToString("D"));
+                ensureCmd.ExecuteNonQuery();
+
                 using var command = AccessCommand(transaction, "UPDATE devices SET device_secret = $secret WHERE store_id = $store AND device_id = $device;");
                 AddAccess(command, "$secret", secret);
                 AddAccess(command, "$store", storeId.ToString("D"));
