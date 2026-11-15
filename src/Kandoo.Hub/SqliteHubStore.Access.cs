@@ -897,10 +897,7 @@ public sealed partial class SqliteHubStore
             using var transaction = _connection.BeginTransaction();
             try
             {
-                using var command = AccessCommand(transaction, @"""
-                    UPDATE devices SET device_secret = $secret
-                    WHERE store_id = $store AND device_id = $device;
-                    """);
+                using var command = AccessCommand(transaction, "UPDATE devices SET device_secret = $secret WHERE store_id = $store AND device_id = $device;");
                 AddAccess(command, "$secret", secret);
                 AddAccess(command, "$store", storeId.ToString("D"));
                 AddAccess(command, "$device", deviceId.ToString("D"));

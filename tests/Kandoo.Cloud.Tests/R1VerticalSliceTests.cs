@@ -46,6 +46,7 @@ public sealed class R1VerticalSliceTests : IDisposable
     public async Task C15_R1_ProductDraftIssueLogReplicationSmsAndPublicInvoiceRunEndToEnd()
     {
         var slice = await CreateIssuedSlice();
+        _hubStore.SaveDeviceSecret(slice.StoreId, _writerDeviceId, "r1-test-device-secret");
         var batch = _hubStore.ReadBatch(slice.StoreId, 100, 1_048_576)!;
         Assert.Equal(4, batch.Entries!.Count);
         Assert.Equal(4, _hubStore.LoadOperationLog().Count(slice.StoreId));
@@ -93,6 +94,7 @@ public sealed class R1VerticalSliceTests : IDisposable
     public async Task C15_R1_RetriesCreateNoDuplicateOperationsCloudProjectionsOrSmsCharges()
     {
         var slice = await CreateIssuedSlice();
+        _hubStore.SaveDeviceSecret(slice.StoreId, _writerDeviceId, "r1-test-device-secret");
         var issueReplay = await Submit(
             slice.StoreId, slice.Device.Session, "r1-issue-1", "invoice.issue", new { invoice_id = slice.InvoiceId });
         Assert.Equal(HttpStatusCode.OK, issueReplay.StatusCode);
@@ -134,6 +136,7 @@ public sealed class R1VerticalSliceTests : IDisposable
     public async Task C24_OfflineIssueThenSyncReplayAndReissueStayDuplicateFree()
     {
         var slice = await CreateIssuedSlice();
+        _hubStore.SaveDeviceSecret(slice.StoreId, _writerDeviceId, "r1-test-device-secret");
         var issueReplay = await Submit(
             slice.StoreId, slice.Device.Session, "r1-issue-1", "invoice.issue", new { invoice_id = slice.InvoiceId });
         Assert.Equal(HttpStatusCode.OK, issueReplay.StatusCode);
