@@ -47,8 +47,8 @@ builder.Services.AddSingleton<ICloudVersionClient>(sp =>
 });
 builder.Services.AddSingleton<HubReplicationOptions>(sp =>
 {
-    var options = new HubReplicationOptions();
     var cloudUrl = builder.Configuration["Hub:CloudUrl"];
+    var v11Enabled = false;
     if (!string.IsNullOrEmpty(cloudUrl))
     {
         try
@@ -62,7 +62,7 @@ builder.Services.AddSingleton<HubReplicationOptions>(sp =>
                 if (document.RootElement.TryGetProperty("protocol_version", out var version)
                     && version.GetString() == "1.1")
                 {
-                    options.PayloadV11Enabled = true;
+                    v11Enabled = true;
                 }
             }
         }
@@ -71,7 +71,7 @@ builder.Services.AddSingleton<HubReplicationOptions>(sp =>
             // Fail-closed: if Cloud is not reachable, v1.1 remains disabled.
         }
     }
-    return options;
+    return new HubReplicationOptions { PayloadV11Enabled = v11Enabled };
 });
 builder.Services.AddSingleton<HubOperationService>();
 builder.Services.AddSingleton(new HubProductCatalogService(hubStore));
