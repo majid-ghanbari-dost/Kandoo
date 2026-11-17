@@ -32,6 +32,7 @@ var sqliteConnection = builder.Configuration.GetConnectionString("HubSqlite")
     ?? "Data Source=kandoo-hub.db;Pooling=False";
 var hubStore = new SqliteHubStore(sqliteConnection);
 builder.Services.AddSingleton<IHubStore>(hubStore);
+builder.Services.AddSingleton<SqliteHubStore>(hubStore);
 builder.Services.AddSingleton<IHubAccessStore>(hubStore);
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<HubStatsService>();
@@ -94,6 +95,12 @@ var backupOptions = new HubBackupOptions();
 builder.Configuration.GetSection("Hub:Backup").Bind(backupOptions);
 backupOptions.Validate();
 builder.Services.AddSingleton(backupOptions);
+
+var demoOptions = new DemoHubOptions();
+builder.Configuration.GetSection("Hub:Demo").Bind(demoOptions);
+demoOptions.Validate();
+builder.Services.AddSingleton(demoOptions);
+
 builder.Services.AddSingleton(provider => new SqliteBackupService(
     hubStore,
     backupOptions,
@@ -119,6 +126,23 @@ if (captureOptions.Enabled)
 }
 
 var app = builder.Build();
+
+// Order 15 demo profile (C-80): seed realistic demo data into the Hub store when
+// demo mode is enabled, so both Windows and Android demo clients read the same
+// LAN authority data.
+if (app.Services.GetRequiredService<DemoHubOptions>().Mode)
+{
+    using var scope = app.Services.CreateScope();
+    var services = scope.ServiceProvider;
+    var seeder = new DemoDataSeeder(
+        services.GetRequiredService<SqliteHubStore>(),
+        services.GetRequiredService<HubProductCatalogService>(),
+        DemoStoreId,
+        DemoDeviceId,
+        services.GetRequiredService<IClock>());
+    seeder.Seed();
+}
+
 app.UseSwagger(options => options.RouteTemplate = "openapi/{documentName}.json");
 app.MapHubHostLocalPages();
 app.MapHubApiFirstEndpoints();
@@ -856,4 +880,8 @@ static object LockBody(DraftLock current) => new
 
 public partial class Program
 {
+    internal static readonly Guid DemoStoreId =
+        Guid.Parse("01010101-0101-0101-0101-010101010101");
+    internal static readonly Guid DemoDeviceId =
+        Guid.Parse("02020202-0202-0202-0202-020202020202");
 }
