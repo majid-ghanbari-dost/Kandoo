@@ -43,7 +43,7 @@ public sealed class DemoDataSeeder
         {
             (
                 "لبنیات", null,
-                new[]
+                new (string Legacy, string Name, long Price, long? Purchase, long Stock)[]
                 {
                     ("LAC-001", "شير پاستور", 15000, 12000, 60_000),
                     ("LAC-002", "پنير سفید", 65000, 52000, 24_000),
@@ -54,7 +54,7 @@ public sealed class DemoDataSeeder
             ),
             (
                 "نرم‌افزار", null,
-                new[]
+                new (string Legacy, string Name, long Price, long? Purchase, long Stock)[]
                 {
                     ("SFC-010", "برنامه حسابداري", 450000, 320000, 5_000),
                     ("SFC-011", "سيستم انبارداري", 380000, 290000, 8_000),
@@ -65,7 +65,7 @@ public sealed class DemoDataSeeder
             ),
             (
                 "لوازم خانگی", null,
-                new[]
+                new (string Legacy, string Name, long Price, long? Purchase, long Stock)[]
                 {
                     ("HHA-101", "ماشین لباسشویی", 8_500_000, 6_900_000, 2_000),
                     ("HHA-102", "يخچال دو-دره", 12_000_000, 9_500_000, 1_500),
@@ -76,7 +76,7 @@ public sealed class DemoDataSeeder
             ),
             (
                 "غذا", null,
-                new[]
+                new (string Legacy, string Name, long Price, long? Purchase, long Stock)[]
                 {
                     ("FOD-201", "نان بربري", 7000, 4500, 120_000),
                     ("FOD-202", "روغن مزه دار", 45000, 34000, 36_000),
@@ -87,7 +87,7 @@ public sealed class DemoDataSeeder
             ),
             (
                 "پوشاک", null,
-                new[]
+                new (string Legacy, string Name, long Price, long? Purchase, long Stock)[]
                 {
                     ("CLT-301", "پانجامه پارچه اي", 95000, 72000, 18_000),
                     ("CLT-302", "شلوار كتان", 145000, 110000, 14_000),
@@ -98,7 +98,7 @@ public sealed class DemoDataSeeder
             ),
             (
                 "غذاهای سریع", null,
-                new[]
+                new (string Legacy, string Name, long Price, long? Purchase, long Stock)[]
                 {
                     ("FST-401", "كباب کوبيده", 65000, 52000, 9_000),
                     ("FST-402", "جوجه کباب", 72000, 58000, 7_000),
@@ -109,7 +109,7 @@ public sealed class DemoDataSeeder
             ),
             (
                 "آرایش و بهداشت", null,
-                new[]
+                new (string Legacy, string Name, long Price, long? Purchase, long Stock)[]
                 {
                     ("BEA-501", "شامپو طبيعي", 42000, 34000, 22_000),
                     ("BEA-502", "صابون دستشو", 18000, 14000, 40_000),
@@ -120,7 +120,7 @@ public sealed class DemoDataSeeder
             ),
             (
                 "لوازم تحریر", null,
-                new[]
+                new (string Legacy, string Name, long Price, long? Purchase, long Stock)[]
                 {
                     ("OFF-601", "قلم رو", 8000, 6000, 85_000),
                     ("OFF-602", "نسخه ميانوس", 24000, 19000, 32_000),
@@ -153,9 +153,7 @@ public sealed class DemoDataSeeder
                     ProductId: "p-" + Slug(legacy),
                     Category: null,
                     GroupId: groupIdForProducts,
-                    PurchasePriceRials: purchase,
-                    UnitPriceRials: price,
-                    InitialStockMillis: stock);
+                    PurchasePriceRials: purchase);
 
                 var result = _catalog.Register(_storeId, _deviceId, "demo-product-" + Slug(legacy), input);
                 // EXACT_DUPLICATE / NEAR_DUPLICATE_WARNING are acceptable on re-seed.

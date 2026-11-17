@@ -59,8 +59,8 @@ public sealed class DemoHubOptions
         }
         else if (bytes.Length == 16)
         {
-            // IPv6 loopback / link-local / unique local (fc00::/7)
-            if (address.IsLoopback || address.IsLinkLocal) return true;
+            // IPv6 loopback / unique local (fc00::/7)
+            if (address.IsLoopback) return true;
             if (bytes[0] == 0xfd || bytes[0] == 0xfc) return true;
         }
 
