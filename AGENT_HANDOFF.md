@@ -519,4 +519,34 @@ Autonomous decisions:
 - C-83: DeviceSecret removed from JSON body serialization; kept only in Authorization: Bearer header per DeviceBearer contract
 - C-83: Legacy header deprecation recorded in openapi.yaml (P-27 debt)
 
-Next tasks: C-84 (review queue + print fallback), C-85 (setup.exe via Inno Setup or zip fallback + RUN-LOCAL.md + start-all), C-86 stretch (Android customer mode).
+### C-84 — Review Queue page + print fallback
+
+Delivered:
+- ReviewQueuePage.xaml + .xaml.cs — dedicated review queue page with:
+  - Load review queue items (fake or real mode via ReviewQueueCoordinator)
+  - View attention cells needing correction
+  - Correct field values via Hub API (POST /reviews/{id}/corrections)
+  - Set customer phone via Hub API (POST /reviews/{id}/customer-phone)
+  - Issue review with optional print (POST /reviews/{id}/issue)
+  - Print fallback when print adapter disabled/failed (saves to local file + clipboard)
+  - Empty/error states with copy-report button
+  - Style v2, role-aware (Store/Operator/Manager)
+- CheckBoxStyle added to DesignTokens.xaml
+- ReviewQueue navigation button added to MainPage quick actions
+
+| Task | Tag | Full commit SHA | Branch CI run | Tag CI run | Status |
+|------|-----|-----------------|---------------|------------|--------|
+| **C-84** | `o15-C-84` | `adaaeca098d937a988b796034b2f495239a49059` | [44074149427](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44074149427) — GREEN (ubuntu + windows) | same commit | GREEN |
+
+Honest delivery notes:
+- Main CI (build+test) GREEN on ubuntu + windows
+- Kandoo App Windows publish failure is pre-existing infrastructure issue (same as C-82), not a code regression
+- All code steps (Test app logic) passed
+
+Files changed: `src/Kandoo.App/ReviewQueuePage.xaml` (new), `src/Kandoo.App/ReviewQueuePage.xaml.cs` (new), `src/Kandoo.App/MainPage.xaml` (ReviewQueue button), `src/Kandoo.App/MainPage.xaml.cs` (OnReviewQueueClicked), `src/Kandoo.App/Resources/DesignTokens.xaml` (CheckBoxStyle).
+
+Autonomous decisions:
+- C-84: Print fallback saves print preview to local app data file + copies to clipboard when print adapter is disabled/failed
+- C-84: ReviewQueuePage uses ReviewQueueCoordinator for fake/real mode switching
+
+Next tasks: C-85 (setup.exe via Inno Setup or zip fallback + RUN-LOCAL.md + start-all), C-86 stretch (Android customer mode).

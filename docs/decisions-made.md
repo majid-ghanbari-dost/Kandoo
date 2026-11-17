@@ -75,3 +75,11 @@ Autonomous technical decisions, one per line (what / why / rejected option), per
 16. **DeviceSecret removed from JSON body serialization** in ReplicationBatch via [JsonIgnore]. It is sent only via Authorization: Bearer header (DeviceBearer scheme per docs/openapi.yaml). Why: Cloud contract requires device secret in header only; serializing it in the body leaks the per-device secret in request logs and body snapshots. Rejected: keeping device_secret in JSON body (P-27 debt from PHP agent; Cloud rejects it).
 
 17. **Legacy header deprecation recorded in openapi.yaml** (x-legacy-header-deprecation): X-Device-Key header and device_secret JSON body field deprecated in P-27, removed in C-83. Why: document the P-27 debt and the migration to DeviceBearer Authorization header. Rejected: silently removing without documentation (breaks API consumers).
+
+## C-84 — Review Queue page + print fallback
+
+18. **Print fallback saves preview to local file + clipboard** when print adapter returns PRINT_ADAPTER_DISABLED or PRINT_FAILED. Why: Galaxy J8 crash was caused by missing managed DLLs; print may not be available on all devices. Fallback ensures print intent is preserved. Rejected: silently ignoring print failures (operator would not know print was skipped).
+
+19. **ReviewQueuePage uses ReviewQueueCoordinator** for fake/real mode switching. Why: consistent with existing Stage-A page pattern; single coordinator manages data source selection. Rejected: per-page data source instantiation (inconsistent).
+
+20. **CheckBoxStyle added to DesignTokens.xaml** for consistent checkbox styling across Stage-A pages. Why: style v2 consistency. Rejected: inline checkbox styling (visual inconsistency).
