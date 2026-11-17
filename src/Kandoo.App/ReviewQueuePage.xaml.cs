@@ -189,7 +189,7 @@ public partial class ReviewQueuePage : ContentPage
         {
             using var request = new HttpRequestMessage(
                 HttpMethod.Get,
-                $\"{_settings.BaseUrl.TrimEnd('/')}/v1/stores/{_settings.StoreId:D}/reviews/{reviewId}/attention");
+                $"{_settings.BaseUrl.TrimEnd('/')}/v1/stores/{_settings.StoreId:D}/reviews/{reviewId}/attention");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _settings.SessionToken);
             using var response = await _httpClient.SendAsync(request);
             if (!response.IsSuccessStatusCode)
@@ -235,10 +235,10 @@ public partial class ReviewQueuePage : ContentPage
         {
             using var request = new HttpRequestMessage(
                 HttpMethod.Post,
-                $\"{_settings.BaseUrl.TrimEnd('/')}/v1/stores/{_settings.StoreId:D}/reviews/{_selectedReview.ReviewId}/corrections");
+                $"{_settings.BaseUrl.TrimEnd('/')}/v1/stores/{_settings.StoreId:D}/reviews/{_selectedReview.ReviewId}/corrections");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _settings.SessionToken);
 
-            var valueElement = JsonDocument.Parse($"{{\"value\":{CorrectionValueEntry.Text}}}").RootElement.GetProperty("value");
+            var valueElement = JsonDocument.Parse($"{{"value":{CorrectionValueEntry.Text}}}").RootElement.GetProperty("value");
             var body = new { field_path = CorrectionFieldEntry.Text.Trim(), value = valueElement };
             request.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
 
@@ -271,7 +271,7 @@ public partial class ReviewQueuePage : ContentPage
         {
             using var request = new HttpRequestMessage(
                 HttpMethod.Post,
-                $\"{_settings.BaseUrl.TrimEnd('/')}/v1/stores/{_settings.StoreId:D}/reviews/{_selectedReview.ReviewId}/customer-phone");
+                $"{_settings.BaseUrl.TrimEnd('/')}/v1/stores/{_settings.StoreId:D}/reviews/{_selectedReview.ReviewId}/customer-phone");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _settings.SessionToken);
 
             var body = new { phone = CustomerPhoneEntry.Text.Trim() };
@@ -307,7 +307,7 @@ public partial class ReviewQueuePage : ContentPage
         {
             using var request = new HttpRequestMessage(
                 HttpMethod.Post,
-                $\"{_settings.BaseUrl.TrimEnd('/')}/v1/stores/{_settings.StoreId:D}/reviews/{_selectedReview.ReviewId}/issue");
+                $"{_settings.BaseUrl.TrimEnd('/')}/v1/stores/{_settings.StoreId:D}/reviews/{_selectedReview.ReviewId}/issue");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _settings.SessionToken);
 
             var body = new
