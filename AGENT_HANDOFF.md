@@ -457,7 +457,7 @@ New data sources: `HubInvoiceDataSource.cs`, `HubProductEditorDataSource.cs`, `H
 
 | Task | Tag | Full commit SHA | Branch CI run | Tag CI run | Status |
 |------|-----|-----------------|---------------|------------|--------|
-| **C-81b** | `o15-C-81b` | pending | pending | pending | committing |
+| **C-81b** | `o15-C-81b` | `35e5f7f6945a06d59ba9bc9c095df17983d0a3f7` | [44050255755](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44050255755) — GREEN (ubuntu + windows) | same commit (tag points to green CI head) | GREEN |
 
 Tests: no new unit tests (UI layer verified through CI build of MAUI Windows target).
 
