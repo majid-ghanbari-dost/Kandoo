@@ -69,3 +69,9 @@ Autonomous technical decisions, one per line (what / why / rejected option), per
 14. **All C-81b pages compiled** after adding missing `using System.Text.Json` and fixing `?? BodyStyle` references. Why: code-behind cannot reference XAML styles as bare C# identifiers. Rejected: per-page custom style classes (over-engineering).
 
 15. **Release APK via AndroidRelease mode** with `EmbedAssembliesIntoApk=true`; APK inspection verifies managed DLLs inside APK. Why: Galaxy J8 crash was caused by missing managed DLLs in Debug APK. Rejected: Debug APK for release testing.
+
+## C-83 — DeviceSecret only in Bearer header (not in JSON body)
+
+16. **DeviceSecret removed from JSON body serialization** in ReplicationBatch via [JsonIgnore]. It is sent only via Authorization: Bearer header (DeviceBearer scheme per docs/openapi.yaml). Why: Cloud contract requires device secret in header only; serializing it in the body leaks the per-device secret in request logs and body snapshots. Rejected: keeping device_secret in JSON body (P-27 debt from PHP agent; Cloud rejects it).
+
+17. **Legacy header deprecation recorded in openapi.yaml** (x-legacy-header-deprecation): X-Device-Key header and device_secret JSON body field deprecated in P-27, removed in C-83. Why: document the P-27 debt and the migration to DeviceBearer Authorization header. Rejected: silently removing without documentation (breaks API consumers).

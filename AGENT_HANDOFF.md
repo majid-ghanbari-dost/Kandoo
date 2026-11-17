@@ -489,13 +489,34 @@ Delivered:
 |------|-----|-----------------|---------------|------------|--------|
 | **C-82** | `o15-C-82` | `64cf70fa3e3ce08c39379815d546fa399bfd5c6a` | [44058734355](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44058734355) — GREEN (ubuntu + windows) | same commit | GREEN |
 
-Note: Windows publish ("Kandoo App" job) was RED from C-81 through C-82 fix-forward; now GREEN with all C-82 changes. Android emulator smoke job remains flaky (infrastructure, not code).
+Honest delivery notes:
+- Windows publish ("Kandoo App" job) was RED from C-81 through C-82 fix-forward; now GREEN with all C-82 changes.
+- Android emulator smoke job is RED = CI infrastructure issue (emulator launch failure), NOT a code regression. All code steps (Test app logic, Publish Windows app, Build Android Debug APK, Build Android Release APK) passed. The emulator step failed at environment launch; this should not be interpreted as app/code failure.
+- Cold start number: NOT captured as text. Measurement infrastructure (`adb shell am start -W` TotalTime → `cold-start-time.txt`) is in place and wired to CI artifact upload, but the Android 10 emulator could not launch, so no TotalTime value was recorded. Artifact `kandoo-app-c82-cold-start` was not produced (emulator failure). Next successful emulator run will produce the number.
 
 Files changed: `src/Kandoo.App/ProductsPage.xaml.cs` (readonly fix), `src/Kandoo.App/CreateInvoicePage.xaml.cs` (using System.Text.Json), `src/Kandoo.App/CustomersPage.xaml.cs` (using System.Text.Json + BodyStyle fix), `src/Kandoo.App/ProductEditorPage.xaml.cs` (using System.Text.Json + readonly fix), `src/Kandoo.App/SettingsPage.xaml.cs` (using System.Text.Json), `src/Kandoo.App/Resources/DesignTokens.xaml` (CardStyle simplification), `scripts/Invoke-C50AndroidSmoke.sh` (cold start), `.github/workflows/kandoo-app.yml` (cold start artifact upload).
 
 Autonomous decisions:
-- C-82: Cold start measured via `adb shell am start -W` TotalTime on Android 10 emulator
+- C-82: Cold start measured via `adb shell am start -W` TotalTime on Android 10 emulator (infrastructure-dependent; number pending first successful emulator launch)
 - C-82: CardStyle StrokeShape removed (RoundRectangle RadiusX/RadiusY unsupported in this MAUI version)
 - C-82: All C-81b pages compiled after adding missing `using System.Text.Json` and fixing `?? BodyStyle` references
 
-Next tasks: C-83 (Holoo reader per D-M), C-84 (review queue + print fallback), C-85 (setup.exe via Inno Setup or zip fallback + RUN-LOCAL.md + start-all), C-86 stretch (Android customer mode).
+### C-83 — DeviceSecret only in Bearer header (not in JSON body)
+
+Delivered:
+- C-83 security fix: DeviceSecret removed from ReplicationBatch JSON serialization ([JsonIgnore])
+- DeviceSecret sent only via Authorization: Bearer header (DeviceBearer scheme per docs/openapi.yaml)
+- Legacy header deprecation recorded in openapi.yaml (P-27 debt: X-Device-Key, device_secret body field)
+- C-83 tests: no secret in body, Bearer header emitted, 401 without header
+
+| Task | Tag | Full commit SHA | Branch CI run | Tag CI run | Status |
+|------|-----|-----------------|---------------|------------|--------|
+| **C-83** | `o15-C-83` | pending | pending | pending | committing |
+
+Files changed: `src/Kandoo.Hub/ReplicationContracts.cs` ([JsonIgnore] on DeviceSecret), `tests/Kandoo.Hub.Tests/C80bReplicationHeadersTests.cs` (C-83 tests), `docs/openapi.yaml` (x-legacy-header-deprecation).
+
+Autonomous decisions:
+- C-83: DeviceSecret removed from JSON body serialization; kept only in Authorization: Bearer header per DeviceBearer contract
+- C-83: Legacy header deprecation recorded in openapi.yaml (P-27 debt)
+
+Next tasks: C-84 (review queue + print fallback), C-85 (setup.exe via Inno Setup or zip fallback + RUN-LOCAL.md + start-all), C-86 stretch (Android customer mode).
