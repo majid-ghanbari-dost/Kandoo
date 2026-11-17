@@ -199,7 +199,10 @@ public sealed class C80bReplicationHeadersTests : IDisposable
     {
         var capturedHeaders = new Dictionary<string, string?>();
         var handler = new CapturingHandler(capturedHeaders);
-        using var client = new HttpClient(handler);
+        using var client = new HttpClient(handler)
+        {
+            BaseAddress = new Uri("https://api.kandoo.invalid")
+        };
         var transport = new HttpCloudReplicationTransport(client);
 
         var batch = new ReplicationBatch
@@ -243,7 +246,10 @@ public sealed class C80bReplicationHeadersTests : IDisposable
         // Cloud would return 401; the transport itself just omits the header.
         var capturedHeaders = new Dictionary<string, string?>();
         var handler = new CapturingHandler(capturedHeaders);
-        using var client = new HttpClient(handler);
+        using var client = new HttpClient(handler)
+        {
+            BaseAddress = new Uri("https://api.kandoo.invalid")
+        };
         var transport = new HttpCloudReplicationTransport(client);
 
         var batch = new ReplicationBatch
