@@ -105,7 +105,7 @@
                     <VerticalStackLayout x:Name="DeviceItems" Style="{StaticResource RowStackStyle}">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate>
-                                <Border Style="{StaticResource RowStyle}">
+                                <Border Style="{StaticResource CardStyle}">
                                     <VerticalStackLayout Style="{StaticResource RowStackStyle}">
                                         <Label Style="{StaticResource SectionTitleStyle}"
                                                Text="{Binding Label}" />
@@ -165,7 +165,7 @@
                 <VerticalStackLayout x:Name="QueueItems" Style="{StaticResource RowStackStyle}">
                     <BindableLayout.ItemTemplate>
                         <DataTemplate>
-                            <Border Style="{StaticResource RowStyle}">
+                            <Border Style="{StaticResource CardStyle}">
                                 <VerticalStackLayout Style="{StaticResource RowStackStyle}">
                                     <Label Style="{StaticResource SectionTitleStyle}"
                                            Text="{Binding InvoiceNumber}" />
@@ -183,7 +183,7 @@
                 </VerticalStackLayout>
 
                 <Border x:Name="CustomerPanel"
-                        Style="{StaticResource RowStyle}"
+                        Style="{StaticResource CardStyle}"
                         IsVisible="False">
                     <VerticalStackLayout Style="{StaticResource RowStackStyle}">
                         <Label Style="{StaticResource SectionTitleStyle}" Text="مشتری نمونه" />
@@ -191,6 +191,17 @@
                                Text="نقش مشتری فعال است؛ فهرست فاکتورها در این مرحله اضافه نشده است." />
                     </VerticalStackLayout>
                 </Border>
+
+                <!-- Copy-report button shown when an error occurs. -->
+                <Button x:Name="CopyReportButton"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Text="کپی گزارش خطا"
+                        Clicked="OnCopyReportClicked"
+                        IsVisible="False"
+                        SemanticProperties.Description="کپی گزارش خطا در حافظه موقت" />
+                <Label x:Name="CopyStatusLabel"
+                       Style="{StaticResource BodyStyle}"
+                       HorizontalTextAlignment="Center" />
             </VerticalStackLayout>
         </ScrollView>
     </Grid>

@@ -106,4 +106,15 @@
         <Setter Property="BackgroundColor" Value="{StaticResource Wax}" />
         <Setter Property="Padding" Value="{StaticResource PaddingSpace3}" />
     </Style>
+
+    <!-- Style v2 card: 16px corner radius, wax background, subtle ink border. -->
+    <Style x:Key="CardStyle" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource Wax}" />
+        <Setter Property="Padding" Value="{StaticResource PaddingSpace3}" />
+        <Setter Property="StrokeShape">
+            <Setter.Value>
+                <Rectangle Radius="16" />
+            </Setter.Value>
+        </Setter>
+    </Style>
 </ResourceDictionary>
