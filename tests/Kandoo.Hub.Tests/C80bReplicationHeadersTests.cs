@@ -75,7 +75,7 @@ public sealed class C80bReplicationHeadersTests : IDisposable
             }
         };
 
-        await transport.SendAsync(batch, CancellationToken.None);
+        _ = await transport.SendAsync(batch, CancellationToken.None);
 
         var request = Assert.NotNull(captured.LastRequest);
         Assert.True(request.Headers.Contains("Authorization"),
@@ -121,7 +121,7 @@ public sealed class C80bReplicationHeadersTests : IDisposable
             }
         };
 
-        await transport.SendAsync(batch, CancellationToken.None);
+        _ = await transport.SendAsync(batch, CancellationToken.None);
 
         var request = Assert.NotNull(captured.LastRequest);
         Assert.False(request.Headers.Contains("Authorization"),
@@ -178,7 +178,7 @@ public sealed class C80bReplicationHeadersTests : IDisposable
             }
         };
 
-        await transport.SendAsync(batch, CancellationToken.None);
+        _ = await transport.SendAsync(batch, CancellationToken.None);
 
         var request = Assert.NotNull(captured.LastRequest);
         var content = await request.Content!.ReadAsStringAsync();
