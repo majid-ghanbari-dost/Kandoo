@@ -237,10 +237,10 @@ public sealed class C80bReplicationHeadersTests : IDisposable
     }
 
     [Fact]
-    public async Task C83_CloudReturns401WithoutBearerHeader()
+    public async Task C83_NoAuthorizationHeaderWhenSecretEmpty()
     {
-        // Cloud returns 401 when Authorization: Bearer header is missing.
-        // The transport does not add the header when DeviceSecret is empty.
+        // When DeviceSecret is empty, no Authorization: Bearer header is sent.
+        // Cloud would return 401; the transport itself just omits the header.
         var capturedHeaders = new Dictionary<string, string?>();
         var handler = new CapturingHandler(capturedHeaders);
         using var client = new HttpClient(handler);
@@ -248,7 +248,7 @@ public sealed class C80bReplicationHeadersTests : IDisposable
 
         var batch = new ReplicationBatch
         {
-            BatchId = "batch-c83-401",
+            BatchId = "batch-c83-noauth",
             StoreId = _storeId,
             WriterDeviceId = _deviceId,
             WriterEpoch = 1,
@@ -274,10 +274,9 @@ public sealed class C80bReplicationHeadersTests : IDisposable
             }
         };
 
-        var response = await transport.SendAsync(batch, CancellationToken.None);
+        await transport.SendAsync(batch, CancellationToken.None);
 
         Assert.False(capturedHeaders.ContainsKey("Authorization"));
-        Assert.Equal(HttpStatusCode.Unauthorized, response.HttpStatus);
     }
 
     /// <summary>Recording transport that captures the batch for assertion.</summary>
