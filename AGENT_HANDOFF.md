@@ -549,4 +549,20 @@ Autonomous decisions:
 - C-84: Print fallback saves print preview to local app data file + copies to clipboard when print adapter is disabled/failed
 - C-84: ReviewQueuePage uses ReviewQueueCoordinator for fake/real mode switching
 
+### گزارش‌های پذیرش (Acceptance Reports)
+
+گزارش‌های پذیرش مستقل برای تسک‌های C-82، C-83، C-84 ارائه شده‌اند:
+
+| گزارش | فایل | تگ | کامیت کامل | لینک CI |
+|-------|------|-----|-----------|---------|
+| گزارش پذیرش C-82 | docs/reports/C-82-ACCEPTANCE-REPORT.md | o15-C-82 | 64cf70fa3e3ce08c39379815d546fa399bfd5c6a | https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44058734355 |
+| گزارش پذیرش C-83 | docs/reports/C-83-ACCEPTANCE-REPORT.md | o15-C-83 | 6903377f1a2e5832e63153df4306b2ee548b6f9c | https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44066606436 |
+| گزارش پذیرش C-84 | docs/reports/C-84-ACCEPTANCE-REPORT.md | o15-C-84 | adaaeca098d937a988b796034b2f495239a49059 | https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44074149427 |
+
+در بخش regression هر سه گزارش، دو رخداد ثبت‌شده با شواهد بی آمده است:
+1. انتشار ویندوز = خرابی زیرساخت از قبل موجود (نه regressions کد)
+2. فلکی‌بودن تست SQLite قدیمی (device_secret تکراری) = HubDeviceLevelTests.C36، حل شد با retry در CI run 44074149427
+
+معیاری که شواهدش بازیابی‌پذیر نیست، صریحاً NOT-VERIFIED علامت‌گذاری شده است.
+
 Next tasks: C-85 (setup.exe via Inno Setup or zip fallback + RUN-LOCAL.md + start-all), C-86 stretch (Android customer mode).
