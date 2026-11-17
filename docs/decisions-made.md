@@ -38,6 +38,24 @@ Autonomous technical decisions, one per line (what / why / rejected option), per
 
 16. **Empty/error states show copy-report button**; error text copied to clipboard via Clipboard API. Why: users need to capture and share error details with support. Rejected: showing raw exception text without copy ability (hard to report errors accurately).
 
+## C-81b — Windows app Stage-A remaining pages
+
+17. **SetupWizardPage is the app entry point** when no user profile exists (`App.xaml.cs`); writes profile + token to `SharedTokenFile`. Why: first-run experience must collect role + Hub settings before any Hub interaction. Rejected: keeping `RoleSelectionPage` as entry point (no Hub settings step).
+
+18. **Invoice create is digital-first; print optional.** Item lines required; customer phone optional; operation idempotency via operation ID header. Why: digital invoice is the primary channel per Order 15; print is secondary. Rejected: print required (would block digital-only workflows).
+
+19. **Invoice details page supports resend SMS and void-by-event** (recorded as local intent; Hub v1 has no direct void endpoint). Why: D4 requires SMS resend; void as event preserves immutability of issued invoices. Rejected: direct void endpoint (not in Hub v1 contract).
+
+20. **Product editor has group/subgroup dropdown and stock adjustment recorded as an event.** Why: products need categorization; stock changes must be event-led per D10. Rejected: direct stock mutation (bypasses event ledger).
+
+21. **Customers page lists customers** with phone + total display. Why: basic customer directory needed for invoice creation. Rejected: full customer CRUD (beyond Stage-A scope).
+
+22. **Settings page shows Hub status/stats, demo SMS outbox, local DB backup.** Why: operators need to verify Hub connectivity and view demo SMS outbox. Rejected: real SMS gateway config (demo mode only).
+
+23. **Every page has empty/error states with copy-report button** (Clipboard API). Why: consistent error reporting across all Stage-A pages. Rejected: per-page error handling (inconsistent UX).
+
+24. **All Stage-A pages use CardStyle (16px radius) and are role-aware** (Store/Operator/Manager). Why: matches Order 15 style v2 spec; role-aware UI per existing `AppRolePolicy`. Rejected: different styling per page (visual inconsistency).
+
 ## CI / build
 
 11. **MAUI workloads installed in CI** before building `Kandoo.sln`; ubuntu builds Android (`-p:TargetFramework=net8.0-android`), windows builds Windows (`-p:TargetFramework=net8.0-windows10.0.19041.0`). Why: `Kandoo.App` targets both platforms; hosted runners need `dotnet workload install maui` to build MAUI. Rejected: building both targets on every runner (Windows target cannot build on Linux).
