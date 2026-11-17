@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Kandoo.App.SetupWizardPage"
+             Title="راه‌اندازی اولیه"
+             Style="{StaticResource PageStyle}">
+    <ScrollView>
+        <Border Style="{StaticResource CardStyle}">
+            <VerticalStackLayout Style="{StaticResource RootStackStyle}">
+                <Label Style="{StaticResource TitleStyle}" Text="راه‌اندازی اولیه کندو" />
+                <Label Style="{StaticResource BodyStyle}"
+                       Text="سه مرحله برای راه‌اندازی برنامه روی این دستگاه." />
+
+                <!-- Step indicator -->
+                <HorizontalStackLayout Style="{StaticResource ButtonRowStyle}">
+                    <Label x:Name="Step1Label" Style="{StaticResource CaptionStyle}"
+                           Text="۱. انتخاب نقش" />
+                    <Label Style="{StaticResource CaptionStyle}" Text="—" />
+                    <Label x:Name="Step2Label" Style="{StaticResource CaptionStyle}"
+                           Text="۲. تنظیمات اتصال" />
+                    <Label Style="{StaticResource CaptionStyle}" Text="—" />
+                    <Label x:Name="Step3Label" Style="{StaticResource CaptionStyle}"
+                           Text="۳. پایان و ذخیره" />
+                </HorizontalStackLayout>
+
+                <!-- Step 1: Role selection -->
+                <Border x:Name="Step1Panel" Style="{StaticResource RowStyle}">
+                    <VerticalStackLayout Style="{StaticResource RowStackStyle}">
+                        <Label Style="{StaticResource SectionTitleStyle}" Text="نقش کاربر را انتخاب کنید" />
+                        <HorizontalStackLayout Style="{StaticResource ButtonRowStyle}">
+                            <Button x:Name="StoreButton"
+                                    Style="{StaticResource PrimaryButtonStyle}"
+                                    Text="فروشگاه نمونه"
+                                    Clicked="OnStoreClicked" />
+                            <Button x:Name="CustomerButton"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Text="مشتری نمونه"
+                                    Clicked="OnCustomerClicked" />
+                            <Button x:Name="BothButton"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Text="هر دو"
+                                    Clicked="OnBothClicked" />
+                        </HorizontalStackLayout>
+                        <Label x:Name="RoleNoteLabel" Style="{StaticResource CaptionStyle}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Step 2: Hub connection settings -->
+                <Border x:Name="Step2Panel" Style="{StaticResource RowStyle}" IsVisible="False">
+                    <VerticalStackLayout Style="{StaticResource RowStackStyle}">
+                        <Label Style="{StaticResource SectionTitleStyle}" Text="تنظیمات اتصال به هاب" />
+                        <Entry x:Name="HubBaseUrlEntry"
+                               Style="{StaticResource InputStyle}"
+                               Placeholder="نشانی هاب، مانند https://hub.lan"
+                               Keyboard="Url"
+                               SemanticProperties.Description="نشانی پایه هاب" />
+                        <Entry x:Name="StoreIdEntry"
+                               Style="{StaticResource InputStyle}"
+                               Placeholder="شناسه فروشگاه"
+                               SemanticProperties.Description="شناسه فروشگاه هاب" />
+                        <Entry x:Name="SessionTokenEntry"
+                               Style="{StaticResource InputStyle}"
+                               Placeholder="نشست دستگاه"
+                               IsPassword="True"
+                               SemanticProperties.Description="رمز نشست دستگاه" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Step 3: Finish -->
+                <Border x:Name="Step3Panel" Style="{StaticResource RowStyle}" IsVisible="False">
+                    <VerticalStackLayout Style="{StaticResource RowStackStyle}">
+                        <Label Style="{StaticResource SectionTitleStyle}" Text="ذخیره و پایان" />
+                        <Label Style="{StaticResource BodyStyle}"
+                               Text="تنظیمات ذخیره شده و برنامه آماده استفاده است." />
+                        <Button x:Name="FinishButton"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Text="ذخیره و وارد شدن"
+                                Clicked="OnFinishClicked" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Label x:Name="StatusLabel" Style="{StaticResource BodyStyle}" />
+                <Button x:Name="CopyReportButton"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Text="کپی گزارش خطا"
+                        Clicked="OnCopyReportClicked"
+                        IsVisible="False"
+                        SemanticProperties.Description="کپی گزارش خطا در حافظه موقت" />
+                <Label x:Name="CopyStatusLabel" Style="{StaticResource BodyStyle}" />
+            </VerticalStackLayout>
+        </Border>
+    </ScrollView>
+</ContentPage>

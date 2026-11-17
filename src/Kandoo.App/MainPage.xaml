@@ -161,6 +161,35 @@
                        Text="آماده" />
 
                 <Label Style="{StaticResource SectionTitleStyle}"
+                       Text="عملیات سریع" />
+                <HorizontalStackLayout Style="{StaticResource ButtonRowStyle}">
+                    <Button x:Name="CreateInvoiceButton"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            Text="ساخت فاکتور"
+                            Clicked="OnCreateInvoiceClicked"
+                            IsEnabled="False"
+                            SemanticProperties.Description="ساخت فاکتور جدید" />
+                    <Button x:Name="ProductEditorButton"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Text="ویرایش محصول"
+                            Clicked="OnProductEditorClicked"
+                            IsEnabled="False"
+                            SemanticProperties.Description="ساخت یا ویرایش محصول" />
+                    <Button x:Name="CustomersButton"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Text="مشتریان"
+                            Clicked="OnCustomersClicked"
+                            IsEnabled="False"
+                            SemanticProperties.Description="فهرست مشتریان" />
+                    <Button x:Name="SettingsButton"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Text="تنظیمات"
+                            Clicked="OnSettingsClicked"
+                            IsEnabled="False"
+                            SemanticProperties.Description="تنظیمات برنامه" />
+                </HorizontalStackLayout>
+
+                <Label Style="{StaticResource SectionTitleStyle}"
                        Text="فاکتورها" />
                 <VerticalStackLayout x:Name="QueueItems" Style="{StaticResource RowStackStyle}">
                     <BindableLayout.ItemTemplate>

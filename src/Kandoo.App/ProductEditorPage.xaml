@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Kandoo.App.ProductEditorPage"
+             Title="ویرایش محصول"
+             Style="{StaticResource PageStyle}">
+    <ScrollView>
+        <Border Style="{StaticResource CardStyle}">
+            <VerticalStackLayout Style="{StaticResource RootStackStyle}">
+                <Label Style="{StaticResource TitleStyle}" Text="ساخت یا ویرایش محصول" />
+                <Label Style="{StaticResource BodyStyle}"
+                       Text="محصول با گروه/زیرگروه و تعدیل موجودی به‌صورت رخداد." />
+
+                <Entry x:Name="ProductIdEntry"
+                       Style="{StaticResource InputStyle}"
+                       Placeholder="شناسه محصول (اختیاری برای ویرایش)"
+                       SemanticProperties.Description="شناسه محصول" />
+                <Entry x:Name="NameEntry"
+                       Style="{StaticResource InputStyle}"
+                       Placeholder="نام محصول"
+                       SemanticProperties.Description="نام محصول" />
+                <Entry x:Name="UnitPriceEntry"
+                       Style="{StaticResource InputStyle}"
+                       Placeholder="قیمت واحد (ریال)"
+                       Keyboard="Numeric"
+                       SemanticProperties.Description="قیمت واحد محصول" />
+                <Entry x:Name="PurchasePriceEntry"
+                       Style="{StaticResource InputStyle}"
+                       Placeholder="قیمت خرید (ریال، اختیاری)"
+                       Keyboard="Numeric"
+                       SemanticProperties.Description="قیمت خرید محصول" />
+                <Picker x:Name="GroupPicker"
+                        Title="گروه محصول"
+                        SemanticProperties.Description="گroupe محصول" />
+
+                <Label Style="{StaticResource SectionTitleStyle}" Text="تعدیل موجودی (رخداد)" />
+                <Entry x:Name="StockAdjustmentEntry"
+                       Style="{StaticResource InputStyle}"
+                       Placeholder="تعدیل موجودی (عدد مثبت یا منفی)"
+                       Keyboard="Numeric"
+                       SemanticProperties.Description="تعدیل موجودی انبار" />
+
+                <Button x:Name="SaveButton"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Text="ذخیره محصول"
+                        Clicked="OnSaveClicked"
+                        SemanticProperties.Description="ذخیره محصول در هاب" />
+
+                <Label x:Name="StatusLabel" Style="{StaticResource BodyStyle}" />
+                <Button x:Name="CopyReportButton"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Text="کپی گزارش خطا"
+                        Clicked="OnCopyReportClicked"
+                        IsVisible="False"
+                        SemanticProperties.Description="کپی گزارش خطا در حافظه موقت" />
+                <Label x:Name="CopyStatusLabel" Style="{StaticResource BodyStyle}" />
+                <Button Style="{StaticResource SecondaryButtonStyle}"
+                        Text="بازگشت"
+                        Clicked="OnBackClicked"
+                        SemanticProperties.Description="بازگشت به صفحه قبلی" />
+            </VerticalStackLayout>
+        </Border>
+    </ScrollView>
+</ContentPage>

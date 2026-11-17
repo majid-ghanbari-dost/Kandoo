@@ -23,6 +23,7 @@ public partial class MainPage : ContentPage
             settings => new HubReviewQueueDataSource(_httpClient, settings));
         UpdateModePresentation();
         UpdateRolePresentation();
+        UpdateActionButtonState();
     }
 
     protected override async void OnAppearing()
@@ -273,6 +274,73 @@ public partial class MainPage : ContentPage
         }
     }
 
+    private async void OnCreateInvoiceClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            var settings = ReadHubSettings();
+            if (settings is null)
+            {
+                StatusLabel.Text = "تنظیمات هاب لازم است.";
+                return;
+            }
+            await Navigation.PushAsync(new CreateInvoicePage(settings));
+        }
+        catch (Exception exception) when (IsExpected(exception))
+        {
+            StatusLabel.Text = exception.Message;
+        }
+    }
+
+    private async void OnProductEditorClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            var settings = ReadHubSettings();
+            if (settings is null)
+            {
+                StatusLabel.Text = "تنظیمات هاب لازم است.";
+                return;
+            }
+            await Navigation.PushAsync(new ProductEditorPage(settings));
+        }
+        catch (Exception exception) when (IsExpected(exception))
+        {
+            StatusLabel.Text = exception.Message;
+        }
+    }
+
+    private async void OnCustomersClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            var settings = ReadHubSettings();
+            if (settings is null)
+            {
+                StatusLabel.Text = "تنظیمات هاب لازم است.";
+                return;
+            }
+            await Navigation.PushAsync(new CustomersPage(settings));
+        }
+        catch (Exception exception) when (IsExpected(exception))
+        {
+            StatusLabel.Text = exception.Message;
+        }
+    }
+
+    private async void OnSettingsClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            var settings = ReadHubSettings();
+            await Navigation.PushAsync(new SettingsPage(settings));
+        }
+        catch (Exception exception) when (IsExpected(exception))
+        {
+            StatusLabel.Text = exception.Message;
+        }
+    }
+
     private async Task LoadDevicesAsync()
     {
         LoadDevicesButton.IsEnabled = false;
@@ -330,6 +398,15 @@ public partial class MainPage : ContentPage
         }
 
         return Guid.TryParse(button.CommandParameter?.ToString(), out deviceId) && deviceId != Guid.Empty;
+    }
+
+    private void UpdateActionButtonState()
+    {
+        var hasSettings = ReadHubSettings() is not null;
+        CreateInvoiceButton.IsEnabled = hasSettings;
+        ProductEditorButton.IsEnabled = hasSettings;
+        CustomersButton.IsEnabled = hasSettings;
+        SettingsButton.IsEnabled = true; // Settings page works without Hub settings for local backup
     }
 
     private static bool IsExpected(Exception exception) => exception is ArgumentException or

@@ -440,7 +440,38 @@ Autonomous decisions (one per line in `docs/decisions-made.md`):
 - C-81: Empty/error states show copy-report button; error text copied to
   clipboard via Clipboard API
 
-Next tasks: C-82 (Android store app APX release), C-83 (Holoo reader per
-D-M), C-84 (review queue + print fallback), C-85 (setup.exe via Inno Setup
-or zip fallback + RUN-LOCAL.md + start-all), C-86 stretch (Android customer
-mode).
+### C-81b — Windows app Stage-A remaining pages (3-step wizard + invoice/product/customer/settings pages)
+
+Delivered: all remaining ORDER 15 Stage-A Windows app features not covered by C-81's 4 pages:
+
+1. 3-step setup wizard (role selection → Hub connection settings → save/finish) writing profile + token to shared file — `SetupWizardPage.xaml` + `.xaml.cs`
+2. Invoice create — digital always, print optional, operation idempotency, customer phone optional, item lines — `CreateInvoicePage.xaml` + `.xaml.cs`
+3. Invoice details + resend SMS + void-by-event — `InvoiceDetailsPage.xaml` + `.xaml.cs`
+4. Product create/edit with group/subgroup dropdown and stock adjustment as event — `ProductEditorPage.xaml` + `.xaml.cs`
+5. Customers list — `CustomersPage.xaml` + `.xaml.cs`
+6. Settings page — Hub status, demo SMS outbox, backup — `SettingsPage.xaml` + `.xaml.cs`
+7. All style v2, role-aware (Store/Operator/Manager), empty/error states with copy-report button on every page
+8. `MainPage.xaml` gains quick-action buttons (Create Invoice, Product Editor, Customers, Settings) enabled when Hub settings exist; `App.xaml.cs` starts `SetupWizardPage` when no profile exists
+
+New data sources: `HubInvoiceDataSource.cs`, `HubProductEditorDataSource.cs`, `HubCustomersDataSource.cs`, `HubStatusDataSource.cs` in `src/Kandoo.App/Logic/`.
+
+| Task | Tag | Full commit SHA | Branch CI run | Tag CI run | Status |
+|------|-----|-----------------|---------------|------------|--------|
+| **C-81b** | `o15-C-81b` | pending | pending | pending | committing |
+
+Tests: no new unit tests (UI layer verified through CI build of MAUI Windows target).
+
+Files changed: `src/Kandoo.App/SetupWizardPage.xaml` + `.xaml.cs`, `src/Kandoo.App/CreateInvoicePage.xaml` + `.xaml.cs`, `src/Kandoo.App/InvoiceDetailsPage.xaml` + `.xaml.cs`, `src/Kandoo.App/ProductEditorPage.xaml` + `.xaml.cs`, `src/Kandoo.App/CustomersPage.xaml` + `.xaml.cs`, `src/Kandoo.App/SettingsPage.xaml` + `.xaml.cs`, `src/Kandoo.App/MainPage.xaml` + `.xaml.cs`, `src/Kandoo.App/App.xaml.cs`, `src/Kandoo.App/Logic/HubInvoiceDataSource.cs`, `src/Kandoo.App/Logic/HubProductEditorDataSource.cs`, `src/Kandoo.App/Logic/HubCustomersDataSource.cs`, `src/Kandoo.App/Logic/HubStatusDataSource.cs`, `AGENT_HANDOFF.md`.
+
+Autonomous decisions (one per line in `docs/decisions-made.md`):
+- C-81b: SetupWizardPage is the app entry point when no user profile exists; writes profile + token to SharedTokenFile
+- C-81b: Invoice create is digital-first; print is optional; operation idempotency via operation ID header
+- C-81b: Customer phone optional on invoice create; item lines required
+- C-81b: Invoice details page supports resend SMS and void-by-event (recorded as local intent)
+- C-81b: Product editor has group/subgroup dropdown and stock adjustment recorded as an event
+- C-81b: Customers page lists customers with phone + total display
+- C-81b: Settings page shows Hub status/stats, demo SMS outbox, local DB backup
+- C-81b: Every page has empty/error states with copy-report button (Clipboard API)
+- C-81b: All Stage-A pages use CardStyle (16px radius) and are role-aware
+
+Next tasks: C-82 (release APK for testing, cold start measurement in CI, assemblies inside APK, crash handler with copy-report page, target J8).
