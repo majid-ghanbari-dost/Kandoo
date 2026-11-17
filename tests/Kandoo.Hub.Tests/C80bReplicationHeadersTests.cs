@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http;
 using System.Text.Json;
 using Kandoo.Hub;
 using Xunit;
@@ -44,7 +45,7 @@ public sealed class C80bReplicationHeadersTests : IDisposable
     public async Task C80b_RealTransportSendsAuthorizationBearerWithDeviceSecret()
     {
         var captured = new CapturingHandler();
-        using var client = new HttpClient(captured);
+        var client = new HttpClient(captured);
         var transport = new HttpCloudReplicationTransport(client);
 
         var batch = new ReplicationBatch
@@ -75,7 +76,8 @@ public sealed class C80bReplicationHeadersTests : IDisposable
             }
         };
 
-        _ = await transport.SendAsync(batch, CancellationToken.None);
+        var response = await transport.SendAsync(batch, CancellationToken.None);
+        Assert.Equal(HttpStatusCode.OK, response.HttpStatus);
 
         var request = Assert.NotNull(captured.LastRequest);
         Assert.True(request.Headers.Contains("Authorization"),
@@ -90,7 +92,7 @@ public sealed class C80bReplicationHeadersTests : IDisposable
     public async Task C80b_RealTransportOmitsAuthorizationWhenDeviceSecretMissing()
     {
         var captured = new CapturingHandler();
-        using var client = new HttpClient(captured);
+        var client = new HttpClient(captured);
         var transport = new HttpCloudReplicationTransport(client);
 
         var batch = new ReplicationBatch
@@ -121,7 +123,8 @@ public sealed class C80bReplicationHeadersTests : IDisposable
             }
         };
 
-        _ = await transport.SendAsync(batch, CancellationToken.None);
+        var response = await transport.SendAsync(batch, CancellationToken.None);
+        Assert.Equal(HttpStatusCode.OK, response.HttpStatus);
 
         var request = Assert.NotNull(captured.LastRequest);
         Assert.False(request.Headers.Contains("Authorization"),
@@ -133,7 +136,7 @@ public sealed class C80bReplicationHeadersTests : IDisposable
     public async Task C80b_RealTransportSendsV11FieldsWhenPresent()
     {
         var captured = new CapturingHandler();
-        using var client = new HttpClient(captured);
+        var client = new HttpClient(captured);
         var transport = new HttpCloudReplicationTransport(client);
 
         var batch = new ReplicationBatch
@@ -178,7 +181,8 @@ public sealed class C80bReplicationHeadersTests : IDisposable
             }
         };
 
-        _ = await transport.SendAsync(batch, CancellationToken.None);
+        var response = await transport.SendAsync(batch, CancellationToken.None);
+        Assert.Equal(HttpStatusCode.OK, response.HttpStatus);
 
         var request = Assert.NotNull(captured.LastRequest);
         var content = await request.Content!.ReadAsStringAsync();
@@ -193,7 +197,7 @@ public sealed class C80bReplicationHeadersTests : IDisposable
         Assert.Equal(5000L, invoices[0].GetProperty("remaining_balance").GetInt64());
     }
 
-    private sealed class CapturingHandler : DelegatingHandler
+    private sealed class CapturingHandler : HttpMessageHandler
     {
         public HttpRequestMessage? LastRequest { get; private set; }
 
