@@ -58,7 +58,7 @@ public partial class InvoiceDetailsPage : ContentPage
                     var rowLabel = new Label
                     {
                         Text = $"{name} × {qty} = {total:N0} ریال",
-                        Style = Resources["BodyStyle"] as Style ?? BodyStyle
+                        Style = Resources["BodyStyle"] as Style
                     };
                     ItemsList.Add(rowLabel);
                 }
