@@ -55,7 +55,7 @@ public partial class CreateInvoicePage : ContentPage
         var label = new Label
         {
             Text = $"{ProductIdEntry.Text} × {quantity} = {item.TotalDisplay}",
-            Style = Resources["BodyStyle"] as Style ?? BodyStyle
+            Style = Resources["BodyStyle"] as Style
         };
         ItemsList.Add(label);
 

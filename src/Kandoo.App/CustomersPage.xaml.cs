@@ -36,20 +36,21 @@ public partial class CustomersPage : ContentPage
 
             foreach (var customer in customers)
             {
+                var bodyStyle = Resources["BodyStyle"] as Style;
                 var border = new Border
                 {
-                    Style = Resources["CardStyle"] as Style ?? BodyStyle
+                    Style = Resources["CardStyle"] as Style ?? bodyStyle
                 };
-                var layout = new VerticalStackLayout { Style = Resources["RowStackStyle"] as Style ?? BodyStyle };
+                var layout = new VerticalStackLayout { Style = Resources["RowStackStyle"] as Style ?? bodyStyle };
                 layout.Add(new Label
                 {
                     Text = customer.Name,
-                    Style = Resources["SectionTitleStyle"] as Style ?? BodyStyle
+                    Style = Resources["SectionTitleStyle"] as Style ?? bodyStyle
                 });
                 layout.Add(new Label
                 {
                     Text = $"{customer.Phone} — {customer.TotalDisplay}",
-                    Style = Resources["BodyStyle"] as Style ?? BodyStyle
+                    Style = bodyStyle
                 });
                 border.Content = layout;
                 CustomersList.Add(border);
