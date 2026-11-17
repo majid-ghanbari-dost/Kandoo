@@ -5,8 +5,8 @@
 تگ: o15-C-85
 
 ## ۲. SHA تگ و SHA کامیت
-تگ کامل: o15-C-85 → 5da8ec1d73a81d2e180659d2f490e7a5ba214567
-کامیت کامل: 4d8d2b34790bae159177d86a80bd84153477cd08
+تگ کامل: o15-C-85 → 8aa5cbf939dc393ab18ac4630b8a81cb1fd1ccf9
+کامیت کامل: 8aa5cbf939dc393ab18ac4630b8a81cb1fd1ccf9
 
 ## ۳. شاخه و لینک‌های CI
 شاخه: arena/4bb6cd51-kandoo
