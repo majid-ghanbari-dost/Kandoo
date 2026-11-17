@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Kandoo.App.RoleSelectionPage"
+             Title="انتخاب نقش"
+             Style="{StaticResource PageStyle}">
+    <ScrollView>
+        <Grid RowDefinitions="48,40,72,64,56,56,56,80,56,56"
+              RowSpacing="{StaticResource Space4}"
+              Padding="{StaticResource PaddingSpace5}"
+              HorizontalOptions="Fill"
+              VerticalOptions="Start">
+            <Label Grid.Row="0" Style="{StaticResource TitleStyle}" Text="کندو" />
+            <Label Grid.Row="1" Style="{StaticResource SectionTitleStyle}" Text="انتخاب نقش کاربر" />
+            <Label Grid.Row="2" x:Name="CurrentRoleLabel" Style="{StaticResource BodyStyle}" />
+            <Label Grid.Row="3"
+                   Style="{StaticResource DemoBannerStyle}"
+                   Text="پروفایل محلی با داده نمونه؛ اطلاعات واقعی نیست" />
+            <Button Grid.Row="4"
+                    x:Name="StoreButton"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Text="فروشگاه نمونه"
+                    Clicked="OnStoreClicked"
+                    SemanticProperties.Description="انتخاب نقش فروشگاه نمونه" />
+            <Button Grid.Row="5"
+                    x:Name="CustomerButton"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Text="مشتری نمونه"
+                    Clicked="OnCustomerClicked"
+                    SemanticProperties.Description="انتخاب نقش مشتری نمونه در اندروید" />
+            <Button Grid.Row="6"
+                    x:Name="BothButton"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Text="فروشگاه و مشتری نمونه"
+                    Clicked="OnBothClicked"
+                    SemanticProperties.Description="انتخاب هر دو نقش در اندروید" />
+            <Label Grid.Row="7" x:Name="PlatformNoteLabel" Style="{StaticResource BodyStyle}" />
+            <Button Grid.Row="8"
+                    x:Name="BackButton"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Text="بازگشت"
+                    IsVisible="False"
+                    Clicked="OnBackClicked"
+                    SemanticProperties.Description="بازگشت بدون تغییر نقش" />
+            <Button Grid.Row="9"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Text="گزارش آخرین خطا"
+                    Clicked="OnCrashReportClicked"
+                    SemanticProperties.Description="نمایش و کپی آخرین گزارش خطای برنامه" />
+        </Grid>
+    </ScrollView>
+</ContentPage>

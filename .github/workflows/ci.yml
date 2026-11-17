@@ -1,0 +1,280 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: 'true'
+
+jobs:
+  build-and-test-linux:
+    name: Build and test (ubuntu-latest)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: kandoo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d kandoo"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      ConnectionStrings__CloudPostgres: "Host=localhost;Port=5432;Database=kandoo;Username=postgres;Password=postgres;Pooling=false"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Check out pinned E-30 contract read-only
+        uses: actions/checkout@v4
+        with:
+          repository: majid-ghanbari-dost/Kandoo-Digital-Invoice
+          ref: 29d842178cd39d3f54f14f3716c44c585911467b
+          path: .e30/Kandoo-Digital-Invoice
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Set up Python 3.11 for C-21
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Restore
+        run: dotnet restore Kandoo.sln
+
+      - name: Build
+        run: dotnet build Kandoo.sln --configuration Release --no-restore
+
+      - name: Run C-21 pinned extraction bridge golden probe
+        shell: pwsh
+        run: scripts/Invoke-CiStep.ps1 -StepName 'Run C-21 pinned extraction bridge golden probe' -ScriptPath scripts/Invoke-C21ExtractionBridge.ps1 -ScriptArguments @('-PythonRepository', '.e30/Kandoo-Digital-Invoice', '-ArtifactPath', 'artifacts/c21-extraction-bridge-ubuntu-latest.json')
+
+      - name: Upload C-21 extraction bridge evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: c21-extraction-bridge-ubuntu-latest
+          path: artifacts/c21-extraction-bridge-ubuntu-latest.json
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Generate and validate C-23 OpenAPI
+        env:
+          KANDOO_OPENAPI_OUTPUT: ${{ github.workspace }}/artifacts/kandoo-hub-openapi.json
+        run: dotnet test tests/Kandoo.Hub.Tests/Kandoo.Hub.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~OpenApiContractTests"
+
+      - name: Upload C-23 generated OpenAPI
+        uses: actions/upload-artifact@v4
+        with:
+          name: kandoo-hub-openapi-c23
+          path: artifacts/kandoo-hub-openapi.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Test Core and write TRX
+        run: dotnet test tests/Kandoo.Core.Tests/Kandoo.Core.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Core.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
+
+      - name: Test Cloud and write TRX
+        run: dotnet test tests/Kandoo.Cloud.Tests/Kandoo.Cloud.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Cloud.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
+
+      - name: Test Hub and write TRX
+        run: dotnet test tests/Kandoo.Hub.Tests/Kandoo.Hub.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Hub.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
+
+      - name: Publish failed test annotations
+        if: always()
+        shell: pwsh
+        run: |
+          $resultFiles = Get-ChildItem -Path tests -Filter *.trx -Recurse -ErrorAction SilentlyContinue
+          foreach ($file in $resultFiles) {
+            [xml]$trx = Get-Content -LiteralPath $file.FullName
+            foreach ($result in @($trx.TestRun.Results.UnitTestResult)) {
+              if ($null -ne $result -and $result.outcome -ne 'Passed') {
+                $message = [string]$result.Output.ErrorInfo.Message
+                $message = $message -replace "[`r`n]+", " "
+                Write-Host "::error::$($result.testName): $message"
+              }
+            }
+          }
+
+      - name: Test Capture and write TRX
+        run: dotnet test tests/Kandoo.Capture.Tests/Kandoo.Capture.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Capture.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-ubuntu-latest
+          path: |
+            tests/Kandoo.Core.Tests/TestResults/*.trx
+            tests/Kandoo.Cloud.Tests/TestResults/*.trx
+            tests/Kandoo.Hub.Tests/TestResults/*.trx
+            tests/Kandoo.Capture.Tests/TestResults/*.trx
+          if-no-files-found: error
+
+  build-and-test-windows:
+    name: Build and test (windows-latest)
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Check out pinned E-30 contract read-only
+        uses: actions/checkout@v4
+        with:
+          repository: majid-ghanbari-dost/Kandoo-Digital-Invoice
+          ref: 29d842178cd39d3f54f14f3716c44c585911467b
+          path: .e30/Kandoo-Digital-Invoice
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Set up Python 3.11 for C-21
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Restore
+        run: dotnet restore Kandoo.sln
+
+      - name: Build
+        run: dotnet build Kandoo.sln --configuration Release --no-restore
+
+      - name: Run C-21 pinned extraction bridge golden probe
+        shell: pwsh
+        run: scripts/Invoke-CiStep.ps1 -StepName 'Run C-21 pinned extraction bridge golden probe' -ScriptPath scripts/Invoke-C21ExtractionBridge.ps1 -ScriptArguments @('-PythonRepository', '.e30/Kandoo-Digital-Invoice', '-ArtifactPath', 'artifacts/c21-extraction-bridge-windows-latest.json')
+
+      - name: Upload C-21 extraction bridge evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: c21-extraction-bridge-windows-latest
+          path: artifacts/c21-extraction-bridge-windows-latest.json
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Test Core and write TRX
+        run: dotnet test tests/Kandoo.Core.Tests/Kandoo.Core.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Core.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
+
+      - name: Test Cloud and write TRX
+        run: dotnet test tests/Kandoo.Cloud.Tests/Kandoo.Cloud.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Cloud.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
+
+      - name: Test Hub and write TRX
+        run: dotnet test tests/Kandoo.Hub.Tests/Kandoo.Hub.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Hub.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
+
+      - name: Publish failed test annotations
+        if: always()
+        shell: pwsh
+        run: |
+          $resultFiles = Get-ChildItem -Path tests -Filter *.trx -Recurse -ErrorAction SilentlyContinue
+          foreach ($file in $resultFiles) {
+            [xml]$trx = Get-Content -LiteralPath $file.FullName
+            foreach ($result in @($trx.TestRun.Results.UnitTestResult)) {
+              if ($null -ne $result -and $result.outcome -ne 'Passed') {
+                $message = [string]$result.Output.ErrorInfo.Message
+                $message = $message -replace "[`r`n]+", " "
+                Write-Host "::error::$($result.testName): $message"
+              }
+            }
+          }
+
+      - name: Test Capture and write TRX
+        run: dotnet test tests/Kandoo.Capture.Tests/Kandoo.Capture.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Capture.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
+
+      - name: Publish self-contained win-x64 Hub host
+        run: dotnet publish src/Kandoo.Hub/Kandoo.Hub.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts/Kandoo.Hub-win-x64
+
+      - name: Start Hub, run C-14 smoke, stop it, and measure the publish
+        shell: pwsh
+        run: scripts/Invoke-HubSmoke.ps1 -PublishDirectory artifacts/Kandoo.Hub-win-x64 -ArtifactDirectory artifacts
+
+      - name: Upload C-14 self-contained Hub artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kandoo-hub-c14-win-x64
+          path: |
+            artifacts/Kandoo.Hub-win-x64/**
+            artifacts/c14-artifact-size.txt
+            artifacts/c14-smoke-result.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Assemble C-22 Windows pilot package
+        shell: pwsh
+        run: scripts/Invoke-CiStep.ps1 -StepName 'Assemble C-22 Windows pilot package' -ScriptPath scripts/New-HubPilotPackage.ps1 -ScriptArguments @('-PublishDirectory', 'artifacts/Kandoo.Hub-win-x64', '-PackageDirectory', 'artifacts/Kandoo.Hub-Pilot-win-x64')
+
+      - name: Run C-22 replacement, pairing, and backup smoke
+        shell: pwsh
+        run: scripts/Invoke-CiStep.ps1 -StepName 'Run C-22 replacement, pairing, and backup smoke' -ScriptPath scripts/Invoke-HubPilotSmoke.ps1 -ScriptArguments @('-PackageDirectory', 'artifacts/Kandoo.Hub-Pilot-win-x64', '-ArtifactDirectory', 'artifacts')
+
+      - name: Upload C-22 Windows pilot artifact
+        id: c22_pilot_upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: kandoo-hub-pilot-c22-win-x64
+          path: |
+            artifacts/Kandoo.Hub-Pilot-win-x64/**
+            artifacts/c22-pilot-smoke-result.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Diagnose C-22 pilot artifact upload failure
+        if: always() && steps.c22_pilot_upload.outcome == 'failure'
+        shell: pwsh
+        run: |
+          $stepName = 'Upload C-22 Windows pilot artifact'
+          $exitCode = 1
+          $lines = [System.Collections.Generic.List[string]]::new()
+          foreach ($path in @('artifacts/Kandoo.Hub-Pilot-win-x64', 'artifacts/c22-pilot-smoke-result.json')) {
+            $lines.Add("$path : $(if (Test-Path -LiteralPath $path) { 'present' } else { 'MISSING' })")
+          }
+          if (Test-Path -LiteralPath artifacts) {
+            Get-ChildItem -LiteralPath artifacts -Recurse -File |
+              Select-Object -First 17 |
+              ForEach-Object { $lines.Add("ARTIFACT_FILE $($_.FullName)") }
+          }
+          $diagnostic = @("CI_STEP_FAILURE step=$stepName exit_code=$exitCode") + $lines.ToArray()
+          $diagnostic | ForEach-Object { Write-Host $_ }
+          if ($env:GITHUB_STEP_SUMMARY) {
+            $summary = [System.Collections.Generic.List[string]]::new()
+            $summary.Add("## $stepName")
+            $summary.Add('')
+            $summary.Add("Exit code: $exitCode")
+            $summary.Add('')
+            $summary.Add('```text')
+            foreach ($line in $diagnostic) { $summary.Add($line) }
+            $summary.Add('```')
+            $summary | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY
+          }
+          exit $exitCode
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-windows-latest
+          path: |
+            tests/Kandoo.Core.Tests/TestResults/*.trx
+            tests/Kandoo.Cloud.Tests/TestResults/*.trx
+            tests/Kandoo.Hub.Tests/TestResults/*.trx
+          if-no-files-found: error
