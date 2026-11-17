@@ -558,6 +558,7 @@ Autonomous decisions:
 | گزارش پذیرش C-82 | docs/reports/C-82-ACCEPTANCE-REPORT.md | o15-C-82 | 64cf70fa3e3ce08c39379815d546fa399bfd5c6a | https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44058734355 |
 | گزارش پذیرش C-83 | docs/reports/C-83-ACCEPTANCE-REPORT.md | o15-C-83 | 6903377f1a2e5832e63153df4306b2ee548b6f9c | https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44066606436 |
 | گزارش پذیرش C-84 | docs/reports/C-84-ACCEPTANCE-REPORT.md | o15-C-84 | adaaeca098d937a988b796034b2f495239a49059 | https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44074149427 |
+| گزارش پذیرش C-85 | docs/reports/C-85-ACCEPTANCE-REPORT.md | o15-C-85 | 4d8d2b34790bae159177d86a80bd84153477cd08 | https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44084559335 |
 
 در بخش regression هر سه گزارش، دو رخداد ثبت‌شده با شواهد بی آمده است:
 1. انتشار ویندوز = خرابی زیرساخت از قبل موجود (نه regressions کد)
@@ -565,4 +566,24 @@ Autonomous decisions:
 
 معیاری که شواهدش بازیابی‌پذیر نیست، صریحاً NOT-VERIFIED علامت‌گذاری شده است.
 
-Next tasks: C-85 (setup.exe via Inno Setup or zip fallback + RUN-LOCAL.md + start-all), C-86 stretch (Android customer mode).
+### C-85 — setup.exe از طریق Inno Setup یا جایگزین zip + RUN-LOCAL.md + start-all
+
+Delivered:
+- setup.exe از طریق Inno Setup در CI windows-latest (continue-on-error؛ در صورت شکست، فایل zip جایگزین)
+- فایل zip جایگزین از خروجی انتشار win-x64
+- RUN-LOCAL.md با پنج گام نمایشی مالک (ویندوز، موبایل، OTP، مشاهدهٔ فاکتور، تطبیق داده) + گام اختیاری اندازه‌گیری شروع
+- scripts/start-all.ps1 برای شروع یک‌دفعه Hub با حالت نمایشی
+
+| Task | Tag | Full commit SHA | Branch CI run | Tag CI run | Status |
+|------|-----|-----------------|---------------|------------|--------|
+| **C-85** | `o15-C-85` | `4d8d2b34790bae159177d86a80bd84153477cd08` | [44084559335](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44084559335) — GREEN (ubuntu + windows) | same commit | GREEN |
+
+Files changed: `.github/workflows/ci.yml` (Inno Setup CI steps), `RUN-LOCAL.md` (new), `scripts/start-all.ps1` (new), `docs/reports/C-85-ACCEPTANCE-REPORT.md` (new).
+
+Autonomous decisions:
+- C-85: Inno Setup builds setup.exe from self-contained win-x64 publish output; choco install innosetup on CI runner
+- C-85: Fallback zip of win-x64 publish output if Inno Setup unavailable
+- C-85: start-all.ps1 runs Hub with Demo mode on localhost:5000
+- C-85: CI Inno Setup steps use continue-on-error; setup.exe upload conditional on success; fallback zip always attempted
+
+Next tasks: C-86 stretch (Android customer mode).
