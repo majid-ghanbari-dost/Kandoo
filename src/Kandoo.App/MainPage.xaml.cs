@@ -274,6 +274,19 @@ public partial class MainPage : ContentPage
         }
     }
 
+    private async void OnReviewQueueClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            var settings = ReadHubSettings();
+            await Navigation.PushAsync(new ReviewQueuePage(_coordinator, settings));
+        }
+        catch (Exception exception) when (IsExpected(exception))
+        {
+            StatusLabel.Text = exception.Message;
+        }
+    }
+
     private async void OnCreateInvoiceClicked(object? sender, EventArgs e)
     {
         try

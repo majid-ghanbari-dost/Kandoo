@@ -151,6 +151,11 @@
                         Text="بارگذاری صف"
                         Clicked="OnLoadClicked"
                         SemanticProperties.Description="بارگذاری صف بررسی" />
+                <Button x:Name="ReviewQueueButton"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Text="صف بازبینی (کامل)"
+                        Clicked="OnReviewQueueClicked"
+                        SemanticProperties.Description="صفحهٔ کامل صف بازبینی با اصلاح و صدور" />
                 <Button x:Name="ProductsButton"
                         Style="{StaticResource PrimaryButtonStyle}"
                         Text="فهرست کالاها (واقعی)"
