@@ -33,7 +33,7 @@ public sealed class HubInvoiceDataSource
             body["customer_phone"] = customerPhone;
 
         using var request = new HttpRequestMessage(
-            HttpMethod.Post, $\"{_baseUrl}/v1/stores/{_settings.StoreId:D}/invoices/drafts");
+            HttpMethod.Post, ${_baseUrl}/v1/stores/{_settings.StoreId:D}/invoices/drafts");
         HubApiUtilities.Authorize(request, _settings);
         request.Content = HubApiUtilities.JsonBody(body);
         using var response = await _client.SendAsync(request, cancellationToken);
@@ -68,7 +68,7 @@ public sealed class HubInvoiceDataSource
 
         using var request = new HttpRequestMessage(
             HttpMethod.Post,
-            $\"{_baseUrl}/v1/stores/{_settings.StoreId:D}/invoices/{invoiceId}/items");
+            ${_baseUrl}/v1/stores/{_settings.StoreId:D}/invoices/{invoiceId}/items");
         HubApiUtilities.Authorize(request, _settings);
         request.Content = HubApiUtilities.JsonBody(body);
         using var response = await _client.SendAsync(request, cancellationToken);
@@ -89,7 +89,7 @@ public sealed class HubInvoiceDataSource
 
         using var request = new HttpRequestMessage(
             HttpMethod.Post,
-            $\"{_baseUrl}/v1/stores/{_settings.StoreId:D}/invoices/{invoiceId}/issue");
+            ${_baseUrl}/v1/stores/{_settings.StoreId:D}/invoices/{invoiceId}/issue");
         HubApiUtilities.Authorize(request, _settings);
         request.Content = HubApiUtilities.JsonBody(body);
         using var response = await _client.SendAsync(request, cancellationToken);
@@ -105,7 +105,7 @@ public sealed class HubInvoiceDataSource
     {
         using var request = new HttpRequestMessage(
             HttpMethod.Post,
-            $\"{_baseUrl}/v1/stores/{_settings.StoreId:D}/invoices/{invoiceId}/sms/resend");
+            ${_baseUrl}/v1/stores/{_settings.StoreId:D}/invoices/{invoiceId}/sms/resend");
         HubApiUtilities.Authorize(request, _settings);
         using var response = await _client.SendAsync(request, cancellationToken);
         if (!response.IsSuccessStatusCode)
@@ -122,7 +122,7 @@ public sealed class HubInvoiceDataSource
     {
         using var request = new HttpRequestMessage(
             HttpMethod.Get,
-            $\"{_baseUrl}/v1/stores/{_settings.StoreId:D}/invoices/{invoiceId}");
+            ${_baseUrl}/v1/stores/{_settings.StoreId:D}/invoices/{invoiceId}");
         HubApiUtilities.Authorize(request, _settings);
         using var response = await _client.SendAsync(request, cancellationToken);
         if (!response.IsSuccessStatusCode)

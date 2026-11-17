@@ -21,7 +21,7 @@ public sealed class HubCustomersDataSource
         CancellationToken cancellationToken = default)
     {
         using var request = new HttpRequestMessage(
-            HttpMethod.Get, $\"{_baseUrl}/v1/stores/{_settings.StoreId:D}/customers");
+            HttpMethod.Get, ${_baseUrl}/v1/stores/{_settings.StoreId:D}/customers");
         HubApiUtilities.Authorize(request, _settings);
         using var response = await _client.SendAsync(request, cancellationToken);
         if (!response.IsSuccessStatusCode)

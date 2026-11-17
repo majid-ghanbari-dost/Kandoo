@@ -35,7 +35,7 @@ public sealed class HubProductEditorDataSource
             body["purchase_price_rials"] = purchasePriceRials;
 
         using var request = new HttpRequestMessage(
-            HttpMethod.Post, $\"{_baseUrl}/v1/stores/{_settings.StoreId:D}/products");
+            HttpMethod.Post, ${_baseUrl}/v1/stores/{_settings.StoreId:D}/products");
         HubApiUtilities.Authorize(request, _settings);
         request.Content = HubApiUtilities.JsonBody(body);
         using var response = await _client.SendAsync(request, cancellationToken);
@@ -71,7 +71,7 @@ public sealed class HubProductEditorDataSource
 
         using var request = new HttpRequestMessage(
             HttpMethod.Patch,
-            $\"{_baseUrl}/v1/stores/{_settings.StoreId:D}/products/{productId}");
+            ${_baseUrl}/v1/stores/{_settings.StoreId:D}/products/{productId}");
         HubApiUtilities.Authorize(request, _settings);
         request.Content = HubApiUtilities.JsonBody(body);
         using var response = await _client.SendAsync(request, cancellationToken);
@@ -88,7 +88,7 @@ public sealed class HubProductEditorDataSource
     {
         using var request = new HttpRequestMessage(
             HttpMethod.Get,
-            $\"{_baseUrl}/v1/stores/{_settings.StoreId:D}/products/cascade-options");
+            ${_baseUrl}/v1/stores/{_settings.StoreId:D}/products/cascade-options");
         HubApiUtilities.Authorize(request, _settings);
         using var response = await _client.SendAsync(request, cancellationToken);
         if (!response.IsSuccessStatusCode)
