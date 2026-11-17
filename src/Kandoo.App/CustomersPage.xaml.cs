@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace Kandoo.App;
 
 public partial class CustomersPage : ContentPage
