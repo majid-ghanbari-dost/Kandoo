@@ -558,7 +558,7 @@ Autonomous decisions:
 | گزارش پذیرش C-82 | docs/reports/C-82-ACCEPTANCE-REPORT.md | o15-C-82 | 64cf70fa3e3ce08c39379815d546fa399bfd5c6a | https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44058734355 |
 | گزارش پذیرش C-83 | docs/reports/C-83-ACCEPTANCE-REPORT.md | o15-C-83 | 6903377f1a2e5832e63153df4306b2ee548b6f9c | https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44066606436 |
 | گزارش پذیرش C-84 | docs/reports/C-84-ACCEPTANCE-REPORT.md | o15-C-84 | adaaeca098d937a988b796034b2f495239a49059 | https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44074149427 |
-| گزارش پذیرش C-85 | docs/reports/C-85-ACCEPTANCE-REPORT.md | o15-C-85 | cc75dcb94869b9030fec26137e2ccee1fe6e3664 | https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44086070797 |
+| گزارش پذیرش C-85 | docs/reports/C-85-ACCEPTANCE-REPORT.md | o15-C-85 | 15db3e600b951e67641444e6652562ca74042c36 | https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44087142952 |
 
 در بخش regression هر سه گزارش، دو رخداد ثبت‌شده با شواهد بی آمده است:
 1. انتشار ویندوز = خرابی زیرساخت از قبل موجود (نه regressions کد)
@@ -576,7 +576,7 @@ Delivered:
 
 | Task | Tag | Full commit SHA | Branch CI run | Tag CI run | Status |
 |------|-----|-----------------|---------------|------------|--------|
-| **C-85** | `o15-C-85` | `cc75dcb94869b9030fec26137e2ccee1fe6e3664` | [44086070797](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44086070797) — GREEN (ubuntu + windows) | same commit | GREEN |
+| **C-85** | `o15-C-85` | `15db3e600b951e67641444e6652562ca74042c36` | [44087142952](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44087142952) — GREEN (ubuntu + windows) | same commit | GREEN |
 
 Files changed: `.github/workflows/ci.yml` (Inno Setup CI steps), `RUN-LOCAL.md` (new), `scripts/start-all.ps1` (new), `docs/reports/C-85-ACCEPTANCE-REPORT.md` (new).
 
