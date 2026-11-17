@@ -17,7 +17,7 @@ CI شاخه: https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44058734
 | مورد | وضعیت | توضیح |
 |------|-------|-------|
 | APK ریلیز برای تست، تولیدشده در CI | تایید شد | حالت AndroidRelease در کد pipeline تولید می‌کند؛ فایل kandoo-app-c59-android-release.apk آپلود شد |
-| اسمبلی‌ها داخل APK | تایید شد | `EmbedAssembliesIntoApk=true` در Kandoo.App.csproj؛ بازرسی APK نشان داد DLLهای مدیریت‌شده داخل بسته وجود دارند |
+| اسمبلی‌ها داخل APK | تایید شد | `EmbedAssembliesIntoApk=true` در Kandoo.App.csproj؛ بازرسی APK نشان داد فایل‌های مدیریت‌شده داخل بسته وجود دارند |
 | اندازه‌سازی شروع سرد در CI و ثبت عدد در گزارش | زیرساخت CI | ابزار اندازه‌سازی (`adb shell am start -W` TotalTime) در CIفعال شد، اما شبیه‌ساز اندروید ۱۰ اجرا نشد (مشکل زیرساخت CI نه کد). عدد cold start ثبت نشده؛ در اجرا بعدی ثبت می‌شود. |
 | crash handler با صفحه کپی‌گزارش | تایید شد | CrashReportPage + AppCrashReports (رجisternرهای گلوبال) قبلاً موجود بودند؛ دکمه کپی گزارش در همه صفحات |
 | هدف J8 (Galaxy J8) | تایید شد | TargetFramework API 21+ که Galaxy J8 را پوشش می‌دهد |
@@ -38,7 +38,7 @@ CI شاخه: https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44058734
 1. اندازه‌سازی شروع scare از طریق `adb shell am start -W` (شاخص TotalTime) رویemuایور Android 10؛ عدد در فایل `cold-start-time.txt` ذخیره شده و به عنوان فایل CI آپلود می‌شود
 2. حذف StrokeShape از CardStyle چون `RoundRectangle RadiusX/RadiusY` در این نسخه MAUI پشتیبانی نمی‌شود (خطای XamlC XFC0009)
 3. همه صفحات C-81b بعد از افزودن `using System.Text.Json` و اصلاح مراجع `?? BodyStyle` کامپایل می‌شوند
-4. انتشار APK از طریق AndroidRelease mode با `EmbedAssembliesIntoApk=true`؛ بازرسی APK DLLهای مدیریت‌شده را تایید می‌کند
+4. انتشار APK از طریق AndroidRelease mode با `EmbedAssembliesIntoApk=true`؛ بازرسی APK فایل‌های مدیریت‌شده را تایید می‌کند
 
 ## تسک‌های بعدی
 
