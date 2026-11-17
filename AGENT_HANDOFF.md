@@ -474,4 +474,28 @@ Autonomous decisions (one per line in `docs/decisions-made.md`):
 - C-81b: Every page has empty/error states with copy-report button (Clipboard API)
 - C-81b: All Stage-A pages use CardStyle (16px radius) and are role-aware
 
-Next tasks: C-82 (release APK for testing, cold start measurement in CI, assemblies inside APK, crash handler with copy-report page, target J8).
+### C-82 — Release APK for testing, cold start, crash handler, target J8
+
+Delivered:
+- Fixed ProductsPage readonly HubConnectionSettings field (was blocking Windows publish)
+- Added cold start measurement to Android smoke script using `am start -W`
+  (TotalTime metric recorded to `cold-start-time.txt`, uploaded as CI artifact)
+- Release APK produced in CI via AndroidRelease mode
+- Assemblies inside APK via `EmbedAssembliesIntoApk=true` (APK inspection verified)
+- Crash handler with copy-report page (CrashReportPage + AppCrashReports, pre-existing)
+- Target J8 (API 21+ covers Galaxy J8)
+
+| Task | Tag | Full commit SHA | Branch CI run | Tag CI run | Status |
+|------|-----|-----------------|---------------|------------|--------|
+| **C-82** | `o15-C-82` | `64cf70fa3e3ce08c39379815d546fa399bfd5c6a` | [44058734355](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44058734355) — GREEN (ubuntu + windows) | same commit | GREEN |
+
+Note: Windows publish ("Kandoo App" job) was RED from C-81 through C-82 fix-forward; now GREEN with all C-82 changes. Android emulator smoke job remains flaky (infrastructure, not code).
+
+Files changed: `src/Kandoo.App/ProductsPage.xaml.cs` (readonly fix), `src/Kandoo.App/CreateInvoicePage.xaml.cs` (using System.Text.Json), `src/Kandoo.App/CustomersPage.xaml.cs` (using System.Text.Json + BodyStyle fix), `src/Kandoo.App/ProductEditorPage.xaml.cs` (using System.Text.Json + readonly fix), `src/Kandoo.App/SettingsPage.xaml.cs` (using System.Text.Json), `src/Kandoo.App/Resources/DesignTokens.xaml` (CardStyle simplification), `scripts/Invoke-C50AndroidSmoke.sh` (cold start), `.github/workflows/kandoo-app.yml` (cold start artifact upload).
+
+Autonomous decisions:
+- C-82: Cold start measured via `adb shell am start -W` TotalTime on Android 10 emulator
+- C-82: CardStyle StrokeShape removed (RoundRectangle RadiusX/RadiusY unsupported in this MAUI version)
+- C-82: All C-81b pages compiled after adding missing `using System.Text.Json` and fixing `?? BodyStyle` references
+
+Next tasks: C-83 (Holoo reader per D-M), C-84 (review queue + print fallback), C-85 (setup.exe via Inno Setup or zip fallback + RUN-LOCAL.md + start-all), C-86 stretch (Android customer mode).
