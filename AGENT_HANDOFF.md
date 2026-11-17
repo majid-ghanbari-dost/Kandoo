@@ -396,4 +396,51 @@ Autonomous decisions (one per line in `docs/decisions-made.md`):
 - C-80b: `Authorization: Bearer <device-secret>` header on replication requests per Cloud `DeviceBearer` contract; Cloud-side auth untouched
 - C-80b: v1.1 fields on batch when Cloud advertises v1.1 (fail-closed, only enabled when advertised)
 
-Next tasks: C-81 (Windows app Stage-A pages style v2), C-82 (Android store app APX release), C-83 (Holoo reader per D-M), C-84 (review queue + print fallback), C-85 (setup.exe via Inno Setup or zip fallback + RUN-LOCAL.md + start-all), C-86 stretch (Android customer mode).
+### C-81 — Windows app Stage-A pages style v2
+
+Delivered: all Stage-A Windows app pages (RoleSelectionPage, MainPage,
+ProductsPage, CrashReportPage) in style v2; role-aware UI (Store/Operator/
+Manager device levels via MainPage device administration buttons and
+AppRolePolicy); empty/error states with copy-report button; shared token file.
+
+- DesignTokens: added `CardStyle` with 16px corner radius (style v2 card)
+- SharedTokenFile (`src/Kandoo.App/Logic/SharedTokenFile.cs`): shared
+  machine-local device/session token store (`kandoo.device-token.v1.json`)
+  so every Stage-A page reads the token without constructor parameter passing
+- RoleSelectionPage: content wrapped in CardStyle
+- ProductsPage: CardStyle on settings panel and product rows; empty/error
+  state with copy-report button; falls back to shared token file when no
+  Hub settings entered
+- MainPage: CardStyle on queue items, device rows, CustomerPanel;
+  copy-report button on load error; saves device/session token to shared
+  file after successful pairing; ReadHubSettings falls back to shared token
+  file
+- CrashReportPage: wrapped in CardStyle
+
+| Task | Tag | Full commit SHA | Branch CI run | Tag CI run | Status |
+|------|-----|-----------------|---------------|------------|--------|
+| **C-81** | `o15-C-81` | `9c70dba693bbf19429b104e9a675703fd5a3b417` | [44044338090](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44044338090) — GREEN (ubuntu + windows) | same commit (tag points to green CI head) | GREEN |
+
+Tests: no new unit tests (UI layer verified through CI build of MAUI
+Windows target).
+
+Files changed: `src/Kandoo.App/Resources/DesignTokens.xaml` (CardStyle),
+`src/Kandoo.App/RoleSelectionPage.xaml` (CardStyle wrapper),
+`src/Kandoo.App/ProductsPage.xaml` + `.xaml.cs` (CardStyle, empty state,
+copy-report, shared token file), `src/Kandoo.App/MainPage.xaml` + `.xaml.cs`
+(CardStyle on items, copy-report, shared token file integration),
+`src/Kandoo.App/CrashReportPage.xaml` (CardStyle wrapper),
+`src/Kandoo.App/Logic/SharedTokenFile.cs` (new).
+
+Autonomous decisions (one per line in `docs/decisions-made.md`):
+- C-81: CardStyle with 16px radius added to DesignTokens; applied to all
+  Stage-A page containers and row items
+- C-81: SharedTokenFile persists device/session token to local app data;
+  read by all pages that need Hub connection settings
+- C-81: Empty/error states show copy-report button; error text copied to
+  clipboard via Clipboard API
+
+Next tasks: C-82 (Android store app APX release), C-83 (Holoo reader per
+D-M), C-84 (review queue + print fallback), C-85 (setup.exe via Inno Setup
+or zip fallback + RUN-LOCAL.md + start-all), C-86 stretch (Android customer
+mode).
