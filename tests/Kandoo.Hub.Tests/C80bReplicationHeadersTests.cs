@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http;
 using System.Text.Json;
 using Kandoo.Hub;
 using Xunit;
@@ -13,6 +14,9 @@ namespace Kandoo.Hub.Tests;
 /// send this header on every replication request. Cloud-side auth is untouched.
 /// v1.1 fields (payload_version, currency, invoice_payloads) are included
 /// when present on the batch.
+///
+/// C-83: DeviceSecret must NOT be serialized in the JSON body. It is sent
+/// only via the Authorization: Bearer header (DeviceBearer scheme).
 ///
 /// Tests verify through HubCloudReplicationClient.AttemptAsync that the
 /// per-device secret is resolved and placed on the ReplicationBatch.DeviceSecret,
@@ -152,6 +156,130 @@ public sealed class C80bReplicationHeadersTests : IDisposable
         Assert.Equal(5000L, invoices[0].RemainingBalance);
     }
 
+    [Fact]
+    public async Task C83_DeviceSecretNotSerializedInBody()
+    {
+        // C-83: DeviceSecret must not appear in the JSON body. It is sent only
+        // via the Authorization: Bearer header.
+        var batch = new ReplicationBatch
+        {
+            BatchId = "batch-c83",
+            StoreId = _storeId,
+            WriterDeviceId = _deviceId,
+            WriterEpoch = 1,
+            DeviceSecret = "dev-secret-must-not-leak",
+            Entries = new List<ReplicationLogEntry>
+            {
+                new()
+                {
+                    StoreId = _storeId,
+                    WriterDeviceId = _deviceId,
+                    WriterEpoch = 1,
+                    OperationSeq = 1,
+                    PreviousEntryHash = new string('0', 64),
+                    EntryHash = new string('a', 64),
+                    OperationId = "op-1",
+                    DeviceId = _deviceId,
+                    OperationType = "invoice.issue",
+                    Payload = HubJson.Element(new { invoice_id = Guid.NewGuid(), service_type = "SALE" }),
+                    Outcome = HubJson.Element(new {}),
+                    ResponseSnapshot = HubJson.Element(new {}),
+                    HubRecordedAt = "2026-11-16T00:00:00Z"
+                }
+            }
+        };
+
+        var json = JsonSerializer.Serialize(batch, HubJson.Options);
+        Assert.DoesNotContain("device_secret", json);
+        Assert.DoesNotContain("dev-secret-must-not-leak", json);
+    }
+
+    [Fact]
+    public async Task C83_TransportEmitsBearerHeader()
+    {
+        var capturedHeaders = new Dictionary<string, string?>();
+        var handler = new CapturingHandler(capturedHeaders);
+        using var client = new HttpClient(handler);
+        var transport = new HttpCloudReplicationTransport(client);
+
+        var batch = new ReplicationBatch
+        {
+            BatchId = "batch-c83-header",
+            StoreId = _storeId,
+            WriterDeviceId = _deviceId,
+            WriterEpoch = 1,
+            DeviceSecret = "dev-secret-header-only",
+            Entries = new List<ReplicationLogEntry>
+            {
+                new()
+                {
+                    StoreId = _storeId,
+                    WriterDeviceId = _deviceId,
+                    WriterEpoch = 1,
+                    OperationSeq = 1,
+                    PreviousEntryHash = new string('0', 64),
+                    EntryHash = new string('a', 64),
+                    OperationId = "op-1",
+                    DeviceId = _deviceId,
+                    OperationType = "invoice.issue",
+                    Payload = HubJson.Element(new { invoice_id = Guid.NewGuid(), service_type = "SALE" }),
+                    Outcome = HubJson.Element(new {}),
+                    ResponseSnapshot = HubJson.Element(new {}),
+                    HubRecordedAt = "2026-11-16T00:00:00Z"
+                }
+            }
+        };
+
+        await transport.SendAsync(batch, CancellationToken.None);
+
+        Assert.True(capturedHeaders.TryGetValue("Authorization", out var auth));
+        Assert.Equal("Bearer dev-secret-header-only", auth);
+    }
+
+    [Fact]
+    public async Task C83_CloudReturns401WithoutBearerHeader()
+    {
+        // Cloud returns 401 when Authorization: Bearer header is missing.
+        // The transport does not add the header when DeviceSecret is empty.
+        var capturedHeaders = new Dictionary<string, string?>();
+        var handler = new CapturingHandler(capturedHeaders);
+        using var client = new HttpClient(handler);
+        var transport = new HttpCloudReplicationTransport(client);
+
+        var batch = new ReplicationBatch
+        {
+            BatchId = "batch-c83-401",
+            StoreId = _storeId,
+            WriterDeviceId = _deviceId,
+            WriterEpoch = 1,
+            DeviceSecret = string.Empty,
+            Entries = new List<ReplicationLogEntry>
+            {
+                new()
+                {
+                    StoreId = _storeId,
+                    WriterDeviceId = _deviceId,
+                    WriterEpoch = 1,
+                    OperationSeq = 1,
+                    PreviousEntryHash = new string('0', 64),
+                    EntryHash = new string('a', 64),
+                    OperationId = "op-1",
+                    DeviceId = _deviceId,
+                    OperationType = "invoice.issue",
+                    Payload = HubJson.Element(new { invoice_id = Guid.NewGuid(), service_type = "SALE" }),
+                    Outcome = HubJson.Element(new {}),
+                    ResponseSnapshot = HubJson.Element(new {}),
+                    HubRecordedAt = "2026-11-16T00:00:00Z"
+                }
+            }
+        };
+
+        var response = await transport.SendAsync(batch, CancellationToken.None);
+
+        Assert.False(capturedHeaders.ContainsKey("Authorization"));
+        Assert.Equal(HttpStatusCode.Unauthorized, response.HttpStatus);
+    }
+
     /// <summary>Recording transport that captures the batch for assertion.</summary>
     private sealed class RecordingTransport : ICloudReplicationTransport
     {
@@ -163,6 +291,27 @@ public sealed class C80bReplicationHeadersTests : IDisposable
             return Task.FromResult(new CloudTransportResponse(
                 HttpStatusCode.OK,
                 JsonSerializer.SerializeToElement(new { status = "ACCEPTED", accepted_through_seq = 1L, head_entry_hash = "x" })));
+        }
+    }
+
+    /// <summary>HttpMessageHandler that captures request headers for assertion.</summary>
+    private sealed class CapturingHandler : HttpMessageHandler
+    {
+        private readonly Dictionary<string, string?> _headers;
+
+        public CapturingHandler(Dictionary<string, string?> headers)
+        {
+            _headers = headers;
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            foreach (var header in request.Headers)
+            {
+                _headers[header.Key] = string.Join(", ", header.Value);
+            }
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
         }
     }
 }

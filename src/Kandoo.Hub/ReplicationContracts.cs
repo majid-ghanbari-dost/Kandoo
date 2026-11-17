@@ -109,7 +109,11 @@ public sealed class ReplicationBatch
     public List<HubInvoiceReplicationPayloadV11>? InvoicePayloads { get; set; }
 
     [JsonPropertyName("device_secret")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [JsonIgnore] // C-83: DeviceSecret must NOT be serialized in the JSON body.
+                 // It is sent only via the Authorization: Bearer header
+                 // (DeviceBearer scheme per docs/openapi.yaml). Cloud-side auth
+                 // rejects any secret in the body; keeping it there would leak
+                 // the per-device secret in request logs and body snapshots.
     public string? DeviceSecret { get; set; }
 
     public static ReplicationBatch Create(HubWriterIdentity writer, Guid storeId, IReadOnlyList<ReplicationLogEntry> entries)
