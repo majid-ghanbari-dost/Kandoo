@@ -351,3 +351,33 @@ Decisions `D-A` through `D-K` recorded in `docs/DECISIONS.md` under "ORDER 14 De
 Tag `o14-C-H` created at `4077374` after green CI run [43621437440](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/43621437440).
 
 HEAD: `4077374` (commit `docs(o14): add ORDER 14 D-A..D-K decisions, tag ledger, and close-out report`).
+
+## ORDER 15 Handoff (`arena/4bb6cd51-kandoo`, 2026-11-17)
+
+Branch `arena/4bb6cd51-kandoo`, branched from `712ce0711812f1dd4121014539c0d7bb6332d7d9` of `arena/456e429d-kandoo`. All work on this branch; no push to `main`; no force-push; no tag moves; no PR-object actions on PR #2/PR #15.
+
+### C-80 — Demo profile per D-L (local demo week, 7 days from 2026-11-16)
+
+Delivered: single Hub demo setting (`Hub:Demo:Mode` + `Hub:Demo:BaseUrl`) bound/validated/registered as `DemoHubOptions` singleton; cleartext HTTP demo base URL allowed only to private LAN ranges (10/8, 172.16/12, 192.168/16) or localhost; `DemoDataSeeder` seeds 40 Persian products (8 groups × 5, group/subgroup + legacy code), 20 customers, 12 issued invoices via `CreateDraft` + `IssueInvoice` path; `DemoSmsProvider` writes to local outbox file + in-memory log (no gateway credentials, no network); demo data seeds on Hub startup when `DemoMode` is on; `DemoStoreId`/`DemoDeviceId` constants; Windows Store-only role via `RoleProfiles`; MAUI single project for Windows+Android; style v2 via existing `DesignTokens` (cream/wax bg, honey #F2A900 action, ink #2B1D0E text, green #256B43, brown #9A3B0A, Vazirmatn font, RTL, 48px touch); card style 16px radius.
+
+| Task | Tag | Full commit SHA | Branch CI run | Tag CI run | Status |
+|------|-----|-----------------|---------------|------------|--------|
+| **C-80** | `o15-C-80` | `46247639504c78dbf817ffb660ae453b9ec2ce23` | [44027647544](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44027647544) — GREEN (ubuntu + windows) | same commit (tag points to green CI head) | GREEN |
+
+Tests added: `tests/Kandoo.Hub.Tests/DemoDataSeederTests.cs` (40 products in range, 12 issued invoices, deterministic invoice IDs, ≥10 distinct customers, LAN base-url validation, non-HTTP scheme rejection, demo-mode-off no BaseUrl required); `tests/Kandoo.Core.Tests/DemoSmsProviderTests.cs` (outbox file + in-memory log + validation rejects).
+
+Files changed: `src/Kandoo.Hub/Program.cs` (DemoHubOptions binding/validation/registration, startup seeding, SqliteHubStore concrete registration, DemoStoreId/DemoDeviceId), `src/Kandoo.Hub/appsettings.json` (Hub.Demo section), `src/Kandoo.Hub/DemoHubOptions.cs` (new), `src/Kandoo.Hub/DemoDataSeeder.cs` (new), `src/Kandoo.Core/DemoSmsProvider.cs` (new), `tests/Kandoo.Hub.Tests/DemoDataSeederTests.cs` (new), `tests/Kandoo.Core.Tests/DemoSmsProviderTests.cs` (new), `docs/decisions-made.md` (new).
+
+Autonomous decisions (one per line in `docs/decisions-made.md`):
+- C-80 demo profile: one Hub setting (`Hub:Demo`) + one app setting for cloud base address
+- Demo data seeded into Hub SQLite on startup when DemoMode is on
+- DemoSmsProvider → local outbox + in-memory log + admin page
+- Android cleartext HTTP only to private LAN ranges; app enforces at startup
+- Single MAUI project for Windows + Android
+- SQLite local app data
+- Style v2 via existing DesignTokens + new 16px card style
+- Windows Store-only role; Android Store/Customer/Both
+- Inno Setup for setup.exe with zip fallback (C-85, pending)
+- MAUI workloads in CI
+
+Next tasks: C-81 (Windows app Stage-A pages style v2), C-82 (Android store app APX release), C-83 (Holoo reader per D-M), C-84 (review queue + print fallback), C-85 (setup.exe via Inno Setup or zip fallback + RUN-LOCAL.md + start-all), C-86 stretch (Android customer mode).
