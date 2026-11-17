@@ -18,6 +18,25 @@ trap capture_logcat EXIT
 adb wait-for-device
 adb shell input keyevent 82 || true
 adb logcat -c
+
+# Cold start measurement: force-stop then launch with am start -W to capture TotalTime.
+if adb shell am force-stop ir.kandoo.app >/dev/null 2>&1; then
+  sleep 2
+  adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n ir.kandoo.app/.MainActivity > "$evidence/cold-start.txt" 2>&1 || true
+  if grep -q 'TotalTime' "$evidence/cold-start.txt" 2>/dev/null; then
+    cold_start_ms=$(grep 'TotalTime' "$evidence/cold-start.txt" | awk '{print $2}' | tr -d '\r')
+    echo "C82_COLD_START total_time_ms=$cold_start_ms package=ir.kandoo.app"
+    echo "::notice::C82_COLD_START total_time_ms=$cold_start_ms package=ir.kandoo.app"
+    printf '%s\n' "$cold_start_ms" > "$evidence/cold-start-time.txt"
+  else
+    echo "::warning::C82_COLD_START TotalTime not found in am start output"
+    printf '%s\n' "unknown" > "$evidence/cold-start-time.txt"
+  fi
+else
+  echo "::warning::C82_COLD_START am force-stop failed"
+  printf '%s\n' "unknown" > "$evidence/cold-start-time.txt"
+fi
+
 adb install -r "$apk" > "$evidence/install.txt" 2>&1
 adb shell monkey -p ir.kandoo.app -c android.intent.category.LAUNCHER 1 > "$evidence/launch.txt" 2>&1
 sleep 15

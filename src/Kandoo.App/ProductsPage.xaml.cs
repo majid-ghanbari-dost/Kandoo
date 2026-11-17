@@ -6,7 +6,7 @@ namespace Kandoo.App;
 public partial class ProductsPage : ContentPage
 {
     private readonly HttpClient _httpClient = new();
-    private readonly HubConnectionSettings? _settings;
+    private HubConnectionSettings? _settings;
     private readonly SharedTokenFile _tokenFile = new();
     private string? _lastError;
 
