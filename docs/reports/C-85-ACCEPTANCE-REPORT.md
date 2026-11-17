@@ -6,12 +6,12 @@
 
 ## ۲. SHA تگ و SHA کامیت
 تگ کامل: o15-C-85 → d0c941ec481c6cb66259d58b0dc4fdcfa314ec10
-کامیت کامل: dba35b6feea5e1a7b9e425471861c748de9c9704
+کامیت کامل: d14663c9bb63c1c376b0b09fafb592c0add27f57
 
 ## ۳. شاخه و لینک‌های CI
 شاخه: arena/4bb6cd51-kandoo
-لینک CI شاخه: https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44088272831 (برای کامیت dba35b6)
-لینک CI تگ: https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44088272831 (تگ o15-C-85 به کامیت dba35b6 اشاره می‌کند، بنابراین هر دو لینک به یک اجرا مربوط است)
+لینک CI شاخه: https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44089301596 (برای کامیت d14663c، هدف تگ o15-C-85)
+لینک CI تگ: https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44089301596 (تگ o15-C-85 به کامیت d14663c اشاره می‌کند، بنابراین هر دو لینک به یک اجرا مربوط است)
 
 ## ۴. محدوده تغییرات
 
@@ -47,7 +47,7 @@ start-all.ps1 — تایید شد
 ## ۶. خروجی تست‌های واقعی و لینک اجرای CI
 
 تست‌های واحد (dotnet test) در هر دو job (ubuntu-latest و windows-latest): تمام تست‌ها موفق.
-لینک اجرای CI: https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44088272831
+لینک اجرای CI: https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44089301596
 نتیجه CI: سبز (GREEN) در هر دو سیستم عامل
 
 ## ۷. وضعیت regression
@@ -62,5 +62,5 @@ setup.exe امضا نشده است؛ مالک باید امضا کند برای 
 عدد اندازه‌گیری شروع ثبت نشده — مالک می‌تواند در دموی واقعی اندازه بگیرد.
 حالت نمایشی فقط به LAN های مجاز است (رنج‌های خصوصی 10/8، 172.16/12، 192.168/16 یا localhost).
 
-CI URL: https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44088272831
-TAG: o15-C-85 at dba35b6feea5e1a7b9e425471861c748de9c9704
+CI URL: https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44089301596
+TAG: o15-C-85 at d14663c9bb63c1c376b0b09fafb592c0add27f57
