@@ -59,3 +59,13 @@ Autonomous technical decisions, one per line (what / why / rejected option), per
 ## CI / build
 
 11. **MAUI workloads installed in CI** before building `Kandoo.sln`; ubuntu builds Android (`-p:TargetFramework=net8.0-android`), windows builds Windows (`-p:TargetFramework=net8.0-windows10.0.19041.0`). Why: `Kandoo.App` targets both platforms; hosted runners need `dotnet workload install maui` to build MAUI. Rejected: building both targets on every runner (Windows target cannot build on Linux).
+
+## C-82 — Release APK, cold start, crash handler, target J8
+
+12. **Cold start measured via `adb shell am start -W` TotalTime** on Android 10 emulator; result saved to `cold-start-time.txt` and uploaded as CI artifact `kandoo-app-c82-cold-start`. Why: standard Android cold start metric; needs emulator-based measurement. Rejected: measuring on physical Galaxy J8 (not available in CI).
+
+13. **CardStyle StrokeShape removed** (`RoundRectangle RadiusX/RadiusY` unsupported in this MAUI version). Why: XamlC error XFC0009 blocked Windows build. Rejected: keeping RoundRectangle (build-breaking).
+
+14. **All C-81b pages compiled** after adding missing `using System.Text.Json` and fixing `?? BodyStyle` references. Why: code-behind cannot reference XAML styles as bare C# identifiers. Rejected: per-page custom style classes (over-engineering).
+
+15. **Release APK via AndroidRelease mode** with `EmbedAssembliesIntoApk=true`; APK inspection verifies managed DLLs inside APK. Why: Galaxy J8 crash was caused by missing managed DLLs in Debug APK. Rejected: Debug APK for release testing.
