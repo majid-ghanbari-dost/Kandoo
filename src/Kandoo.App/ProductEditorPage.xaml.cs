@@ -1,10 +1,12 @@
+using System.Text.Json;
+
 namespace Kandoo.App;
 
 public partial class ProductEditorPage : ContentPage
 {
     private readonly HttpClient _httpClient = new();
     private readonly HubConnectionSettings? _settings;
-    private readonly List<GroupOption> _groups = new();
+    private List<GroupOption> _groups = new();
     private string? _lastError;
 
     public ProductEditorPage(HubConnectionSettings? settings = null)
