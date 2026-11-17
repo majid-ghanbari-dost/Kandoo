@@ -511,7 +511,7 @@ Delivered:
 
 | Task | Tag | Full commit SHA | Branch CI run | Tag CI run | Status |
 |------|-----|-----------------|---------------|------------|--------|
-| **C-83** | `o15-C-83` | pending | pending | pending | committing |
+| **C-83** | `o15-C-83` | `6903377f1a2e5832e63153df4306b2ee548b6f9c` | [44066606436](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44066606436) — GREEN (ubuntu + windows) | same commit | GREEN |
 
 Files changed: `src/Kandoo.Hub/ReplicationContracts.cs` ([JsonIgnore] on DeviceSecret), `tests/Kandoo.Hub.Tests/C80bReplicationHeadersTests.cs` (C-83 tests), `docs/openapi.yaml` (x-legacy-header-deprecation).
 
