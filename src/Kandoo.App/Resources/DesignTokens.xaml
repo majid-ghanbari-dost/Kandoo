@@ -113,7 +113,7 @@
         <Setter Property="Padding" Value="{StaticResource PaddingSpace3}" />
         <Setter Property="StrokeShape">
             <Setter.Value>
-                <Rectangle Radius="16" />
+                <RoundRectangle RadiusX="16" RadiusY="16" />
             </Setter.Value>
         </Setter>
     </Style>
