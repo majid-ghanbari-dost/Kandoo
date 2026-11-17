@@ -380,4 +380,20 @@ Autonomous decisions (one per line in `docs/decisions-made.md`):
 - Inno Setup for setup.exe with zip fallback (C-85, pending)
 - MAUI workloads in CI
 
+### C-80b — Replication headers per Cloud contract (frozen contract alignment)
+
+Delivered: `HttpCloudReplicationTransport.SendAsync` adds `Authorization: Bearer <device-secret>` header on every `ingestOperationBatch` request to Cloud, matching the `DeviceBearer` scheme in `docs/openapi.yaml`. Cloud-side authentication untouched. The per-device secret is resolved by `HubCloudReplicationClient.AttemptAsync` and placed on `ReplicationBatch.DeviceSecret`, which the transport emits as the header. v1.1 fields (`payload_version`, `currency`, `invoice_payloads`) included on the batch when `HubReplicationOptions.PayloadV11Enabled` is true via `HubReplicationPayloadV11.Apply`. Exact header name: `Authorization` with shape `Bearer <device-secret>`.
+
+| Task | Tag | Full commit SHA | Branch CI run | Tag CI run | Status |
+|------|-----|-----------------|---------------|------------|--------|
+| **C-80b** | `o15-C-80b` | `b2d8a0d267fd618bf16a1fc173c46544338d3558` | [44039697223](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44039697223) — GREEN (ubuntu + windows) | same commit (tag points to green CI head) | GREEN |
+
+Tests added: `tests/Kandoo.Hub.Tests/C80bReplicationHeadersTests.cs` (device secret survives on batch sent to transport; v1.1 fields present on batch).
+
+Files changed: `src/Kandoo.Hub/HubCloudReplicationClient.cs` (Authorization header in transport), `tests/Kandoo.Hub.Tests/C80bReplicationHeadersTests.cs` (new).
+
+Autonomous decisions (one per line in `docs/decisions-made.md`):
+- C-80b: `Authorization: Bearer <device-secret>` header on replication requests per Cloud `DeviceBearer` contract; Cloud-side auth untouched
+- C-80b: v1.1 fields on batch when Cloud advertises v1.1 (fail-closed, only enabled when advertised)
+
 Next tasks: C-81 (Windows app Stage-A pages style v2), C-82 (Android store app APX release), C-83 (Holoo reader per D-M), C-84 (review queue + print fallback), C-85 (setup.exe via Inno Setup or zip fallback + RUN-LOCAL.md + start-all), C-86 stretch (Android customer mode).
