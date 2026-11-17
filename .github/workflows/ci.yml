@@ -281,16 +281,16 @@ jobs:
         continue-on-error: true
         run: |
           # Copy CI publish output to where the .iss script expects it
-          $publishDir = Join-Path $env:GITHUB_WORKSPACE \'packaging\\HubPilot\\publish'
+          $publishDir = Join-Path $env:GITHUB_WORKSPACE "packaging\HubPilot\publish"
           if (Test-Path $publishDir) { Remove-Item $publishDir -Recurse -Force }
           New-Item -ItemType Directory -Force -Path $publishDir | Out-Null
-          Copy-Item -Path \'artifacts/Kandoo.Hub-win-x64/*' -Destination $publishDir -Recurse -Force
+          Copy-Item -Path "artifacts/Kandoo.Hub-win-x64/*" -Destination $publishDir -Recurse -Force
           # Copy launcher and README referenced by the .iss script
-          Copy-Item -Path \'packaging\\HubPilot\\Start-KandooHub.ps1' -Destination $publishDir -Force
-          Copy-Item -Path \'packaging\\HubPilot\\README.txt' -Destination $publishDir -Force
+          Copy-Item -Path "packaging\HubPilot\Start-KandooHub.ps1" -Destination $publishDir -Force
+          Copy-Item -Path "packaging\HubPilot\README.txt" -Destination $publishDir -Force
           # Build the installer
-          & iscc \'packaging\\HubPilot\\KandooHub.Installer.iss'
-          if ($LASTEXITCODE -ne 0) { throw \'Inno Setup build failed.' }
+          & iscc "packaging\HubPilot\KandooHub.Installer.iss"
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup build failed." }
 
       - name: Upload C-85 setup.exe
         uses: actions/upload-artifact@v4
@@ -305,10 +305,10 @@ jobs:
         if: always()
         shell: pwsh
         run: |
-          $setup = \'packaging/HubPilot/Output/KandooHub-Setup.exe'
+          $setup = "packaging/HubPilot/Output/KandooHub-Setup.exe"
           if (-not (Test-Path $setup)) {
-            Compress-Archive -Path \'artifacts/Kandoo.Hub-win-x64/*' -DestinationPath \'artifacts/Kandoo.Hub-win-x64.zip' -Force
-            Write-Host \'C85_FALLBACK_ZIP artifacts/Kandoo.Hub-win-x64.zip'
+            Compress-Archive -Path "artifacts/Kandoo.Hub-win-x64/*" -DestinationPath "artifacts/Kandoo.Hub-win-x64.zip" -Force
+            Write-Host "C85_FALLBACK_ZIP artifacts/Kandoo.Hub-win-x64.zip"
           }
 
       - name: Upload fallback zip (C-85)
