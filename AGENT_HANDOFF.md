@@ -623,4 +623,57 @@ Autonomous decisions:
 
 سند RUN-LOCAL.md برای نسخهٔinstaller بازنویسی شود تا با تجربهٔ جدید سازگار باشد.
 
-Next tasks: C-87 (installer + First-Run Shop Setup).
+Next tasks: C-87-fix-1 (installer + real MAUI Windows app inside installer).
+
+### C-87-fix-1 — تکمیل الزامی C-87 (بعد از ابلاغ مدیر اجرایی)
+
+تگ o15-C-87 روی کامیت 3e6f7302 قفل می‌ماند و جابه‌جا نمی‌شود. تگ جدید o15-C-87-fix-1 باید روی کامیت سبز CI ساخته شود.
+
+#### condición مالک برای پذیرش C-87-fix-1
+
+نصب‌ساز Kandoo-Setup-x64.exe必ず tartalmazzałد 실행可能な برنامه ویندوزی واقعی Kandoo.App (نه لانچر، نه placeholder). دکمهٔ پایانی ویزارد باید اپ واقعی را اجرا کند. ورود به محیط واقعی Kandoo بدون PowerShell/ترمینال/ویرایش JSON/توکن دستی.
+
+#### شwürdigkeiten CI —_BUILD اپ ویندوزی MAUI (Kandoo.App)
+
+۱۴ تلاش متوالی برای ساخت Kandoo.App (MAUI) روی رانر windows-latest CI همه شکست خورد. خطاهای ثبت‌شده:
+
+۱. `CS1002: ; expected` در ReviewQueuePage.xaml.cs:241 — رشته‌های جاسازماندهی با نقل‌قول‌های درون-line نامعتبر. دستور: `dotnet publish src/Kandoo.App/Kandoo.App.csproj --configuration Release --framework net8.0-windows10.0.19041.0 --output artifacts/Kandoo.App-win-x64`. رفع شد با Replace به concat رشته‌ای.
+
+۲. `Assets file '...obj\project.assets.json' not found. Run a NuGet package restore to generate this file.` — dotnet msbuild بدون restore. دستور: `dotnet msbuild src/Kandoo.App/Kandoo.App.csproj /t:Publish /p:Configuration=Release ...`.
+
+۳. `The type or namespace name 'ContentPage' could not be found` — CustomersPage.xaml.cs:5. نوع‌های MAUI یافتی نمی‌شوند.
+
+۴. `The type or namespace name 'ContentPage' could not be found` — CreateInvoicePage.xaml.cs:5.
+
+۵. `The type or namespace name 'ContentPage' could not be found` — CrashReportPage.xaml.cs:3.
+
+۶. `The type or namespace name 'Application' could not be found` — App.xaml.cs:3.
+
+۷. `The type or namespace name 'Android' could not be found` — Platforms/Android/MainApplication.cs:2,1.
+
+۸. `The type or namespace name 'Android' could not be found` — Platforms/Android/MainActivity.cs:3,2,1.
+
+۹. `The workload 'net8.0-android' is out of support` — هشدار لكن نشان‌دهنده وضعیت workload.
+
+۱۰. `dotnet workload install maui --skip-manifest-update` نصب شد اما نوع‌های MAUI یافتی نمی‌شوند.
+
+۱۱. `dotnet build ... --framework net8.0-windows10.0.19041.0` — نوع‌های MAUI یافتی نمی‌شوند.
+
+۱۲. `dotnet build ... -p:TargetFramework=net8.0-windows10.0.19041.0` — نوع‌های MAUI یافتی نمی‌شوند.
+
+۱۳. `dotnet workload install maui` (کامل، ۵ دقیقه نصب) — نوع‌های MAUI هنوز یافتی نمی‌شوند.
+
+۱۴. `dotnet workload install maui-windows` + `dotnet publish --framework net8.0-windows10.0.19041.0` — همان خطاهای ContentPage/Application/Android.
+
+#### نتیجه
+
+به Despite ۱۴ تلاش مستندشده، اپ ویندوزی واقعی (Kandoo.App/MAUI) در CI ساخته نمی‌شود. نوع‌های MAUI (ContentPage, Application, Android) توسط workload روی رانر windows-latest فراهم نمی‌شوند.
+
+بر اساس ابلاغ مدیر اجرایی بند و): «اگر پس از تلاش مستندشده، اپ واقعاً در CI عملاً ناممکن باشد، متوقف شو و با شواهد کامل به من ارجاع بده».
+
+توقف در اینجا. نیاز به راهنمایی اجرایی برای ادامه C-87-fix-1. گزینه‌های پیشنهادی برای ادامه:
+- رنر مجاز خود-hosted با Visual Studio کامل و workload MAUI
+- تغییر پروژه Kandoo.App از MAUI به WinForms/WPF برای ساخت روی CI
+- ساخت دومرحله‌ای:_job جداگانه برای ساخت MAUI、سپس استفاده از آرتیفاِت در ساخت نصب‌ساز
+
+تگ o15-C-87-fix-1 هنوز ساخته نشده است. CI سبز برای installer حاوی اپ واقعی مورد نیاز است.
