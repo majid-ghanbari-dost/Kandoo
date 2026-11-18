@@ -279,6 +279,7 @@ jobs:
       - name: Build Windows MAUI app (C-87)
         shell: pwsh
         run: |
+          dotnet workload install maui --skip-manifest-update
           dotnet restore src/Kandoo.App/Kandoo.App.csproj
           dotnet build src/Kandoo.App/Kandoo.App.csproj `
             --configuration Release `
