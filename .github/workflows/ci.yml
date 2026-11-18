@@ -279,12 +279,8 @@ jobs:
       - name: Publish Windows MAUI app (C-87)
         shell: pwsh
         run: |
-          dotnet msbuild src/Kandoo.App/Kandoo.App.csproj `
-            /t:Publish `
-            /p:Configuration=Release `
-            /p:TargetFramework=net8.0-windows10.0.19041.0 `
-            /p:PublishDir=artifacts/Kandoo.App-win-x64 `
-            /p:WindowsPackageType=None
+          dotnet restore src/Kandoo.App/Kandoo.App.csproj
+          dotnet publish src/Kandoo.App/Kandoo.App.csproj --configuration Release --framework net8.0-windows10.0.19041.0 --output artifacts/Kandoo.App-win-x64 --no-restore
 
       - name: Build Kandoo-Setup-x64.exe with Inno Setup (C-87)
         shell: pwsh
