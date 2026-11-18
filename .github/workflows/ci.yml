@@ -272,11 +272,18 @@ jobs:
           }
           exit $exitCode
 
+      - name: Diagnose MAUI SDK/workload (C-87-fix-1)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          dotnet --version
+          dotnet workload install maui-windows
+          dotnet workload list
+
       - name: Build Windows MAUI app (C-87-fix-1)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          dotnet workload install maui-windows
           dotnet publish src/Kandoo.App/Kandoo.App.csproj -c Release -f net8.0-windows10.0.19041.0 -o artifacts/Kandoo.App-win-x64
 
       - name: Build Windows Setup Launcher (C-87)
