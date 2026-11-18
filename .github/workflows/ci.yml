@@ -268,6 +268,12 @@ jobs:
           }
           exit $exitCode
 
+      - name: Build Windows MAUI app (C-87)
+        shell: pwsh
+        run: |
+          dotnet workload install maui-windows
+          dotnet build src/Kandoo.App/Kandoo.App.csproj --configuration Release --framework net8.0-windows10.0.19041.0 -p:OutputPath=artifacts/Kandoo.App-win-x64
+
       - name: Install Inno Setup (C-87)
         shell: pwsh
         continue-on-error: true
@@ -287,9 +293,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path "$publishDir\hub" | Out-Null
           New-Item -ItemType Directory -Force -Path "$publishDir\app" | Out-Null
           Copy-Item -Path "artifacts/Kandoo.Hub-win-x64/*" -Destination "$publishDir\hub" -Recurse -Force
-          # MAUI app placeholder
-          New-Item -ItemType File -Force -Path "$publishDir\app\README.txt" | Out-Null
-          Set-Content -Path "$publishDir\\app\\README.txt" -Value "Kandoo Windows App placeholder. MAUI app build pending."
+          Copy-Item -Path "artifacts/Kandoo.App-win-x64/*" -Destination "$publishDir\app" -Recurse -Force
           # Copy launcher and README referenced by the .iss script
           Copy-Item -Path "packaging\HubPilot\Start-KandooHub.ps1" -Destination "$publishDir" -Force
           Copy-Item -Path "packaging\HubPilot\README.txt" -Destination "$publishDir" -Force
