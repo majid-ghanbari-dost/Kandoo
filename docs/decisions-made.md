@@ -83,3 +83,13 @@ Autonomous technical decisions, one per line (what / why / rejected option), per
 19. **ReviewQueuePage uses ReviewQueueCoordinator** for fake/real mode switching. Why: consistent with existing Stage-A page pattern; single coordinator manages data source selection. Rejected: per-page data source instantiation (inconsistent).
 
 20. **CheckBoxStyle added to DesignTokens.xaml** for consistent checkbox styling across Stage-A pages. Why: style v2 consistency. Rejected: inline checkbox styling (visual inconsistency).
+
+## C-85 — setup.exe REJECTED at product level
+
+21. **C-85 rejected: output is only Hub executable, not full Windows software.** Running Kandoo.Hub.exe starts only a local service on port 5000; browser page is local Pairing only, not the real software environment. `OwnerBootstrapProof` in `appsettings.json` is empty and the formal owner session creation path is unused. Install experience, first-run setup, automatic database creation, shop identity, and entry to the real environment were not proven.
+   Why: owner ran C-85 output on a real machine and found product-level defect. Rejected: accepting C-85 as delivered.
+
+## C-87 — Real installer + First-Run Shop Setup (activated)
+
+22. **Installer output: standalone `Kandoo-Setup-x64.exe` downloadable from GitHub.** Why: owner requires a single downloadable file, double-click install, standard installation steps. Rejected: zip fallback or manual PowerShell/JSON steps.
+23. **First-Run Setup via software's own GUI.** On first launch with no config, the app shows a graphical setup wizard that auto-creates database, configures services/settings/prerequisites, and resolves `OwnerBootstrapProof` graphically — no PowerShell, no terminal, no JSON editing, no manual token creation. Why: owner requires entry to real Kandoo environment without technical intervention. Rejected: Pairing page counts as real environment (it does not).
