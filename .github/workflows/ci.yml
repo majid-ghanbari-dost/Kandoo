@@ -269,6 +269,7 @@ jobs:
           exit $exitCode
 
       - name: Build Windows Setup Launcher (C-87)
+        if: runner.os == 'Windows'
         shell: pwsh
         run: |
           dotnet build src/Kandoo.App.Launcher/Kandoo.App.Launcher.csproj --configuration Release -p:OutputPath=artifacts/Kandoo.SetupLauncher-win-x64
