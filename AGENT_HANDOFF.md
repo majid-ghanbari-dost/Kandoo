@@ -586,4 +586,8 @@ Autonomous decisions:
 - C-85: start-all.ps1 runs Hub with Demo mode on localhost:5000
 - C-85: CI Inno Setup steps use continue-on-error; setup.exe upload conditional on success; fallback zip always attempted
 
+### درس حاکمیتی — ثبت SHAها بعد از push
+
+هیچ SHA.commit یا SHA.tag را تا زمان push موفق به ریموتorigin و بازیابی موفق با `git ls-remote origin` اعلام نکن. Commit‌های محلی که push نشده‌اند (مانند 8aa5cbf939dc393ab18ac4630b8a81cb1fd1ccf9) در ریموت قابل بازیابی نیستند و می‌توانند با reset شاخه از ریموت محو شوند. SHAهای گزارش شده همیشه باید با خروجی verbatim `git ls-remote origin` تأیید شوند.
+
 Next tasks: C-86 stretch (Android customer mode).
