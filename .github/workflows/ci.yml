@@ -272,9 +272,9 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          dotnet workload install maui
+          dotnet workload install maui-windows
           dotnet restore src/Kandoo.App/Kandoo.App.csproj
-          dotnet build src/Kandoo.App/Kandoo.App.csproj --configuration Release --framework net8.0-windows10.0.19041.0 -p:OutputPath=artifacts/Kandoo.App-win-x64 --no-restore
+          dotnet publish src/Kandoo.App/Kandoo.App.csproj --configuration Release --framework net8.0-windows10.0.19041.0 --output artifacts/Kandoo.App-win-x64 --no-restore
 
       - name: Build Windows Setup Launcher (C-87)
 
