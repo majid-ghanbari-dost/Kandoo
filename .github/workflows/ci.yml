@@ -272,16 +272,35 @@ jobs:
           }
           exit $exitCode
 
-      - name: Build Windows MAUI app (C-87-fix-1)
-        if: runner.os == 'Windows'
+      - name: Install MAUI Windows workload (C-87-fix-1)
         shell: pwsh
         run: |
           dotnet --info
-          dotnet publish src/Kandoo.App/Kandoo.App.csproj -c Release -f net8.0-windows10.0.19041.0 -o artifacts/Kandoo.App-win-x64
+          dotnet workload install maui-windows
+          if ($LASTEXITCODE -ne 0) { throw "maui-windows workload install failed." }
+          dotnet workload list
+
+      - name: Build Windows MAUI app (C-87-fix-1)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          dotnet publish src/Kandoo.App/Kandoo.App.csproj -c Release -r win-x64 --self-contained true `
+            -p:TargetFrameworks=net8.0-windows10.0.19041.0 `
+            -p:WindowsPackageType=None -p:WindowsAppSDKSelfContained=true `
+            -o artifacts/Kandoo.App-win-x64 `
+            -bl:artifacts/maui-publish.binlog
+          if ($LASTEXITCODE -ne 0) { throw "MAUI Windows publish failed." }
+
+      - name: Upload MAUI build log (C-87-fix-1)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kandoo-maui-publish-binlog
+          path: artifacts/maui-publish.binlog
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Build Windows Setup Launcher (C-87)
-
-        if: runner.os == 'Windows'
         shell: pwsh
         run: |
           dotnet build src/Kandoo.App.Launcher/Kandoo.App.Launcher.csproj --configuration Release -p:OutputPath=artifacts/Kandoo.SetupLauncher-win-x64
