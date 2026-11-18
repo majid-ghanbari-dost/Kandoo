@@ -279,8 +279,9 @@ jobs:
       - name: Publish Windows MAUI app (C-87)
         shell: pwsh
         run: |
-          dotnet restore src/Kandoo.App/Kandoo.App.csproj
-          dotnet publish src/Kandoo.App/Kandoo.App.csproj --configuration Release --framework net8.0-windows10.0.19041.0 --output artifacts/Kandoo.App-win-x64 --no-restore
+          $src = "src/Kandoo.App/bin/Release/net8.0-windows10.0.19041.0"
+          if (-not (Test-Path $src)) { throw "MAUI Windows build output not found at $src" }
+          Copy-Item -Path "$src/*" -Destination "artifacts/Kandoo.App-win-x64" -Recurse -Force
 
       - name: Build Kandoo-Setup-x64.exe with Inno Setup (C-87)
         shell: pwsh
