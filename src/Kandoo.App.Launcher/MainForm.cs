@@ -348,6 +348,18 @@ public class MainForm : Form
     private async void OnFinishClicked(object? sender, EventArgs e)
     {
         await Task.Delay(500);
+        // C-87-fix-1: Launch the real Kandoo Windows app (Kandoo.App.exe) installed
+        // alongside this launcher in the same application folder.
+        var appDir = Path.GetDirectoryName(Environment.ProcessPath) ?? string.Empty;
+        var appExe = Path.Combine(appDir, "Kandoo.App.exe");
+        if (File.Exists(appExe))
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = appExe,
+                UseShellExecute = true,
+            });
+        }
         Close();
     }
 
