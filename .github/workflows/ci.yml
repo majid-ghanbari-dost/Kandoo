@@ -268,7 +268,7 @@ jobs:
           }
           exit $exitCode
 
-      - name: Install Inno Setup (C-85)
+      - name: Install Inno Setup (C-87)
         shell: pwsh
         continue-on-error: true
         run: |
@@ -276,7 +276,13 @@ jobs:
             choco install innosetup -y --no-progress
           }
 
-      - name: Build setup.exe with Inno Setup (C-85)
+      - name: Publish Windows MAUI app (C-87)
+        shell: pwsh
+        run: |
+          dotnet publish src/Kandoo.App/Kandoo.App.csproj `
+            --configuration Release `--framework net8.0-windows10.0.19041.0 `--output artifacts/Kandoo.App-win-x64
+
+      - name: Build Kandoo-Setup-x64.exe with Inno Setup (C-87)
         shell: pwsh
         continue-on-error: true
         run: |
@@ -284,38 +290,41 @@ jobs:
           $publishDir = Join-Path $env:GITHUB_WORKSPACE "packaging\HubPilot\publish"
           if (Test-Path $publishDir) { Remove-Item $publishDir -Recurse -Force }
           New-Item -ItemType Directory -Force -Path $publishDir | Out-Null
-          Copy-Item -Path "artifacts/Kandoo.Hub-win-x64/*" -Destination $publishDir -Recurse -Force
+          New-Item -ItemType Directory -Force -Path "$publishDir\hub" | Out-Null
+          New-Item -ItemType Directory -Force -Path "$publishDir\app" | Out-Null
+          Copy-Item -Path "artifacts/Kandoo.Hub-win-x64/*" -Destination "$publishDir\hub" -Recurse -Force
+          Copy-Item -Path "artifacts/Kandoo.App-win-x64/*" -Destination "$publishDir\app" -Recurse -Force
           # Copy launcher and README referenced by the .iss script
-          Copy-Item -Path "packaging\HubPilot\Start-KandooHub.ps1" -Destination $publishDir -Force
-          Copy-Item -Path "packaging\HubPilot\README.txt" -Destination $publishDir -Force
+          Copy-Item -Path "packaging\HubPilot\Start-KandooHub.ps1" -Destination "$publishDir" -Force
+          Copy-Item -Path "packaging\HubPilot\README.txt" -Destination "$publishDir" -Force
           # Build the installer
           & iscc "packaging\HubPilot\KandooHub.Installer.iss"
           if ($LASTEXITCODE -ne 0) { throw "Inno Setup build failed." }
 
-      - name: Upload C-85 setup.exe
+      - name: Upload C-87 setup.exe
         uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: kandoo-hub-c85-setup-exe
-          path: packaging/HubPilot/Output/KandooHub-Setup.exe
+          name: kandoo-hub-c87-setup-exe
+          path: packaging/HubPilot/Output/Kandoo-Setup-x64.exe
           if-no-files-found: warn
           retention-days: 7
 
-      - name: Fallback zip (C-85)
+      - name: Fallback zip (C-87)
         if: always()
         shell: pwsh
         run: |
-          $setup = "packaging/HubPilot/Output/KandooHub-Setup.exe"
+          $setup = "packaging/HubPilot/Output/Kandoo-Setup-x64.exe"
           if (-not (Test-Path $setup)) {
             Compress-Archive -Path "artifacts/Kandoo.Hub-win-x64/*" -DestinationPath "artifacts/Kandoo.Hub-win-x64.zip" -Force
-            Write-Host "C85_FALLBACK_ZIP artifacts/Kandoo.Hub-win-x64.zip"
+            Write-Host "C87_FALLBACK_ZIP artifacts/Kandoo.Hub-win-x64.zip"
           }
 
-      - name: Upload fallback zip (C-85)
+      - name: Upload fallback zip (C-87)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: kandoo-hub-c85-win-x64-zip
+          name: kandoo-hub-c87-win-x64-zip
           path: artifacts/Kandoo.Hub-win-x64.zip
           if-no-files-found: warn
           retention-days: 7

@@ -127,6 +127,20 @@ if (captureOptions.Enabled)
 
 var app = builder.Build();
 
+// C-87 First-Run Setup: log whether OwnerBootstrapProof is configured so the
+// First-Run Setup wizard can confirm owner bootstrap is available. If empty,
+// owner sessions return 503 OWNER_BOOTSTRAP_UNAVAILABLE until the First-Run
+// Setup configures it via the Hub__OwnerBootstrapProof environment variable.
+var bootstrapProof = builder.Configuration["Hub:OwnerBootstrapProof"];
+if (string.IsNullOrWhiteSpace(bootstrapProof))
+{
+    Console.WriteLine("WARN: Hub:OwnerBootstrapProof is not configured. Owner bootstrap is unavailable until First-Run Setup configures it.");
+}
+else
+{
+    Console.WriteLine("INFO: Hub:OwnerBootstrapProof is configured. Owner bootstrap is available.");
+}
+
 // Order 15 demo profile (C-80): seed realistic demo data into the Hub store when
 // demo mode is enabled, so both Windows and Android demo clients read the same
 // LAN authority data.
