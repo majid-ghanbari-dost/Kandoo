@@ -238,7 +238,8 @@ public partial class ReviewQueuePage : ContentPage
                 $"{_settings.BaseUrl.TrimEnd('/')}/v1/stores/{_settings.StoreId:D}/reviews/{_selectedReview.ReviewId}/corrections");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _settings.SessionToken);
 
-            var valueElement = JsonDocument.Parse($"{{"value":{CorrectionValueEntry.Text}}}").RootElement.GetProperty("value");
+            var jsonValue = "{"value":" + CorrectionValueEntry.Text + "}";
+            var valueElement = JsonDocument.Parse(jsonValue).RootElement.GetProperty("value");
             var body = new { field_path = CorrectionFieldEntry.Text.Trim(), value = valueElement };
             request.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
 
