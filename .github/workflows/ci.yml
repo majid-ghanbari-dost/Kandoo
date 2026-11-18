@@ -51,6 +51,10 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      - name: Log dotnet version
+        shell: pwsh
+        run: dotnet --info
+
       - name: Set up Python 3.11 for C-21
         uses: actions/setup-python@v6
         with:
@@ -273,8 +277,7 @@ jobs:
         shell: pwsh
         run: |
           dotnet workload install maui-windows
-          dotnet restore src/Kandoo.App/Kandoo.App.csproj
-          dotnet publish src/Kandoo.App/Kandoo.App.csproj --configuration Release --framework net8.0-windows10.0.19041.0 --output artifacts/Kandoo.App-win-x64 --no-restore
+          dotnet publish src/Kandoo.App/Kandoo.App.csproj -c Release -f net8.0-windows10.0.19041.0 -o artifacts/Kandoo.App-win-x64
 
       - name: Build Windows Setup Launcher (C-87)
 
