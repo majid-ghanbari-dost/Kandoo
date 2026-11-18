@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace Kandoo.App.Launcher;
 
-internal sealed class LocalProfileStore : IUserProfileStore
+public sealed class LocalProfileStore : IUserProfileStore
 {
     private readonly string _path;
 
