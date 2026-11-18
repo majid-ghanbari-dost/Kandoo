@@ -577,7 +577,7 @@ Delivered:
 | Task | Tag | Full commit SHA | Branch CI run | Tag CI run | Status |
 |------|-----|-----------------|---------------|------------|--------|
 | **C-85** | `o15-C-85` | `aef2f6e99f8c5b532c51043c2bc2fe4cf7d12480` | [44091485971](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44091485971) — GREEN (ubuntu + windows) | same commit | GREEN |
-| **C-87** | `o15-C-87` | `76b62f498ed4c1faa8b0f2553a9bd362575e32d3` | [44290521787](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44290521787) — GREEN (ubuntu + windows) | same commit (tag points to green CI head) | GREEN |
+| **C-87** | `o15-C-87` | `3e6f7302` | [44300282154](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44300282154) — GREEN (ubuntu + windows) | same commit (tag points to green CI head) | GREEN |
 
 Files changed: `.github/workflows/ci.yml` (Inno Setup CI steps), `RUN-LOCAL.md` (new), `scripts/start-all.ps1` (new), `docs/reports/C-85-ACCEPTANCE-REPORT.md` (new).
 
