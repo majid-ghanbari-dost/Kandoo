@@ -30,7 +30,7 @@
                         <Entry x:Name="StoreNameEntry"
                                Style="{StaticResource InputStyle}"
                                Placeholder="نام فروشگاه را وارد کنید"
-                               SemanticProperties.Description="نام فروشگاه برای rails&=داده‌های فروشگاه" />
+                               SemanticProperties.Description="نام فروشگاه برای داده‌های فروشگاه" />
                         <Button x:Name="StartShopButton"
                                 Style="{StaticResource PrimaryButtonStyle}"
                                 Text="شروع راه‌اندازی خودکار"
