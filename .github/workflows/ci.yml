@@ -272,7 +272,8 @@ jobs:
           }
           exit $exitCode
 
-      - name: Install MAUI Windows workload (C-87-fix-3)
+      - name: Install MAUI Windows workload (C-87-fix-4)
+        working-directory: src/Kandoo.App
         shell: pwsh
         run: |
           dotnet --version
@@ -281,34 +282,35 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "maui-windows workload install failed." }
           dotnet workload list
 
-      - name: Build Windows MAUI app (C-87-fix-3)
+      - name: Build Windows MAUI app (C-87-fix-4)
+        working-directory: src/Kandoo.App
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE\artifacts" | Out-Null
           $publishArgs = @(
-            'publish', 'src/Kandoo.App/Kandoo.App.csproj',
+            'publish', 'Kandoo.App.csproj',
             '-c', 'Release', '-f', 'net8.0-windows10.0.19041.0', '-r', 'win-x64', '--self-contained', 'true',
             '-p:TargetFrameworks=net8.0-windows10.0.19041.0',
             '-p:WindowsPackageType=None', '-p:WindowsAppSDKSelfContained=true',
-            '-o', 'artifacts/Kandoo.App-win-x64',
-            '-bl:artifacts/maui-publish.binlog',
+            '-o', "$env:GITHUB_WORKSPACE\artifacts\Kandoo.App-win-x64",
+            '-bl:' + "$env:GITHUB_WORKSPACE\artifacts\maui-publish.binlog",
             '-v:m'
           )
           Write-Host "RUN: dotnet $($publishArgs -join ' ')"
-          & dotnet @publishArgs 2>&1 | Tee-Object -FilePath artifacts/maui-publish.log
+          & dotnet @publishArgs 2>&1 | Tee-Object -FilePath "$env:GITHUB_WORKSPACE\artifacts\maui-publish.log"
           $code = $LASTEXITCODE
           Write-Host "MAUI_PUBLISH_EXIT_CODE=$code"
           if ($code -ne 0) {
-            $errs = @(Select-String -Path artifacts/maui-publish.log -Pattern '(error|Error)[ :]+[A-Za-z]+[0-9]+|error:' |
+            $errs = @(Select-String -Path "$env:GITHUB_WORKSPACE\artifacts\maui-publish.log" -Pattern '(error|Error)[ :]+[A-Za-z]+[0-9]+|error:' |
               ForEach-Object { $_.Line.Trim() } | Select-Object -Unique -First 15)
-            if ($errs.Count -eq 0) { $errs = @(Get-Content artifacts/maui-publish.log -Tail 20) }
+            if ($errs.Count -eq 0) { $errs = @(Get-Content "$env:GITHUB_WORKSPACE\artifacts\maui-publish.log" -Tail 20) }
             $summary = @('## MAUI publish failed', ('exit code ' + $code), '', '```text') + $errs + @('```')
             if ($env:GITHUB_STEP_SUMMARY) { $summary | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY }
             foreach ($e in $errs) { Write-Host "::error::$e" }
             throw "MAUI Windows publish failed (exit $code)."
           }
 
-      - name: Upload MAUI build log (C-87-fix-3)
+      - name: Upload MAUI build log (C-87-fix-4)
         if: always()
         uses: actions/upload-artifact@v4
         with:
