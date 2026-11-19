@@ -397,7 +397,7 @@ public partial class ReviewQueuePage : ContentPage
         }
     }
 
-    private async void OnCopyReportClicked(object? sender, EventArgs e)
+    private async Task CopyReportAsync()
     {
         if (string.IsNullOrWhiteSpace(_lastError))
             return;
@@ -413,9 +413,14 @@ public partial class ReviewQueuePage : ContentPage
         }
     }
 
+    private async void OnCopyReportClicked(object? sender, EventArgs e)
+    {
+        await CopyReportAsync();
+    }
+
     private async void OnListCopyReportClicked(object? sender, EventArgs e)
     {
-        await OnCopyReportClicked(sender, e);
+        await CopyReportAsync();
     }
 
     private async void OnBackClicked(object? sender, EventArgs e)
