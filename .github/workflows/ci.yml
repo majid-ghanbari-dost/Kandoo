@@ -322,23 +322,41 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-      - name: Build Windows Setup Launcher (C-87)
+      - name: Build Windows Setup Launcher (C-87-fix-11)
         shell: pwsh
         run: |
-          dotnet build src/Kandoo.App.Launcher/Kandoo.App.Launcher.csproj --configuration Release -p:OutputPath=artifacts/Kandoo.SetupLauncher-win-x64
+          $launcherOutput = "$env:GITHUB_WORKSPACE\artifacts\Kandoo.SetupLauncher-win-x64"
+          New-Item -ItemType Directory -Force -Path $launcherOutput | Out-Null
+          dotnet build src/Kandoo.App.Launcher/Kandoo.App.Launcher.csproj --configuration Release -o $launcherOutput
+          if ($LASTEXITCODE -ne 0) { throw "Launcher build failed." }
+          if (-not (Test-Path -LiteralPath $launcherOutput -PathType Container)) { throw "MISSING $launcherOutput" }
+          Get-ChildItem -LiteralPath $launcherOutput -File | Select-Object -First 20 | ForEach-Object { Write-Host "LAUNCHER_OUTPUT $($_.FullName)" }
 
-      - name: Install Inno Setup (C-87)
+      - name: Install Inno Setup (C-87-fix-11)
         shell: pwsh
-        continue-on-error: true
         run: |
-          if (-not (Get-Command iscc -ErrorAction SilentlyContinue)) {
+          $iscc = "\${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path -LiteralPath $iscc -PathType Leaf)) {
             choco install innosetup -y --no-progress
+            if ($LASTEXITCODE -ne 0) { throw "Chocolatey Inno Setup installation failed (exit $LASTEXITCODE)." }
           }
+          if (-not (Test-Path -LiteralPath $iscc -PathType Leaf)) { throw "ISCC.exe not found at expected path: $iscc" }
+          Write-Host "ISCC_PATH=$iscc"
+          "ISCC_PATH=$iscc" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
-      - name: Build Kandoo-Setup-x64.exe with Inno Setup (C-87)
+      - name: Build Kandoo-Setup-x64.exe with Inno Setup (C-87-fix-11)
         shell: pwsh
-        continue-on-error: true
         run: |
+          $sourceFolders = @(
+            "artifacts/Kandoo.Hub-win-x64",
+            "artifacts/Kandoo.App-win-x64",
+            "artifacts/Kandoo.SetupLauncher-win-x64"
+          )
+          foreach ($source in $sourceFolders) {
+            if (-not (Test-Path -LiteralPath $source -PathType Container)) { throw "MISSING $source" }
+          }
+          if (-not (Test-Path -LiteralPath $env:ISCC_PATH -PathType Leaf)) { throw "MISSING ISCC_PATH $env:ISCC_PATH" }
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
           # Copy CI publish output to where the .iss script expects it
           $publishDir = Join-Path $env:GITHUB_WORKSPACE "packaging\HubPilot\publish"
           if (Test-Path $publishDir) { Remove-Item $publishDir -Recurse -Force }
@@ -351,16 +369,37 @@ jobs:
           # Copy launcher and README referenced by the .iss script
           Copy-Item -Path "packaging\HubPilot\Start-KandooHub.ps1" -Destination "$publishDir" -Force
           Copy-Item -Path "packaging\HubPilot\README.txt" -Destination "$publishDir" -Force
-          # Build the installer
-          & iscc "packaging\HubPilot\KandooHub.Installer.iss"
-          if ($LASTEXITCODE -ne 0) { throw "Inno Setup build failed." }
+          # Build the installer and preserve the compiler output verbatim
+          $isccLog = "$env:GITHUB_WORKSPACE\artifacts\iscc.log"
+          & $env:ISCC_PATH "packaging\HubPilot\KandooHub.Installer.iss" 2>&1 | Tee-Object -FilePath $isccLog
+          $isccExitCode = $LASTEXITCODE
+          if ($isccExitCode -ne 0) {
+            $errorLines = @(Get-Content -LiteralPath $isccLog | Select-String -Pattern 'Error' | Select-Object -First 10 | ForEach-Object { $_.Line })
+            foreach ($line in $errorLines) { Write-Host "::error::$line" }
+            throw "Inno Setup build failed (exit $isccExitCode)."
+          }
+          $setupPath = "packaging/HubPilot/Output/Kandoo-Setup-x64.exe"
+          if (-not (Test-Path -LiteralPath $setupPath -PathType Leaf)) { throw "MISSING installer output: $setupPath" }
+          $setupFile = Get-Item -LiteralPath $setupPath
+          if ($setupFile.Length -le 0) { throw "Installer output is empty: $setupPath" }
+          Write-Host "C87_SETUP_EXE_PATH=$($setupFile.FullName)"
+          Write-Host "C87_SETUP_EXE_SIZE=$($setupFile.Length)"
 
-      - name: Upload C-87 setup.exe
+      - name: Upload C-87 setup.exe (C-87-fix-11)
         uses: actions/upload-artifact@v4
         if: success()
         with:
           name: kandoo-hub-c87-setup-exe
           path: packaging/HubPilot/Output/Kandoo-Setup-x64.exe
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload iscc log (C-87-fix-11)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kandoo-iscc-log
+          path: artifacts/iscc.log
           if-no-files-found: warn
           retention-days: 7
 
