@@ -272,7 +272,7 @@ jobs:
           }
           exit $exitCode
 
-      - name: Install MAUI Windows workload (C-87-fix-5)
+      - name: Install MAUI Windows workload (C-87-fix-6)
         working-directory: src/Kandoo.App
         shell: pwsh
         run: |
@@ -282,7 +282,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "maui-windows workload install failed." }
           dotnet workload list
 
-      - name: Build Windows MAUI app (C-87-fix-5)
+      - name: Build Windows MAUI app (C-87-fix-6)
         working-directory: src/Kandoo.App
         shell: pwsh
         run: |
@@ -290,7 +290,7 @@ jobs:
           $publishArgs = @(
             'publish', 'Kandoo.App.csproj',
             '-c', 'Release', '-f', 'net8.0-windows10.0.19041.0', '-r', 'win-x64', '--self-contained', 'true',
-            '-p:TargetFrameworks=net8.0-windows10.0.19041.0',
+            '-p:KandooWindowsOnly=true',
             '-p:WindowsPackageType=None', '-p:WindowsAppSDKSelfContained=true',
             '-o', "$env:GITHUB_WORKSPACE\artifacts\Kandoo.App-win-x64",
             "-bl:$env:GITHUB_WORKSPACE\artifacts\maui-publish.binlog",
@@ -311,7 +311,7 @@ jobs:
             throw "MAUI Windows publish failed (exit $code)."
           }
 
-      - name: Upload MAUI build log (C-87-fix-5)
+      - name: Upload MAUI build log (C-87-fix-6)
         if: always()
         uses: actions/upload-artifact@v4
         with:
