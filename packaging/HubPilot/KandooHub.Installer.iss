@@ -1,6 +1,68 @@
-; Kandoo — Windows Installer (C-87)
+; Kandoo - Windows Installer (C-87)
 ; ======================================
-; Build a self-contained setup.exe for the Kandoo Hub Windows host and
-; the Kandoo Windows app. No .NET runtime is required on the target machine.
-;\n; Build:\n;   1. Publish the self-contained Hub host:\n;        dotnet publish src/Kandoo.Hub/Kandoo.Hub.csproj `\n;           --configuration Release --runtime win-x64 --self-contained true `\n;           --output packaging\\HubPilot\\publish\\hub\n;   2. Build the Windows Setup Launcher:\n;        dotnet build src/Kandoo.App.Launcher/Kandoo.App.Launcher.csproj `\n;           --configuration Release `\n;           --output packaging\\HubPilot\\publish\\app\n;   3. Compile this script:\n;        iscc packaging\\HubPilot\\KandooHub.Installer.iss\n;   Result: packaging\\HubPilot\\Output\\Kandoo-Setup-x64.exe\n;\n#define MyAppName \"Kandoo\"\n#define MyAppPublisher \"Kandoo\"\n#define MyAppURL \"https://kandoo.ir\"\n#define MyHubExeName \"Kandoo.Hub.exe\"\n#define MyAppExeName \"Kandoo.SetupLauncher.exe\"\n#define MyAppVersion \"1.1.0\"\n#define InstallerName \"Kandoo-Setup-x64\"\n\n[Setup]\n; Fixed AppId keeps upgrades replacing the same installation.\nAppId={4F1C2A3E-8B6D-4E1F-9C2D-7A3B5E1D9F40}\nAppName={#MyAppName}\nAppPublisher={#MyAppPublisher}\nAppPublisherURL={#MyAppURL}\nAppSupportURL={#MyAppURL}\nAppUpdatesURL={#MyAppURL}\nVersion={#MyAppVersion}\nDefaultDirName={pf}\\{#MyAppName}\nDefaultGroupName={#MyAppName}\nAllowNoIcons=yes\nLicenseFile=\nUninstallable=yes\nCompression=lzma\nSolidCompression=yes\nWizardStyle=modern\nPrivilegesRequired=admin\nArchitecturesInstallIn64BitMode=x64
-OutputDir=.\Output\n\n[Languages]\nName: \"fa\"; MessagesFile: \"compiler:Languages\\Farsi.isl\"\nName: \"en\"; MessagesFile: \"compiler:Default.isl\"\n\n[Tasks]\nName: \"desktopicon\"; Description: \"{cm:CreateDesktopIcon}\"; GroupDescription: \"{cm:AdditionalIcons}\"; Flags: unchecked\n\n[Files]\n; Self-contained Hub publish output (built in step 1 above).\nSource: \"packaging\\HubPilot\\publish\\hub\\*\"; DestDir: \"{app}\"; Flags: ignoreversion recursesubdirs\n; Windows Setup Launcher publish output (built in step 2 above).\nSource: \"packaging\\HubPilot\\publish\\app\\*\"; DestDir: \"{app}\"; Flags: ignoreversion recursesubdirs\n; Launcher and configuration shipped with the installer.\nSource: \"packaging\\HubPilot\\Start-KandooHub.ps1\"; DestDir: \"{app}\"; Flags: ignoreversion\nSource: \"packaging\\HubPilot\\README.txt\"; DestDir: \"{app}\"; Flags: ignoreversion\n\n[Icons]\nName: \"{group}\\{#MyAppName}\"; Filename: \"{app}\\{#MyAppExeName}\"\nName: \"{group}\\{cm:UninstallProgram,{#MyAppName}}\"; Filename: \"{uninstallexe}\"\nName: \"{desktop}\\{#MyAppName}\"; Filename: \"{app}\\{#MyAppExeName}\"; Tasks: desktopicon\n\n[Run]\nFilename: \"{app}\\{#MyAppExeName}\"; \\\n    Description: \"{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}\"; \\\n    Flags: nowait postinstall skipifsilent unchecked\n\n[UninstallDelete]\nType: filesandordirs; Name: \"{app}\"
+; Builds a self-contained setup.exe for the Kandoo Hub Windows host and the
+; Kandoo Windows app. No .NET runtime is required on the target machine.
+;
+; All Source paths are relative to THIS script's folder (packaging\HubPilot).
+; CI (and the manual steps below) stage the inputs under packaging\HubPilot\publish:
+;   publish\hub  = self-contained Hub host publish output
+;   publish\app  = Windows app publish output + Kandoo.SetupLauncher build output
+; Compile:
+;   iscc packaging\HubPilot\KandooHub.Installer.iss
+; Result: packaging\HubPilot\Output\Kandoo-Setup-x64.exe
+
+#define MyAppName "Kandoo"
+#define MyAppPublisher "Kandoo"
+#define MyAppURL "https://kandoo.ir"
+#define MyHubExeName "Kandoo.Hub.exe"
+#define MyAppExeName "Kandoo.SetupLauncher.exe"
+#define MyAppVersion "1.1.0"
+#define InstallerName "Kandoo-Setup-x64"
+
+[Setup]
+; Fixed AppId keeps upgrades replacing the same installation.
+; The doubled opening brace is Inno Setup's escape for a literal brace.
+AppId={{4F1C2A3E-8B6D-4E1F-9C2D-7A3B5E1D9F40}
+AppName={#MyAppName}
+AppVersion={#MyAppVersion}
+AppPublisher={#MyAppPublisher}
+AppPublisherURL={#MyAppURL}
+AppSupportURL={#MyAppURL}
+AppUpdatesURL={#MyAppURL}
+DefaultDirName={autopf}\{#MyAppName}
+DefaultGroupName={#MyAppName}
+AllowNoIcons=yes
+Uninstallable=yes
+Compression=lzma
+SolidCompression=yes
+WizardStyle=modern
+PrivilegesRequired=admin
+ArchitecturesInstallIn64BitMode=x64
+OutputDir=Output
+OutputBaseFilename={#InstallerName}
+
+[Languages]
+Name: "en"; MessagesFile: "compiler:Default.isl"
+
+[Tasks]
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+
+[Files]
+; Self-contained Hub publish output.
+Source: "publish\hub\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Windows app + Setup Launcher output.
+Source: "publish\app\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Launcher script and readme shipped with the installer.
+Source: "Start-KandooHub.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "README.txt"; DestDir: "{app}"; Flags: ignoreversion
+
+[Icons]
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+
+[Run]
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent unchecked
+
+[UninstallDelete]
+Type: filesandordirs; Name: "{app}"
