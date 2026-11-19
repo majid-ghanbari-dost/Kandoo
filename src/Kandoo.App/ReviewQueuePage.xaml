@@ -103,9 +103,13 @@
                                 SemanticProperties.Description="ثبت شماره تماس مشتری" />
 
                         <Label Style="{StaticResource SectionTitleStyle}" Text=" صدور و چاپ" />
-                        <CheckBox x:Name="PrintCheckBox"
-                                  Content="چاپ پس از صدور"
-                                  Style="{StaticResource CheckBoxStyle}" />
+                        <HorizontalStackLayout Style="{StaticResource ButtonRowStyle}">
+                            <CheckBox x:Name="PrintCheckBox"
+                                      Style="{StaticResource CheckBoxStyle}" />
+                            <Label Style="{StaticResource BodyStyle}"
+                                   Text="چاپ پس از صدور"
+                                   VerticalOptions="Center" />
+                        </HorizontalStackLayout>
                         <Button x:Name="IssueButton"
                                 Style="{StaticResource PrimaryButtonStyle}"
                                 Text="صدور فاکتور"

@@ -108,9 +108,7 @@
     </Style>
 
     <Style x:Key="CheckBoxStyle" TargetType="CheckBox">
-        <Setter Property="TextColor" Value="{StaticResource Ink}" />
-        <Setter Property="FontFamily" Value="{StaticResource FontFamilyRegular}" />
-        <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
+        <Setter Property="Color" Value="{StaticResource Ink}" />
     </Style>
 
     <!-- Style v2 card: wax background, subtle padding. -->
