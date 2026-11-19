@@ -335,7 +335,7 @@ jobs:
       - name: Install Inno Setup (C-87-fix-11)
         shell: pwsh
         run: |
-          $iscc = "\${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path -LiteralPath $iscc -PathType Leaf)) {
             choco install innosetup -y --no-progress
             if ($LASTEXITCODE -ne 0) { throw "Chocolatey Inno Setup installation failed (exit $LASTEXITCODE)." }
