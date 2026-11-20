@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Drawing;
 using System.Net.Http.Headers;
+using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using System.Windows.Forms;
@@ -13,9 +14,12 @@ public class MainForm : Form
     private readonly SharedTokenFile _tokenFile = new();
     private readonly HttpClient _http = new();
     private string? _lastError;
+    private Process? _hubProcess;
+    private string? _hubBaseUrl;
 
-    // C-87 First-Run Setup: fixed port for local Hub on this machine.
-    private const string HubBaseUrl = "http://localhost:5000";
+    // C-87 First-Run Setup: the Hub port is chosen at runtime (a free random
+    // localhost port) so this run never talks to a Hub started by a previous
+    // run that may have a different OwnerBootstrapProof.
 
     // UI controls
     private TextBox _storeNameEntry = null!;
@@ -34,7 +38,8 @@ public class MainForm : Form
     public MainForm(IUserProfileStore profiles)
     {
         _profiles = profiles ?? throw new ArgumentNullException(nameof(profiles));
-        _http.BaseAddress = new Uri(HubBaseUrl);
+        // _http.BaseAddress is set dynamically in ConfigureShopAsync after a
+        // free port is chosen for this run.
 
         Text = "کندو — راه‌اندازی اولیهٔ فروشگاه";
         Size = new Size(560, 560);
@@ -279,7 +284,12 @@ public class MainForm : Form
 
     private async Task ConfigureShopAsync(string storeName)
     {
-        // C-87: Locate Hub.exe in its own folder (hub\) under the install root.
+        // C-87: If this launcher instance already started a Hub in a previous
+        // run (e.g. after a failed first attempt), stop it before starting a
+        // new one so we never talk to a Hub we did not start in this run.
+        StopPreviousHub();
+
+        // C-87: Locate Hub.exe in its own folder (hub\\) under the install root.
         // The Hub is a separate self-contained runtime and must not share a folder with the launcher or the app.
         var appDir = Path.GetDirectoryName(Environment.ProcessPath) ?? string.Empty;
         var hubDir = Path.Combine(appDir, "hub");
@@ -294,8 +304,15 @@ public class MainForm : Form
         // owner bootstrap without editing JSON or using PowerShell.
         var bootstrapProof = Guid.NewGuid().ToString("D");
 
+        // C-87: Pick a free random localhost port so this run never binds to a
+        // port already held by a Hub from an earlier click/test with a
+        // different proof.
+        var hubPort = GetFreePort();
+        _hubBaseUrl = $"http://localhost:{hubPort}";
+        _http.BaseAddress = new Uri(_hubBaseUrl + "/");
+
         // C-87: Start Hub.exe as a background process with OwnerBootstrapProof
-        // passed via environment variable.
+        // passed via environment variable and ASPNETCORE_URLS on the chosen port.
         var startInfo = new ProcessStartInfo
         {
             FileName = hubExe,
@@ -306,11 +323,15 @@ public class MainForm : Form
             RedirectStandardError = true,
         };
         startInfo.EnvironmentVariables["Hub__OwnerBootstrapProof"] = bootstrapProof;
-        startInfo.EnvironmentVariables["ASPNETCORE_URLS"] = "http://localhost:5000";
+        startInfo.EnvironmentVariables["ASPNETCORE_URLS"] = _hubBaseUrl;
 
-        Process.Start(startInfo);
+        _hubProcess = Process.Start(startInfo);
+        if (_hubProcess is null)
+        {
+            throw new InvalidOperationException("نمی‌توان Kandoo.Hub.exe را راه‌اندازی کرد.");
+        }
 
-        // C-87: Wait for Hub to become available on localhost:5000.
+        // C-87: Wait for Hub to become available on the chosen port.
         _step2Status.Text = "در حال راه‌اندازی سرویس هاب محلی…";
         await WaitForHubAsync(TimeSpan.FromSeconds(30));
 
@@ -341,18 +362,58 @@ public class MainForm : Form
             throw new InvalidOperationException("نشست مالک issuing نشد: session_token در پاسخ موجود نیست.");
         }
 
-        // C-87: Save profile and session token so the app enters the real environment.
+        // C-87: Save profile, session token, and Hub base URL so the app can
+        // connect to the Hub this launcher started.
         _profiles.Save(new LocalUserProfile(AppUserRole.Store));
         _tokenFile.Save(new DeviceTokenRecord(sessionToken, storeId));
+        SaveHubBaseUrl(_hubBaseUrl);
 
         AdvanceToStep3();
+    }
+
+    /// <summary>Stops the Hub process started by a previous run of this launcher instance, if any.</summary>
+    private void StopPreviousHub()
+    {
+        if (_hubProcess is not null && !_hubProcess.HasExited)
+        {
+            try
+            {
+                _hubProcess.Kill();
+                _hubProcess.WaitForExit(5000);
+            }
+            catch
+            {
+                // Best-effort kill; if the process is already gone, that is fine.
+            }
+        }
+
+        _hubProcess = null;
+    }
+
+    /// <summary>Returns a free TCP port on localhost.</summary>
+    private static int GetFreePort()
+    {
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        listener.Stop();
+        return port;
+    }
+
+    /// <summary>Persists the chosen Hub base URL so Kandoo.App can read it.</summary>
+    private static void SaveHubBaseUrl(string hubBaseUrl)
+    {
+        var folder = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        Directory.CreateDirectory(folder);
+        var path = Path.Combine(folder, "kandoo.hub-url.v1.txt");
+        File.WriteAllText(path, hubBaseUrl);
     }
 
     private async void OnFinishClicked(object? sender, EventArgs e)
     {
         await Task.Delay(500);
         // C-87-fix-1: Launch the real Kandoo Windows app (Kandoo.App.exe) from its own
-        // folder (app\) under the install root.
+        // folder (app\\) under the install root.
         var appDir = Path.GetDirectoryName(Environment.ProcessPath) ?? string.Empty;
         var appExeDir = Path.Combine(appDir, "app");
         var appExe = Path.Combine(appExeDir, "Kandoo.App.exe");
