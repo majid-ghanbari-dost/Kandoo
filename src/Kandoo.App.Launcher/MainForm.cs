@@ -279,9 +279,11 @@ public class MainForm : Form
 
     private async Task ConfigureShopAsync(string storeName)
     {
-        // C-87: Locate Hub.exe next to the installed app.
+        // C-87: Locate Hub.exe in its own folder (hub\) under the install root.
+        // The Hub is a separate self-contained runtime and must not share a folder with the launcher or the app.
         var appDir = Path.GetDirectoryName(Environment.ProcessPath) ?? string.Empty;
-        var hubExe = Path.Combine(appDir, "Kandoo.Hub.exe");
+        var hubDir = Path.Combine(appDir, "hub");
+        var hubExe = Path.Combine(hubDir, "Kandoo.Hub.exe");
 
         if (!File.Exists(hubExe))
         {
@@ -297,6 +299,7 @@ public class MainForm : Form
         var startInfo = new ProcessStartInfo
         {
             FileName = hubExe,
+            WorkingDirectory = hubDir,
             UseShellExecute = false,
             CreateNoWindow = true,
             RedirectStandardOutput = true,
@@ -348,15 +351,17 @@ public class MainForm : Form
     private async void OnFinishClicked(object? sender, EventArgs e)
     {
         await Task.Delay(500);
-        // C-87-fix-1: Launch the real Kandoo Windows app (Kandoo.App.exe) installed
-        // alongside this launcher in the same application folder.
+        // C-87-fix-1: Launch the real Kandoo Windows app (Kandoo.App.exe) from its own
+        // folder (app\) under the install root.
         var appDir = Path.GetDirectoryName(Environment.ProcessPath) ?? string.Empty;
-        var appExe = Path.Combine(appDir, "Kandoo.App.exe");
+        var appExeDir = Path.Combine(appDir, "app");
+        var appExe = Path.Combine(appExeDir, "Kandoo.App.exe");
         if (File.Exists(appExe))
         {
             Process.Start(new ProcessStartInfo
             {
                 FileName = appExe,
+                WorkingDirectory = appExeDir,
                 UseShellExecute = true,
             });
         }
