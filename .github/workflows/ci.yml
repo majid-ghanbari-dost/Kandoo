@@ -513,7 +513,9 @@ jobs:
           $outcomes.Add("MAUI app smoke: PASS (soft)")
           Write-Host "SMOKE_STEP=5_maui PASS"
 
-          # 6. Write outcome file
+          # 6. Copy smoke files into workspace for artifact upload
+          Copy-Item -Path "$installDir\setup.log" -Destination "$env:GITHUB_WORKSPACE\artifacts\setup.log" -Force -ErrorAction SilentlyContinue
+          Copy-Item -Path "$installDir\smoke.txt" -Destination "$env:GITHUB_WORKSPACE\artifacts\smoke.txt" -Force -ErrorAction SilentlyContinue
           $outcomes | Out-File -FilePath $outcomeFile -Encoding utf8
 
       - name: Upload install smoke artifact (C-87-fix-12)
@@ -522,8 +524,8 @@ jobs:
         with:
           name: kandoo-install-smoke
           path: |
-            C:\KandooInstallTest\setup.log
-            C:\KandooInstallTest\smoke.txt
+            artifacts/setup.log
+            artifacts/smoke.txt
             artifacts/smoke-outcome.txt
           if-no-files-found: warn
           retention-days: 7
