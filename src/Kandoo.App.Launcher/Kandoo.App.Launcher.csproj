@@ -8,6 +8,11 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>Kandoo.SetupLauncher</AssemblyName>
+    <!-- Self-contained: the launcher must run on a PC with no .NET installed, and must not depend on
+         whichever hostfxr/runtime happens to sit next to it. `dotnet build -o` copies the runtime. -->
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
 
 </Project>
