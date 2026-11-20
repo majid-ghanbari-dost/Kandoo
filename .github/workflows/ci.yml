@@ -443,6 +443,7 @@ jobs:
           $proc = Start-Process -FilePath $setup -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', "/DIR=$installDir", "/LOG=$setupLog" -Wait -PassThru
           if ($proc.ExitCode -ne 0) { throw "Installer exit code $($proc.ExitCode)" }
           $outcomes.Add("Installer silent install: PASS")
+          Write-Host "SMOKE_STEP=1_installer PASS"
 
           # 2. Layout assertions
           foreach ($f in @("$installDir\Kandoo.SetupLauncher.exe", "$installDir\hostfxr.dll")) {
@@ -459,10 +460,11 @@ jobs:
           $rcContent = Get-Content -LiteralPath $rc -Raw
           if ($rcContent -notmatch 'includedFrameworks') { throw "Launcher runtimeconfig does not contain includedFrameworks" }
           $outcomes.Add("Layout assertions: PASS")
+          Write-Host "SMOKE_STEP=2_layout PASS"
 
           # 3. Launcher smoke without machine .NET
           $env:DOTNET_ROOT = "C:\no-dotnet"
-          $env:'DOTNET_ROOT(x86)' = "C:\no-dotnet"
+          [System.Environment]::SetEnvironmentVariable("DOTNET_ROOT(x86)", "C:\no-dotnet", [System.EnvironmentVariableTarget]::Process)
           $env:DOTNET_MULTILEVEL_LOOKUP = "0"
           $dotnetPathEntries = $env:PATH -split ';' | Where-Object { $_ -notlike '*dotnet*' }
           $env:PATH = ($dotnetPathEntries -join ';')
@@ -476,6 +478,7 @@ jobs:
           if ($smokeContent -notmatch '^KANDOO_LAUNCHER_OK') { throw "Launcher smoke output unexpected: $smokeContent" }
           Write-Host "SMOKE_LAUNCHER_PASS"
           $outcomes.Add("Launcher smoke without .NET: PASS")
+          Write-Host "SMOKE_STEP=3_launcher PASS"
 
           # 4. Hub smoke from INSTALLED folder
           $hubGuid = [guid]::NewGuid().ToString()
@@ -495,6 +498,7 @@ jobs:
           if (-not $hubOk) { throw "Hub /health did not return 200 within 40s" }
           Write-Host "SMOKE_HUB_PASS proof=$hubGuid"
           $outcomes.Add("Hub smoke from installed folder: PASS proof=$hubGuid")
+          Write-Host "SMOKE_STEP=4_hub PASS"
           if (-not $hubProc.WaitForExit(5000)) { $hubProc.Kill() }
 
           # 5. MAUI app smoke (SOFT)
@@ -507,6 +511,7 @@ jobs:
             Write-Host "::warning::SMOKE_MAUI_EXIT_CODE=$($mauiProc.ExitCode)"
           }
           $outcomes.Add("MAUI app smoke: PASS (soft)")
+          Write-Host "SMOKE_STEP=5_maui PASS"
 
           # 6. Write outcome file
           $outcomes | Out-File -FilePath $outcomeFile -Encoding utf8
