@@ -106,4 +106,14 @@
         <Setter Property="BackgroundColor" Value="{StaticResource Wax}" />
         <Setter Property="Padding" Value="{StaticResource PaddingSpace3}" />
     </Style>
+
+    <Style x:Key="CheckBoxStyle" TargetType="CheckBox">
+        <Setter Property="Color" Value="{StaticResource Ink}" />
+    </Style>
+
+    <!-- Style v2 card: wax background, subtle padding. -->
+    <Style x:Key="CardStyle" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource Wax}" />
+        <Setter Property="Padding" Value="{StaticResource PaddingSpace3}" />
+    </Style>
 </ResourceDictionary>

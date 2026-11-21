@@ -30,7 +30,7 @@ var app = builder.Build();
 // existing rate-limit, capability, legal-copy, and content-negotiation guards.
 app.UseStaticFiles();
 
-app.MapGet("/health", () => Results.Json(new { status = "ok" }, CloudJson.Options));
+app.MapGet("/health", () => Results.Json(new { status = "ok", protocol_version = "1.1" }, CloudJson.Options));
 
 app.MapGet("/i/{token}", (
     HttpContext context,
