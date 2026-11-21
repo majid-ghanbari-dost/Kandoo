@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Kandoo.App.ReturnsPage"
+             Title="برگشت کالاها"
+             Style="{StaticResource PageStyle}">
+    <ScrollView>
+        <Border Style="{StaticResource CardStyle}">
+            <VerticalStackLayout Style="{StaticResource RootStackStyle}">
+                <Label Style="{StaticResource TitleStyle}" Text="برگشت کالا / فاکتور" />
+                <Label Style="{StaticResource BodyStyle}" Text="ثبت و پیگیری برگشت‌های فروشگاهی." />
+
+                <Button x:Name="LoadButton"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Text="بارگذاری برگشت‌ها"
+                        Clicked="OnLoadClicked"
+                        SemanticProperties.Description="بارگذاری فهرست برگشت‌ها از هاب" />
+                <Label x:Name="StatusLabel" Style="{StaticResource CaptionStyle}" />
+
+                <VerticalStackLayout x:Name="ReturnsList" Style="{StaticResource RowStackStyle}" />
+
+                <!-- Empty state -->
+                <VerticalStackLayout x:Name="EmptyState"
+                                     IsVisible="False"
+                                     HorizontalOptions="Center"
+                                     VerticalOptions="Center"
+                                     Spacing="{StaticResource Space3}">
+                    <Label Style="{StaticResource SectionTitleStyle}"
+                           Text="هیچ برگشتی یافت نشد"
+                           HorizontalTextAlignment="Center" />
+                    <Label Style="{StaticResource BodyStyle}"
+                           Text="فهرست برگشت‌ها خالی است."
+                           HorizontalTextAlignment="Center" />
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </Border>
+    </ScrollView>
+</ContentPage>

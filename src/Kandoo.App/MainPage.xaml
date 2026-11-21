@@ -186,12 +186,18 @@
                             Clicked="OnCustomersClicked"
                             IsEnabled="False"
                             SemanticProperties.Description="فهرست مشتریان" />
-                    <Button x:Name="SettingsButton"
-                            Style="{StaticResource SecondaryButtonStyle}"
-                            Text="تنظیمات"
-                            Clicked="OnSettingsClicked"
-                            IsEnabled="False"
-                            SemanticProperties.Description="تنظیمات برنامه" />
+                <Button x:Name="SettingsButton"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Text="تنظیمات"
+                        Clicked="OnSettingsClicked"
+                        IsEnabled="False"
+                        SemanticProperties.Description="تنظیمات برنامه" />
+                <Button x:Name="ReturnsButton"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Text="برگشت‌ها"
+                        Clicked="OnReturnsClicked"
+                        IsEnabled="False"
+                        SemanticProperties.Description="صف برگشت کالاها" />
                 </HorizontalStackLayout>
 
                 <Label Style="{StaticResource SectionTitleStyle}"
