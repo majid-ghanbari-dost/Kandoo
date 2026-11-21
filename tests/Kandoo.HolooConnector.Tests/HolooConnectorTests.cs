@@ -97,10 +97,12 @@ public class HolooConnectorTests
     [Fact]
     public void IncrementalSync_create_if_changed_returns_new_when_version_differs()
     {
-        var prev = Assert.NotNull(HolooSchemaVersion.Known("H1-6"));
-        var curr = Assert.NotNull(HolooSchemaVersion.Known("H1-7"));
+        var prev = HolooSchemaVersion.Known("H1-6");
+        var curr = HolooSchemaVersion.Known("H1-7");
+        Assert.NotNull(prev);
+        Assert.NotNull(curr);
 
-        var sync = HolooIncrementalSync.CreateIfChanged(prev, curr, 100);
+        var sync = HolooIncrementalSync.CreateIfChanged(prev!, curr!, 100);
 
         Assert.NotNull(sync);
         Assert.Equal("H1-7", sync!.Version.Value);
@@ -111,10 +113,12 @@ public class HolooConnectorTests
     [Fact]
     public void IncrementalSync_create_if_changed_returns_null_when_version_same()
     {
-        var prev = Assert.NotNull(HolooSchemaVersion.Known("H1-6"));
-        var curr = Assert.NotNull(HolooSchemaVersion.Known("H1-6"));
+        var prev = HolooSchemaVersion.Known("H1-6");
+        var curr = HolooSchemaVersion.Known("H1-6");
+        Assert.NotNull(prev);
+        Assert.NotNull(curr);
 
-        var sync = HolooIncrementalSync.CreateIfChanged(prev, curr, 100);
+        var sync = HolooIncrementalSync.CreateIfChanged(prev!, curr!, 100);
 
         Assert.Null(sync);
     }
@@ -122,9 +126,10 @@ public class HolooConnectorTests
     [Fact]
     public void IncrementalSync_create_if_changed_returns_new_when_previous_null()
     {
-        var curr = Assert.NotNull(HolooSchemaVersion.Known("H1-6"));
+        var curr = HolooSchemaVersion.Known("H1-6");
+        Assert.NotNull(curr);
 
-        var sync = HolooIncrementalSync.CreateIfChanged(null, curr, 0);
+        var sync = HolooIncrementalSync.CreateIfChanged(null, curr!, 0);
 
         Assert.NotNull(sync);
         Assert.Equal("H1-6", sync!.Version.Value);
