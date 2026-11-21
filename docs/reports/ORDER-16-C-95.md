@@ -7,7 +7,7 @@
 
 | وظیفه | شاخه | SHA کامل | آدرس رن CI | نتیجه | نام آرتیفاکت |
 |-------|-------|---------|-----------|-------|--------------|
-| C-95 | `arena/kandoo-c95-maui-launcher` | `8acd54d8` | https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44872666136 | سبز (هر دو جاب) | kandoo-hub-c87-setup-exe (۸۹٫۷۲ MB), kandoo-install-smoke (۲۲٫۳۷ KB) |
+| C-95 | `arena/kandoo-c95-maui-launcher` | `08950a5de6f992a7866a359963d14f6864b2ceb7` | https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44924669492 | سبز (ubuntu + windows) | kandoo-hub-c87-setup-exe, kandoo-install-smoke |
 
 ## جزئیات تغییرات
 
@@ -42,4 +42,4 @@
 
 ## نتیجه نهایی
 
-CI هر دو جاب سبز است، هر دو آرتیفاکت موجود است، smoked installer با موفقیت اجرا شد، PR #12 ایجاد شده و در انتظار بررسی مدیر است.
+CI هر دو جاب سبز است (ubuntu-success, windows-success). تگ `o16-c95` روی کامیت `08950a5de6f992a7866a359963d14f6864b2ceb7` ایجاد شده است. PR #12 ایجاد شده و در انتظار بررسی مدیر است.
