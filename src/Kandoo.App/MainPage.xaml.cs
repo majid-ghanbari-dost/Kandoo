@@ -380,6 +380,16 @@ public partial class MainPage : ContentPage
         }
     }
 
+    private async void OnCustomerOtpClicked(object? sender, EventArgs e)
+    {
+        await Navigation.PushModalAsync(new CustomerOtpPage());
+    }
+
+    private async void OnCustomerInvoicesClicked(object? sender, EventArgs e)
+    {
+        await Navigation.PushModalAsync(new CustomerInvoicesPage());
+    }
+
     private async Task LoadDevicesAsync()
     {
         LoadDevicesButton.IsEnabled = false;
