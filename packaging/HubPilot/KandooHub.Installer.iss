@@ -3,10 +3,9 @@
 ; Builds a self-contained setup.exe for the Kandoo Hub Windows host and the
 ; Kandoo Windows app. No .NET runtime is required on the target machine.
 ;
-; Install layout (three SEPARATE self-contained runtimes, never mixed in one folder):
-;   {app}\             Kandoo.SetupLauncher.exe + its own runtime (self-contained)
+; Install layout (two SEPARATE self-contained runtimes, never mixed in one folder):
 ;   {app}\hub\         Kandoo.Hub.exe + its own runtime
-;   {app}\app\         Kandoo.App.exe (MAUI) + its own runtime
+;   {app}\app\         Kandoo.App.exe (MAUI) + its own runtime (single app entry point)
 ;
 ; All Source paths are relative to THIS script's folder (packaging\HubPilot).
 ; CI stages the inputs under packaging\HubPilot\publish:
@@ -20,7 +19,7 @@
 #define MyAppName "Kandoo"
 #define MyAppPublisher "Kandoo"
 #define MyAppURL "https://kandoo.ir"
-#define MyAppExeName "Kandoo.SetupLauncher.exe"
+#define MyAppExeName "Kandoo.App.exe"
 #define MyAppVersion "1.1.0"
 #define InstallerName "Kandoo-Setup-x64"
 
@@ -53,11 +52,11 @@ Name: "en"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-; Launcher with its own runtime, in the install root.
-Source: "publish\launcher\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; C-95: No separate WinForms launcher. The MAUI app (Kandoo.App.exe) is the
+; single app entry point. It starts the local Hub on first run via SetupWizardPage.
 ; Self-contained Hub publish output, in its own folder.
 Source: "publish\hub\*"; DestDir: "{app}\hub"; Flags: ignoreversion recursesubdirs createallsubdirs
-; Windows app publish output, in its own folder.
+; Windows app publish output (MAUI), in its own folder. This is the entry point.
 Source: "publish\app\*"; DestDir: "{app}\app"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; Launcher script and readme shipped with the installer.
 Source: "Start-KandooHub.ps1"; DestDir: "{app}"; Flags: ignoreversion

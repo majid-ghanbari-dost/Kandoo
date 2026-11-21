@@ -1,7 +1,9 @@
 namespace Kandoo.App;
 
 using System.Diagnostics;
+using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 
@@ -12,15 +14,17 @@ public partial class SetupWizardPage : ContentPage
     private readonly HttpClient _http = new();
     private string? _lastError;
     private Process? _hubProcess;
+    private string? _hubBaseUrl;
     private LocalUserProfile? _shopProfile;
 
-    // C-87 First-Run Setup: fixed port for local Hub on this machine.
-    private const string HubBaseUrl = "http://localhost:5000";
+    // C-95: Hub port is chosen dynamically per run (free localhost port)
+    // so this run never conflicts with a Hub from a previous run.
 
     public SetupWizardPage(IUserProfileStore profiles)
     {
         _profiles = profiles ?? throw new ArgumentNullException(nameof(profiles));
-        _http.BaseAddress = new Uri(HubBaseUrl);
+        // _http.BaseAddress is set dynamically in ConfigureShopAsync after a
+        // free port is chosen for this run.
         InitializeComponent();
         UpdateStepVisibility();
         StatusLabel.Text = "مرحله ۱: نام فروشگاه را وارد کنید.";
@@ -94,40 +98,52 @@ public partial class SetupWizardPage : ContentPage
 
     private async Task ConfigureShopAsync(string storeName)
     {
-        // C-87: Locate Hub.exe next to the installed app.
+        // C-95: Stop the Hub started by a previous run of this setup, if any.
+        StopPreviousHub();
+
+        // C-95: Locate Hub.exe in its own folder (hub\\) under the install root.
+        // The Hub is a separate self-contained runtime and must not share a folder with the app.
         var appDir = Path.GetDirectoryName(Environment.ProcessPath) ?? string.Empty;
-        var hubExe = Path.Combine(appDir, "Kandoo.Hub.exe");
+        var hubDir = Path.Combine(appDir, "hub");
+        var hubExe = Path.Combine(hubDir, "Kandoo.Hub.exe");
 
         if (!File.Exists(hubExe))
         {
             throw new InvalidOperationException("فایل Kandoo.Hub.exe در پوشه نصب یافت نشد.");
         }
 
-        // C-87: Generate OwnerBootstrapProof so the First-Run Setup can configure
+        // C-95: Generate OwnerBootstrapProof so the First-Run Setup can configure
         // owner bootstrap without editing JSON or using PowerShell.
         var bootstrapProof = Guid.NewGuid().ToString("D");
 
-        // C-87: Start Hub.exe as a background process with OwnerBootstrapProof
-        // passed via environment variable (ASP.NET Core configuration pipeline
-        // maps Hub__OwnerBootstrapProof to Hub:OwnerBootstrapProof).
+        // C-95: Pick a free random localhost port so this run never binds to a
+        // port already held by a Hub from an earlier click/test with a
+        // different proof.
+        var hubPort = GetFreePort();
+        _hubBaseUrl = $"http://localhost:{hubPort}";
+        _http.BaseAddress = new Uri(_hubBaseUrl + "/");
+
+        // C-95: Start Hub.exe as a background process with OwnerBootstrapProof
+        // passed via environment variable and ASPNETCORE_URLS on the chosen port.
         var startInfo = new ProcessStartInfo
         {
             FileName = hubExe,
+            WorkingDirectory = hubDir,
             UseShellExecute = false,
             CreateNoWindow = true,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
         };
         startInfo.EnvironmentVariables["Hub__OwnerBootstrapProof"] = bootstrapProof;
-        startInfo.EnvironmentVariables["ASPNETCORE_URLS"] = "http://localhost:5000";
+        startInfo.EnvironmentVariables["ASPNETCORE_URLS"] = _hubBaseUrl;
 
         _hubProcess = Process.Start(startInfo);
         if (_hubProcess is null)
         {
-            throw new InvalidOperationException("ניתן راه‌اندازی Kandoo.Hub.exe.");
+            throw new InvalidOperationException("نمی‌توان Kandoo.Hub.exe را راه‌اندازی کرد.");
         }
 
-        // C-87: Wait for Hub to become available on localhost:5000.
+        // C-95: Wait for Hub to become available on the chosen port.
         StatusLabel.Text = "در حال راه‌اندازی سرویس هاب محلی…";
         await WaitForHubAsync(TimeSpan.FromSeconds(30));
 
@@ -158,14 +174,13 @@ public partial class SetupWizardPage : ContentPage
             throw new InvalidOperationException("نشست مالک issuing نشد: session_token در پاسخ موجود نیست.");
         }
 
-        // C-87: Save profile and session token so the app enters the real environment.
+        // C-95: Save profile, session token, and Hub base URL so the app can
+        // connect to the Hub this setup started.
         _shopProfile = new LocalUserProfile(AppUserRole.Store);
         _profiles.Save(_shopProfile);
 
         _tokenFile.Save(new DeviceTokenRecord(sessionToken, storeId));
-
-        // C-87: Stop Hub process — it will continue running independently.
-        // The process was started detached; it keeps running after setup completes.
+        SaveHubBaseUrl(_hubBaseUrl);
 
         AdvanceToStep3();
     }
@@ -213,6 +228,44 @@ public partial class SetupWizardPage : ContentPage
         {
             CopyStatusLabel.Text = $"کپی ناموفق: {exception.Message}";
         }
+    }
+
+    /// <summary>Stops the Hub process started by a previous run of this setup, if any.</summary>
+    private void StopPreviousHub()
+    {
+        if (_hubProcess is not null && !_hubProcess.HasExited)
+        {
+            try
+            {
+                _hubProcess.Kill();
+                _hubProcess.WaitForExit(5000);
+            }
+            catch
+            {
+                // Best-effort kill; if the process is already gone, that is fine.
+            }
+        }
+
+        _hubProcess = null;
+    }
+
+    /// <summary>Returns a free TCP port on localhost.</summary>
+    private static int GetFreePort()
+    {
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        listener.Stop();
+        return port;
+    }
+
+    /// <summary>Persists the chosen Hub base URL so Kandoo.App can read it.</summary>
+    private static void SaveHubBaseUrl(string hubBaseUrl)
+    {
+        var folder = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        Directory.CreateDirectory(folder);
+        var path = Path.Combine(folder, "kandoo.hub-url.v1.txt");
+        File.WriteAllText(path, hubBaseUrl);
     }
 
     private static bool IsExpected(Exception exception) => exception is ArgumentException or
