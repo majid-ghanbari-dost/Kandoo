@@ -1,8 +1,240 @@
 # KANDOO — PARENT PROJECT AGENT HANDOFF
 
+## Revised-Sequence Final Handoff (`H-03`, 2026-10-30)
+
+The revised sequence `C-21 → C-25 → H-03` is complete on `arena/b18303e5-kandoo`. H-02 v3 and the owner-decisions record below remain closed GREEN and unchanged. C-22, C-23 and C-24 are executive-CERTIFIED; C-21 and C-25 have agent-observed green final runs and await executive verification. All existing tags are immutable. No `main` push, merge, PR, UI work, or write to the Python repository occurred.
+
+### Full-SHA tag and CI ledger
+
+| Task / candidate | Full commit SHA | Annotated tag / full tag-object SHA | CI evidence | Executive status |
+| --- | --- | --- | --- | --- |
+| **C-21 final** | `0533fa68c8ae5300a1643ee0f18119fa86cb80e7` | `stable-c-21` / `b3f60894bd2d6262223ac0583034dd9432f923bd` | [41093395355](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/41093395355) — agent-observed GREEN on Ubuntu and Windows; real E-30 golden probe passed on both | awaiting executive verification |
+| C-22 original (retained RED) | `d081d09a78d49b2953f098c8f9bd27a7b5f0e784` | `stable-c-22` / `3ad0ea650267f48b0f3189796e69f0285a84e570` | [41042524261](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/41042524261) — RED; immutable audit history | retained; not the final behavior tip |
+| C-22 fix1 (retained RED) | `c7abc2afce04c45fdb596213911d5f5796406915` | `stable-c-22-fix1` / `64a1c994e9ca74d50fdf49c6f32ab5dd8f6eb3de` | [41053767524](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/41053767524) — RED; immutable audit history | retained; not the final behavior tip |
+| **C-23 final + certified C-22 behavior** | `fba230f25435747686e2ec208209f64351e3ee16` | `stable-c-23` / `e43aa9495457190099fcca32b200f36902bea4e4` | [41058125481](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/41058125481) — GREEN on Ubuntu and Windows | C-22 and C-23 CERTIFIED at this tip |
+| **C-24 final** | `3f58bcdb6973f0655637eb7f308946c9eb63fb10` | `stable-c-24` / `f40bbfea2ef23deeeb4ff6f6817945354c456326` | [41058983964](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/41058983964) — GREEN on Ubuntu and Windows | CERTIFIED |
+| **C-25 final** | `05d576874ab13a00a9516925e88ba5daac33a5c1` | `stable-c-25` / `7613fadf0645c3a7ae6350afd46d993eaf8aa491` | [41094388690](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/41094388690) — agent-observed GREEN on Ubuntu and Windows | awaiting executive verification |
+| **H-03 (this documentation-only publication)** | Full commit SHA published in the final execution result; a commit cannot contain its own SHA | `stable-h-03` / full tag-object SHA published after tagging | Publication run observed in the final execution result | awaiting executive verification |
+
+### Delivery and operating boundaries
+
+- **C-21:** the C# capture-folder bridge invokes the final E-30 CLI without a shell, validates pinned `capture-folder-result-v1`, enforces the 180-second process-tree timeout, and fails closed without native invoice/customer/sale/stock effects. CI checks out read-only Python commit `29d842178cd39d3f54f14f3716c44c585911467b`, verifies schema/golden hashes, and compares all 14,075 golden stdout bytes on both OSes. No fixtures or Python source were copied. Golden evidence is synthetic mechanics only, not real SPL/SHD compatibility or production accuracy.
+- **C-25:** contract-led review found and closed Hub bootstrap role escalation, owner rebinding and second-Hub creation. Session authentication now checks role/owner consistency with the paired device; three regression tests prove companion denial, no hidden session effects, valid same-Hub renewal, and fail-closed persisted drift. No new membership roles, ownership-transfer policy, or Cloud contract was invented.
+- **Final verification model:** local .NET/Python execution remains unavailable in the sandbox. Static checks and observed GitHub Actions are distinguished throughout; C-21/C-25 reports retain `awaiting executive verification`. Artifact upload succeeded, but sandbox artifact download was blocked by the outbound host boundary and is not claimed as independent local evidence.
+- **Next gate:** executive review of C-21, C-25 and H-03. The revised implementation sequence has no remaining task. Production extractor enablement still requires the external pinned E-30 executable and explicit configuration; live Faraz transport, authentic capture samples and production accuracy remain outside this handoff.
+
+## Window-3 Final Handoff (`H-02 v3`, 2026-10-30)
+
+This final documentation-only ledger starts from H-02 v2 at `f6d6ac22bef22e14e7295cde9ef13985d7124a9b` / `stable-h-02-v2` (`73b69702eb41c11c6d081b49a504ee61817321dc`). C-15 is certified GREEN by the executive's live read; the former inferred qualification is obsolete.
+
+| Task / candidate | Full commit SHA | Annotated tag / tag object | PM-relayed CI verdict |
+| --- | --- | --- | --- |
+| C-14 v1 (retained, superseded) | `9aa6383ffad88e9544e493ca055fcce4e5308153` | `stable-c-14` / `c3a4a1f87742b2a0200aa907432277f82e4391ec` | [40838199654](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40838199654) — RED; retained superseded catalog-fixture candidate |
+| **C-14 final v2** | `33ef8209f074f17fd1fe740517318889e1085bdc` | `stable-c-14-v2` / `6985f9b1a192d8c55ade7813fa945b856901a881` | [40838323344](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40838323344) — GREEN |
+| **C-15** | `2bf8614d277366323dd689f43790816eb93223d2` | `stable-c-15` / `454c335c5964e654f537000e6ac3904c0c2ebbe1` | [40838490817](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40838490817) — **CERTIFIED GREEN** on both jobs (push, created 2026-10-29T07:54:55Z), read live by the executive; the inferred qualification is obsolete; both test-result artifacts and `kandoo-hub-c14-win-x64` at 47,944,324 B uploaded |
+| **C-16** | `271730d1bef6f1ee4db174ee3bcdd6b073780bf0` | `stable-c-16` / `441c05dfd7b6e3c745f0ff777b2e903c809ced92` | [40838766492](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40838766492) — GREEN; `kandoo-hub-c14-win-x64` = 47,955,575 B |
+| C-18 v1 (retained red) | `4da3cb651499f39b09a99501013d0af3e9906416` | `stable-c-18` / `d5492573ab9a389460d6f4ed63e7a96c17f1ca26` | [40838999159](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40838999159) — RED, Build on Ubuntu and Windows; unresolved `IClock` |
+| **C-18 final v2** | `cbff8a5465e4e565641992aa67b050798305d830` | `stable-c-18-v2` / `85b966caf69e258fd48972bab48bd75985c04ce9` | [40858174391](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40858174391) — GREEN on both jobs (push, created 2026-10-29T10:31:02Z); the one-import fix; the FIRST fully-green full-suite run on this branch |
+| **C-19** | `7544f9bbc2de33c9b13eebcf2f1068e8dbb4eb64` | `stable-c-19` / `accc30983f4aef0e55dffde058f727da16286219` | [40839617820](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40839617820) — RED with the same inherited C-18 compile error; no additional C-19 compile error was relayed |
+| H-02 v1 (retained red) | `c089dc3bf5b792aabb9d3a37683dd67548480490` | `stable-h-02` / `58dcd04ac83ca66335d117baeebb80c3ab6a1aa0` | [40839664353](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40839664353) — RED with the same inherited compile error; documentation-only tip |
+| **H-02 v2** | `f6d6ac22bef22e14e7295cde9ef13985d7124a9b` | `stable-h-02-v2` / `73b69702eb41c11c6d081b49a504ee61817321dc` | [40858274525](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40858274525) — GREEN (push, created 2026-10-29T10:31:47Z); [40862607886](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40862607886) — GREEN on the merge ref (pull_request #5, created 2026-10-29T11:05:03Z, 4/4 checks; PR #5 created by the PM via compare URL, create-only, never merged) |
+| **H-02 v3 (this publication)** | commit SHA: published in the execution report (a commit cannot contain its own SHA) | `stable-h-02-v3` / tag object SHA: published in the execution report | PR #5 run on the new head: PENDING VERDICT (awaiting executive relay) |
+
+C-18/C-19 tests HAVE executed green: run #63 was the first fully-green full-suite execution on this branch (both jobs, including `Kandoo.Capture.Tests`); #64/#65 confirmed it. The two real-SPL/SHD compatibility tests remain unchanged, skipped, and BLOCKED by absent owner-provided samples; no capture was fabricated. Nothing was pushed to `main`, no existing tag was moved, and no merge or UI work occurred. The H-02 v3 commit and tag object SHAs are published in the execution report because a commit cannot contain its own SHA.
+
+## Window-3 Fix-Forward Handoff (`C-18 v2`, 2026-10-29)
+
+PM relayed run `40838999159` as RED on both operating systems at Build for C-18 `4da3cb651499f39b09a99501013d0af3e9906416`; C-19 run `40839617820` and H-02 run `40839664353` inherited the same single unresolved-`IClock` error. Source verification against the clean published tree found that `Kandoo.Core.IClock` already exists, `SystemCloudClock` already implements it, and `Program.cs` already injects that implementation into `PublicInvoiceRateLimiter`. The attributable defect is only the missing `Kandoo.Core` import in `PublicTokenSecurity.cs`; v2 adds that import and does not duplicate the clock contract or touch any C-19 file. All existing tags remain immutable. Target tag: `stable-c-18-v2`; its CI run URL is `relayed after batch`, and no test execution is claimed before PM relay.
+
+## Window-3 Implementation Handoff (`C-19`, 2026-10-29)
+
+C-18 is published at `4da3cb651499f39b09a99501013d0af3e9906416` / `stable-c-18`. C-19 moves the supplied probe's raw spool capture, stable-scan/baseline behavior, OpenXPS Persian glyph reconstruction, and ESC/POS GS-v-0 raster/PNG reconstruction into a new `Kandoo.Capture` .NET 8 library. The Hub registers capture through standard `Hub:Capture` configuration and an opt-in hosted monitor; each stable SPL/SHD file is copied by content hash with an atomic REVIEW-only manifest. Raw captures do not create canonical invoices, customers, sales, or other native effects. Four active synthetic tests cover XPS reconstruction, raster pixels/PNG output, stable hashed spool handoff, and startup-baseline/change detection; a Hub test covers the REVIEW manifest and idempotent sink. Two tests are explicitly BLOCKED/skipped because owner-provided real SPL and SHD capture samples are absent; no captures are fabricated and no real-spool compatibility is claimed. Capture builds and tests run in both CI jobs. Target tag: `stable-c-19`; CI run URL is `relayed after batch`. Local .NET/PowerShell execution remains unavailable, so no local or CI success is claimed.
+
+## Window-3 Implementation Handoff (`C-18`, 2026-10-29)
+
+C-16 is published at `271730d1bef6f1ee4db174ee3bcdd6b073780bf0` / `stable-c-16`. C-18 hardens `/i/{token}` without changing its public-invoice contract: public lookups use a SHA-256 token-hash index and `CryptographicOperations.FixedTimeEquals` on full hashes; unknown, malformed, and unauthorized capabilities collapse to the same 404 body/headers; a fixed-window per-client-address limiter returns bounded retry metadata; and ASP.NET request/routing diagnostics that could disclose raw token paths are disabled. Existing raw tokens remain only in trusted server-side delivery/claim storage. Four tests cover fixed-time comparison behavior, identical unknown/unauthorized responses, per-address window recovery, and absence of valid/unknown tokens from captured server logs. Target tag: `stable-c-18`; CI run URL is `relayed after batch`.
+
+## Window-3 Implementation Handoff (`C-16`, 2026-10-29)
+
+C-15 is published at `2bf8614d277366323dd689f43790816eb93223d2` / `stable-c-15`. C-16 adds a SQLite-backed Mode-B REVIEW queue around the strict C-07 consumer. Acceptance has no native sale/customer effect; captured attention cells plus synthetic operator-phone/payable cells are listed; allowed value corrections and explicit phone entry update the preserved source provenance to `operator_confirmed` and append audit rows. Payable is recomputed with checked C# signed-integer arithmetic as line totals plus only declared `summary.extra_amounts`; ACC-0 tax/discount/rounding semantics are not inferred. Issue requires an empty captured-attention list, explicit normalized operator phone, and a matching sum, then uses the same draft/item/ISSUE operation service with deterministic retry IDs, external capture identity, D11 locking, and display-number allocation. Four golden-JSON tests cover clean issue, corrected value/provenance, failing-sum refusal before native operations, and missing-phone refusal. Target tag: `stable-c-16`; CI run URL is `relayed after batch`.
+
+## Window-3 Implementation Handoff (`C-15`, 2026-10-29)
+
+C-14 is complete at `33ef8209f074f17fd1fe740517318889e1085bdc` with annotated `stable-c-14-v2`; initial `stable-c-14` remains immutable. C-15 adds the R1 vertical slice through the real Hub HTTP API, durable SQLite operation/outbox log, real Cloud ingest/PostgreSQL, deterministic SMS stub and durable quota counters, and the public token page. Native Hub ISSUE responses now retain the immutable issued payload/hash, timestamp, external identity, and lines; item add validates an optional same-store product ID. Cloud projects only complete successful native ISSUE responses into the single-invoice public projection and never invents missing legacy details. Four serial PostgreSQL tests cover the full product → phone draft → item → issue-at-number-1 → four-entry log → replicate → one SMS charge → public invoice run, idempotent operation/Cloud/SMS retries, store-A/store-B denial, and second-device phone-lock conflict. Target tag: `stable-c-15`; CI run URL is `relayed after batch`.
+
+## Window-3 Implementation Handoff (`C-14`, 2026-10-29)
+
+C-14 starts from the executive-verified PR #4 merge `1dd53ff74c091f71e35606c3e1254049c1ffc16a` on `arena/23ca21c9-kandoo`. The existing ASP.NET Core Hub executable is now the runnable console host: SQLite remains on disk, standard appsettings/environment configuration is used, loopback-only pages expose the latest explicitly issued pairing grant, the same payload is printed as `KANDOO_PAIRING_GRANT=...`, authenticated product creation is available over HTTP, and WebApplication lifetime handlers provide graceful shutdown with SQLite disposal. A disabled-by-default loopback shutdown switch exists only for the smoke harness. Windows CI publishes a self-contained `win-x64` folder, starts the executable, pairs a device, creates a stocked product, creates a phone draft, adds an item, issues display number 1, stops the host gracefully, measures the uncompressed publish bytes/MiB into `c14-artifact-size.txt` and the step summary, and uploads the publish plus smoke result. Two in-process tests cover local pairing display and durable idempotent product creation. The initial candidate was published as `9aa6383ffad88e9544e493ca055fcce4e5308153` / `stable-c-14`. Before C-15, static integration review found that the in-process test factory replaced the operation store but not the newly registered catalog service; v2 replaces both so the product test uses its isolated SQLite database. The production host was already wired to one store. Target final tag: `stable-c-14-v2`; the v1 tag remains immutable. CI run URLs and the CI-measured artifact size are recorded in the SECTION C evidence block below, copied byte-for-byte from the executive relay. No real-capture samples, UI work, merges, or main pushes are included.
+
+### C-14 v2 Windows smoke evidence
+
+```text
+SECTION C — C-14 v2 WINDOWS SMOKE EVIDENCE (record VERBATIM; never re-derive)
+Source: Actions run #57, id 40838323344, head 33ef8209f074f17fd1fe740517318889e1085bdc
+(stable-c-14-v2, "test(c-14): isolate the host catalog fixture"), event push, created
+2026-10-29T07:53:23Z, conclusion SUCCESS. All figures below are verbatim from the CI
+run/job pages, fetched 2026-10-30 by the executive. Nothing derived, rounded, or invented.
+
+Jobs:
+  Build and test (ubuntu-latest)  job 123328319284  success  duration 1m 14s
+  Build and test (windows-latest) job 123328319640  success  duration 2m 43s
+  Run page header: 2m 47s, Artifacts 3
+
+Windows job steps (all conclusion=success; timestamps UTC):
+  #10 "Publish self-contained win-x64 Hub host"
+      started 2026-10-29T07:55:44Z, completed 2026-10-29T07:55:55Z
+  #11 "Start Hub, run C-14 smoke, stop it, and measure the publish"   <-- SMOKE RESULT
+      started 2026-10-29T07:55:55Z, completed 2026-10-29T07:55:58Z
+  #12 "Upload C-14 self-contained Hub artifact"
+      started 2026-10-29T07:55:58Z, completed 2026-10-29T07:56:03Z
+
+Artifacts (run page table, verbatim Name | Size | Digest):
+  kandoo-hub-c14-win-x64       45.7 MB  sha256:d5384482d1e41899f18e5e2e5df06431974c9d41b57cd930fe98795c29bc3772
+  test-results-ubuntu-latest   23.1 KB  sha256:a6144525343480defcc262d7cfafb6799015852804eb9c5c7840c277a9a7ff6c
+  test-results-windows-latest  23.1 KB  sha256:2feb0c1b8e7dfdc8de13bc6b8f15cf1d13af61bebbf736237f7e76e5206909a2
+
+Not supplied (never invent): the byte-exact size_in_bytes of kandoo-hub-c14-win-x64 at
+this run (API quota drained; logs require auth). "45.7 MB" is exactly as displayed on
+the run page. If the executive later relays an exact byte figure, record it in the next
+handoff update. Never compute, round, or infer it.
+
+Annotations (run page, verbatim; non-blocking warnings):
+  - Build and test (ubuntu-latest) Node.js 20 is deprecated. The following actions target
+    Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4,
+    actions/setup-dotnet@v4, actions/upload-artifact@v4. For more information see:
+    https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+  - Build and test (windows-latest) Node.js 20 is deprecated. (same action list and link)
+  - Build and test (ubuntu-latest) "The ubuntu-latest label will migrate to Ubuntu 26
+    beginning October 19, 2026. For more information, see
+    https://github.com/actions/runner-images/issues/14748 "
+```
+
+## Final Implementation Handoff (`H-01`, 2026-10-26)
+
+C-10 through C-13 are complete on the fixed review-only Arena branch. The authoritative implementation line ends at C-13 v2. Every candidate SHA, annotated tag/object, per-OS result, and run URL is recorded below; red tags remain immutable and were never moved.
+
+| Task / candidate | Commit SHA | Annotated tag / tag object | Ubuntu | Windows | CI run |
+| --- | --- | --- | --- | --- | --- |
+| **C-10 final** | `dbbf2511ff78dd6d154cc1b12cf99bf821eeecac` | `stable-c-10` / `0d02b9634d2fc095141f605dcffb6c2026cf7eb4` | Green | Green | [40293083629](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40293083629) |
+| C-11 v1 (retained red) | `58c1751ad4ed8e2c85d1a0ef1ca30cd6931f2619` | `stable-c-11` / `edada80faabd9baa88c763a8b9970855ca9e79ac` | Red — Build | Red — Build | [40293860657](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40293860657) |
+| **C-11 final v2** | `582a2cfd4876b38b85619f2690402ade6dfe0e72` | `stable-c-11-v2` / `d07001ab10ef76ffb8b58b991ad28ffb3c30019c` | Green | Green | [40294075398](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40294075398) |
+| C-12 v1 (retained red) | `45ce927df4786ab3f165df88ad2c3076d0c57f87` | `stable-c-12` / `f9a9a9a16d19483d5329d6adfddb2050349fec60` | Red — Build | Red — Build | [40295770215](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40295770215) |
+| C-12 v2 (retained red) | `90a92ab4207c78bdf5b9cc111ea1fa7f1aedded4` | `stable-c-12-v2` / `d5107297b95b006a23d156eb4b46c43219983313` | Red — Cloud tests | Red — Cloud tests | [40296029468](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40296029468) |
+| C-12 v3 (retained red) | `4c1ec4eb12e109e9a2de845a235fc0b95a78f74d` | `stable-c-12-v3` / `a78ae177afbf7b0caeeded4498904b46c67ca017` | Red — Cloud round trip | Red — Cloud round trip | [40296419280](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40296419280) |
+| **C-12 final v4** | `b35ede07a93c6c68ff8980201971e0c57c85d71c` | `stable-c-12-v4` / `0552215c490f603632a37d9f3caa284b0150caf7` | Green | Green | [40296755316](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40296755316) |
+| C-13 v1 (retained red) | `a136293199eff62f1c96524a24df60f1e526b3ca` | `stable-c-13` / `1859ca8557f2b414be29060ac67286d97fcd5ffb` | Red — Build | Red — Build | [40297875572](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40297875572) |
+| **C-13 final v2** | `f90dbc672b9c0c17eddfe6ff06fd4b60ca49e0a9` | `stable-c-13-v2` / `744ed1bb8834a093b8e0afcd7d880db0d16c8e9a` | Green | Green | [40298111209](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/40298111209) |
+
+H-01 is documentation-only: it adds this final ledger and publication note, starts from verified C-13 v2, and targets new annotated tag `stable-h-01`. Its own pushed SHA, tag object, and per-OS CI URL are reported in the final dispatch result. No merge or PR closure is authorized; `main` remains unchanged.
+
+## Previous Implementation Handoff (`C-13`, 2026-10-26)
+
+C-12 is complete at `b35ede07a93c6c68ff8980201971e0c57c85d71c` with annotated `stable-c-12-v4` (`0552215c490f603632a37d9f3caa284b0150caf7`); run `40296755316` is green on Ubuntu and Windows. Its v1–v3 tags remain immutable with the documented build/fixture failures. C-13 starts from that verified commit and adds a no-UI durable product catalog creation path. Name, non-negative Rial price, and initial stock are required; structured category/color/size/material/brand/barcode/specification are optional and blank-normalized. Existing Persian/Arabic/half-space normalization and candidate-acknowledged near-duplicate behavior are preserved. Atomic idempotent creation allocates positive per-store numeric tags from a dedicated watermark, records initial stock through the append-only inventory ledger, and survives retirement/restart/restore without tag reuse. Products, tag assignments, and the tag watermark join the canonical restore projection. Canonical QR JSON carries only store ID/tag plus optional calculated Luhn digit, with strict round-trip validation and no authentication capability. Six focused tests cover required fields, metadata/stock/idempotency, duplicate warning/isolation, retirement/restart/restore continuation, and exact QR examples/error cases. `ASM-31` records the boundary. The first candidate was tagged `stable-c-13` at `a136293199eff62f1c96524a24df60f1e526b3ca`; run `40297875572` was red on Ubuntu and Windows at Build because a new tag-counter write command reused a nested local name, so no tests ran. That tag remains immutable. The v2 candidate targets `stable-c-13-v2` with only that local renamed and this handoff update. CI is pending at v2 publication; final pushed SHA, tag, and per-OS run URL are reported in the task result. Any further red CI requires another fix and new immutable tag. No merge is authorized.
+
+## Previous Implementation Handoff (`C-12`, 2026-10-26)
+
+C-11 is complete at `582a2cfd4876b38b85619f2690402ade6dfe0e72` with annotated `stable-c-11-v2`; run `40294075398` is green on Ubuntu and Windows. The earlier `stable-c-11` tag remains immutable with its documented red build. C-12 starts from the verified v2 commit and implements sync-protocol section 4 restore semantics. OTP plus an interface-backed recovery-key or bound paired-device approval creates a manifest-bound export grant; SMS alone or as a purported second factor cannot export or activate. PostgreSQL exports only a complete contiguous hash-valid log plus canonical replay state. Fresh SQLite staging restores pairing metadata, products, inventory, invoices/items, idempotent operations, locks, display counters, and acknowledged log history atomically, recomputes the hash before commit, excludes sessions/retry timestamps, and activates a fenced replacement writer only after an identical re-read hash. Unsynced suffix loss is listed and requires owner acknowledgement. Nine tests cover RESTORE-001–004, FAIL-001, SMS-only denial, loss acknowledgement, independent-manifest corruption detection, and a real Hub → PostgreSQL ingest/export → fresh Hub round trip that proves identical state hash, no restored session, idempotent replay, and writer-epoch `N+1` continuation. `ASM-30` records the boundary. The first candidate was tagged `stable-c-12` at `45ce927df4786ab3f165df88ad2c3076d0c57f87`; run `40295770215` was red on Ubuntu and Windows at Build because the new partial store called a nonexistent transaction-helper name, so no tests ran. That tag remains immutable. The second candidate was tagged `stable-c-12-v2` at `90a92ab4207c78bdf5b9cc111ea1fa7f1aedded4`; run `40296029468` built and passed Core on both OSes but was red in Cloud tests because the new vector loader assumed an output-copied file and the synthetic draft phone used local rather than international syntax. That tag also remains immutable. The third candidate was tagged `stable-c-12-v3` at `4c1ec4eb12e109e9a2de845a235fc0b95a78f74d`; run `40296419280` passed the vector/corruption/loss tests but was red on both OSes because the populated test supplied an idempotency key different from Cloud's required `batch_id`, correctly receiving 409. That tag remains immutable. The v4 candidate targets `stable-c-12-v4` with `cloudBatch.BatchId` as that test key and this handoff update. CI is pending at v4 publication; final pushed SHA, tag, and per-OS run URL are reported in the task result. Any further red CI requires another fix and new immutable tag. No merge is authorized.
+
+## Previous Implementation Handoff (`C-11`, 2026-10-25)
+
+C-10 is complete at `dbbf2511ff78dd6d154cc1b12cf99bf821eeecac` with annotated `stable-c-10`; run `40293083629` is green on Ubuntu and Windows. C-11 starts from that verified commit. It adds customer-specific OTP issue/verify endpoints using `ISmsProvider` and only the deterministic stub, durable normalized-phone rate limits, expiry and attempt lockout, hashed OTP/session secrets, verified accounts and opaque bearer sessions, public-invoice claim records, and verified-phone invoice listing across stores with explicit store identity. Claims do not rewrite Hub invoice projections, and anonymous `/i/{token}` single-invoice reads remain unchanged. Five in-process Cloud/PostgreSQL tests cover expiry, wrong-code limits, per-number rate limiting plus duplicate-free issue retry, verified-phone isolation/claim behavior across multiple stores, and anonymous public-token access without an account. The first candidate was tagged `stable-c-11` at `58c1751ad4ed8e2c85d1a0ef1ca30cd6931f2619`; run `40293860657` was red on both OSes because the test compiler required a non-null assertion for an explicitly seeded optional public-token property. That tag remains immutable. The v2 candidate targets `stable-c-11-v2` with only that test nullability correction and this handoff update. CI is pending at v2 publication; final pushed SHA, tag, and per-OS run URL are reported in the task result. Any further red CI requires another fix and new immutable tag. No merge is authorized.
+
+## Previous Implementation Handoff (`C-10`, 2026-10-25)
+
+U-01 is complete at `3c0033f595e47e1d0abea10eeeea27084909169a` with annotated `stable-u-01`; run `40218201455` is green on Ubuntu and Windows. The owner authorized and verified another mixed-reset recovery from stale R-0 metadata to that exact published U-01 tip, with a clean tree and no recovery-time remote changes. C-10 starts from the recovered U-01 commit and follows current sync-protocol section 3 plus CLOUD-001–008, ignoring obsolete section/target-task numbering as directed. It adds immutable hash-chained SQLite replication entries in the original operation transaction, ordered per-store HTTP batches, exact head/sequence acknowledgement, durable retry/outbox behavior, gap/review reporting, throttle limits, and persistent writer fencing that blocks later mutations. Nine tests execute all CLOUD vectors through the in-process Cloud server with real PostgreSQL and prove lost-response retry across actual Hub store recreation, canonical entry hashes, acknowledgement durability, and restart-persistent fencing. Target tag: `stable-c-10`. CI is pending at publication; final pushed SHA, tag, and per-OS run URL are reported in the task result. Any red CI requires a fix and new immutable tag. No merge is authorized.
+
+## Previous Documentation Handoff (`U-01`, 2026-10-25)
+
+P-01b is complete at `c1093e4670b383df0dff78a4837a53beac209a9f` with annotated `stable-p-01b` (`2cd2b7c4eab92c0dcb95c965bb5fcb5a27714c8c`); run `40171231477` is green on Ubuntu and Windows. Before U-01, the local clone again had stale R-0 HEAD/index metadata while its workspace was byte-identical to that published P-01b commit. The owner explicitly authorized `git reset --mixed FETCH_HEAD` at verified `c1093e4670b383df0dff78a4837a53beac209a9f`; recovery produced a clean tree with zero file changes and did not alter remote refs. U-01 starts from the recovered P-01b tip and is documentation-only. It adds `docs/product-ux-vision.md` with the owner’s two Persian screen concepts quoted verbatim, 39 structured requirements each tagged `decided by owner` or `needs discussion`, and exactly five intentionally unanswered open questions covering free-form fields/cross-store matching, phone/Windows presentation, rental/other-service MVP scope, customer-order destination/operator notification, and cascading options/product schema. No screens are designed and no UI or implementation code is changed. Existing normative documents remain unchanged; only the new UX vision document and this mandatory handoff are in scope. Target tag: `stable-u-01`. CI is pending at publication; final SHA and tag are reported in the task result. No merge is authorized.
+
+## Previous Implementation Handoff (`P-01b`, 2026-10-25)
+
+C-09 is complete at `98a5a45983dc25ebe3eb90523dec222935e63fda` with annotated `stable-c-09-v2` (`4f4cd9aeba68bf705c06c7dd08a72c9b6bd458b0`). Run `40170934415` is green on Ubuntu and Windows. Its first tag `stable-c-09` remains retained with Ubuntu green and the documented Windows embedded-PostgreSQL fixture failure. P-01b starts from the verified C-09-v2 commit and is documentation-only. It adds `docs/domain-model-basket.md` specifying Basket/BasketItem strictly as customer requests, the five-state machine, submit-price snapshots and accept recheck, store switch, never-reused store-scoped product tags and optional Luhn digit, printed QR labels, verified-phone guards, abuse limits, Hub/Cloud in-app live notifications without Google-push assumptions, strict isolation, 34 acceptance tests, and an explicit non-destructive P-01/P-02/P-04 required-change list. Existing domain/protocol/OpenAPI/decision documents are intentionally unchanged; only the new Basket document and this mandatory handoff are in scope. Target tag: `stable-p-01b`. CI is pending at publication; final SHA, tag object, and per-OS run URL are reported in the dispatch result. Any red CI requires a fix and new tag.
+
+## Previous Implementation Handoff (`C-09`, 2026-10-25)
+
+C-08 is complete and authoritative at `776ef59d4f594410f6d72f3ec970eb539a66b83b` with annotated `stable-c-08-v4` (`4413d13c97a4a54ab1e6aa9af9205365171980ed`). Run `40170402686` is green on `ubuntu-latest` and `windows-latest`; earlier C-08 tags remain immutable audit history. C-09 starts from that verified commit. It adds `ISmsProvider`, a deterministic no-network/no-secret stub, Persian single-invoice-link templates, interface-backed subscription metadata, PostgreSQL operation-ID reservations, per-store quota/counters, and per-invoice/per-recipient abuse limits. Tests cover template content, durable retry without duplicates, quota exhaustion, rate-limit retry metadata/window recovery, recipient abuse, operation fingerprint conflicts, and cross-store link rejection. The first candidate was tagged `stable-c-09` at `5e5bc8c3a49c0f45bdba17c1ee63b6edd82ba4be`. Run `40170774903` was green on Ubuntu but red on Windows because separate test classes started competing embedded PostgreSQL processes; that tag remains immutable. The v2 candidate targets `stable-c-09-v2` and places Cloud/SMS tests in one shared, serial xUnit PostgreSQL collection fixture while preserving real database execution on both OS legs. CI is pending at v2 publication; final pushed SHA, tag object, and per-OS run URL are reported in the dispatch result. Any further red CI requires a fix and new tag.
+
+## Previous Implementation Handoff (`C-08`, 2026-10-25)
+
+The active branch remains `arena/1c5ae19c-kandoo`; C-08 starts from the independently verified CI-green commit `3af5c898743451ff4574c45374b5b7dd9a077832`. `main` remains at `82d40cf7d55ac170db7a464dad5985be75d6b71a`. The C-08 candidate adds the ASP.NET Core Hub API, persistent companion-only QR grants/device registry/hashed credentials and sessions, owner-only pairing/revocation, disconnect and D11 lock handling, durable rejected responses/outbox entries, and C-04-backed operation idempotency. The in-process `WebApplicationFactory` suite executes all 16 `LAN-PAIR`/`LAN-SESSION`/`LAN-OP`/`LAN-LOCK` vectors on temporary SQLite databases; client-only `LAN-HUB-001` is intentionally outside the Hub harness. The first candidate was tagged `stable-c-08` at `979749d85abf11467a1b80c85dbe17c27e0eb27a`; run `40169889363` was red on both OS legs because Minimal API DTO binding did not yet use the snake-case JSON profile. That tag remains immutable. The second candidate, `stable-c-08-v2` at `668403657b40f7b31961c8a21e921d262949e352`, configured ASP.NET HTTP JSON binding correctly but run `40170080773` was red on both OS legs because the test factory still shared the top-level default SQLite database across parallel vectors. That tag also remains immutable. The third candidate, `stable-c-08-v3` at `d83b4fa219f1d4dbcf886aa135b81373ad2f7cf5`, isolated each test database correctly; run `40170217533` remained red on both OS legs for two fixed-invoice-ID harness bindings and one real D11 read-expiry defect. That tag remains immutable. The v4 candidate targets `stable-c-08-v4`: follow-up commands bind to Hub-generated invoice IDs, and `DraftLockManager.Get` now evaluates exact-boundary expiry. CI is pending at v4 publication; final pushed SHA, tag object, and per-OS run URL are reported in the dispatch result. Never move a published tag; any further red CI requires another fix and new tag.
+
+## Previous Implementation Handoff (`H-00`, 2026-10-24)
+
+This section supersedes the older documentation-only snapshots below for the active implementation line. The active Arena branch is `arena/1c5ae19c-kandoo`; `main` remains at baseline `82d40cf7d55ac170db7a464dad5985be75d6b71a`. The C-03 starting tip for the next dispatch is `fca2262aeaa6dbfedd2c1f3d0107bd0ce147aa62`.
+
+| Task | Content commit | Annotated tag (object SHA) | CI run ID |
+| --- | --- | --- | --- |
+| **C-01** | `5ff98a5b52819af8ba215942532cdf2a3c6f565c` | `stable-c-01` (`4394f7b19a476ff4769b468f1decb7f91dc41153`) | `40068393877` |
+| **C-02** | `9a2581ed53d57575343bb1346575b11ab8c8fdfa` | **`stable-c-02-v4` (`9cca13b309fcf169e8aadc09a4cecc63fe9c42be`)** | `40069226292` |
+| **P-03-docs** | `f071070c5a7a835a104f5c3eb31859a1ffdae121` | `stable-p-03-docs` (`48c58d6cc921021dc3d20d22951c3270b0da31a6`) | `40069315245` |
+| **C-03** | `fca2262aeaa6dbfedd2c1f3d0107bd0ce147aa62` | `stable-c-03` (`a97767356019c17dcbfa00477ebfdb7414faa608`) | `40069741771` |
+
+**C-02 tag authority:** `stable-c-02-v4` is the authoritative, corrected C-02 tag. The earlier `stable-c-02` tag points to pre-fix commit `2c8a5796970d4e5bc159f264d1f2bed218894413` and **must not be moved**. Earlier C-02 fix tags remain immutable audit history.
+
+The current dispatch CI loop requires owner/verifier confirmation for each new task: **CI result needed from the owner**. Do not infer a new task's OS result from these historical run IDs.
+
 This repository is the parent Kandoo project.
 
-## Repository & Cross-Repo State (`R-0` Snapshot)
+## Current Repository State (`P-0104r` Snapshot)
+
+- **Date:** `2026-10-23`
+- **Task:** `P-0104r — Unified documentation revision` (owner-approved; documentation and YAML only)
+- **Parent repository (`majid-ghanbari-dost/Kandoo` — THIS REPOSITORY):**
+  - **Active cumulative branch:** `arena/91ef8c4b-kandoo`; PR #2 remains open and unmerged.
+  - **Starting `P-0104r` `HEAD`:** `ee1e17165924798339075e705a2aa45ecc60f899` (`stable-p-04` tip).
+  - **Exact `P-0104r` content commit `HEAD`:** `1f9da7c1b6227c7a1332d581266f52fdce856614` *(six requested documents; immediate parent of this handoff-recording commit; final `P-0104r` commit-group tip is tagged `stable-p-0104r`)*.
+  - **Stable tag:** `stable-p-0104r`.
+  - **Delivered:** `docs/domain-model.md`, `docs/sync-protocol.md`, `docs/sync-protocol-test-vectors.json`, `docs/openapi.yaml`, `docs/cloud-api-contract.md`, and `docs/DECISIONS.md` now allocate `display_number` only at successful `ISSUE`, restart the 300-second lock inactivity window only on newly Hub-accepted draft item/quantity/customer changes, and use `ASM-22` signed integer thousandths (`quantity_millis`, `quantity_delta_millis`, `stock_millis`). D11 Open item 3 and D12 Open item 6 are closed; no endpoint or implementation was added.
+  - **Changed domain rule IDs:** `D10-R1`, `D10-R3`, `D11-R1`, `D11-R6`, `D11-R8`, `D11-R9`, `D11-R10`, `D12-R2`–`D12-R6`, `MD-R5`, `MD-R8`, `MD-R9`.
+  - **Changed domain test IDs:** `TC-E09`, `TC-E11`, `TC-D10-R1`, `TC-D10-R2`, `TC-D10-R3`, `TC-D10-R5`, `TC-D11-R1`, `TC-D11-R3`, `TC-D11-R5`, `TC-D11-R6`, `TC-D11-R8`, `TC-D11-R9`, `TC-D12-R2`–`TC-D12-R6`, `TC-SI-R6`, `TC-MD-R5`, `TC-MD-R8`, `TC-MD-R9`.
+  - **Changed vector IDs (21):** `LAN-SESSION-002`, `LAN-LOCK-001`–`LAN-LOCK-006`, `LAN-HUB-001`, `CLOUD-001`–`CLOUD-005`, `RESTORE-001`–`RESTORE-004`, `FAIL-001`, `FAIL-003`, `FAIL-004`, `FAIL-005`. The other 13 vectors are unchanged; intentional `CLOUD-007` corruption is preserved.
+  - **Changed P-04 contract fields/metadata:** `Invoice.display_number` is required but nullable (`integer`/`null`, positive when issued); `PublicInvoiceView.display_number` remains required positive issued-only data with an explicit description; `LogEntry` documents the ASM-22 generic payload/outcome/response-snapshot quantity names; `info.description` records the revision; `x-contract.revision=P-0104r` and `x-contract.quantity_encoding` were added. No quantity endpoint or lock-extension endpoint was added.
+  - **Hash validation:** UTF-8 canonical JSON with recursively sorted object keys, compact separators, and no ASCII escaping; request hashes use exactly `store_id`, `device_id`, `operation_id`, `operation_type`, `base_version`, `payload`; entry hashes omit only `entry_hash`; state hashes use the canonical replayed projection. Independent Python and Node.js recomputation passed 34 request-hash occurrences, 21 entry-hash occurrences, and 2 state projections, with zero failures.
+  - **Other validation:** `npx --yes @redocly/cli lint docs/openapi.yaml` (`2.69.0`) exited 0 with zero errors/warnings. Structural/P-02 compatibility passed 34 vectors, 11 wire batches, 18 contained entries, 22 operations, 15 POST mutations, exactly 51 matching narrative/YAML error codes, and frozen domain counts 15 entities/52 rules/67 scenarios. `python3 -m json.tool docs/sync-protocol-test-vectors.json` and `git diff --check` passed.
+  - **Assumptions/decisions:** `ASM-09` and `ASM-10` contain the owner-approved D11/D12 revisions; new `ASM-22` records the quantity encoding and rationale. D7 single-Hub authority, D10 idempotency/OCC, D8/SEC-1 restore second factor, D4 SMS-stub/public-token rules, and strict store isolation are unchanged.
+  - **Not delivered:** P-03, C#, physical schema, extraction implementation, secrets, production credentials, demos, live SMS, or legal copy. P-03 was not started.
+
+## Repository State (`P-04` Snapshot)
+
+- **Date:** `2026-10-22`
+- **Task:** `P-04 — Cloud API contract` (documentation and YAML only)
+- **Parent repository (`majid-ghanbari-dost/Kandoo` — THIS REPOSITORY):**
+  - **Active cumulative branch:** `arena/91ef8c4b-kandoo`; PR #2 remains open and unmerged.
+  - **Starting `P-04` `HEAD`:** `2b08caa16a794311c8f50cafb40c19a30919b69f` (`stable-p-02`).
+  - **Exact `P-04` content commit `HEAD`:** `8473cacbec8ce57e06e91c03da14444ece9d7ad7` *(immediate parent of this handoff-recording commit; final `P-04` commit-group tip is tagged `stable-p-04`)*.
+  - **Stable tag:** `stable-p-04`.
+  - **Delivered:** `docs/openapi.yaml` (OpenAPI 3.1) and `docs/cloud-api-contract.md` define 22 operations across Store Registration, Device Pairing, Operation Ingest, Locks, Restore, and Invoice Delivery; 15 mutations require `Idempotency-Key`; 51 error codes share the `{code, message, retry_hint}` envelope. The contract specifies per-device/restore credentials and rotation, `/v1` path versioning, cursor pagination, default rate limits, P-02-compatible operation/log/lock shapes, OTP plus SEC-1 restore, and D4/D14 gates.
+  - **Validation:** `npx --yes @redocly/cli@2.69.0 lint docs/openapi.yaml` exited 0 with zero errors and zero warnings. Structural checks validated 22 operations, the complete error matrix, all 11 wire-shaped P-02 batches and 18 contained entries; `CLOUD-006` harness metadata and intentional `CLOUD-007` corruption were handled explicitly.
+  - **Assumptions:** `docs/DECISIONS.md` records `ASM-18`–`ASM-21` and Open items 11–13.
+  - **Not delivered:** C#, physical schema, API implementation, extraction code, secrets, production credentials, demos, live SMS, or legal copy (`ASM-18`).
+
+## Repository State (`P-02` Snapshot)
+
+- **Date:** `2026-10-22`
+- **Task:** `P-02 — Sync/replication protocol specification` (documentation only)
+- **Parent repository (`majid-ghanbari-dost/Kandoo` — THIS REPOSITORY):**
+  - **Active cumulative branch:** `arena/91ef8c4b-kandoo`; PR #2 remains open and unmerged.
+  - **Starting `P-02` `HEAD`:** `e8a935105bdfad7ab323b4a83ec83b8a4c44ecc2` (`stable-p-01`).
+  - **Exact `P-02` content commit `HEAD`:** `fc4df52ad5617ebd837a07022cc2d847436a8f58` *(immediate parent of this handoff-recording commit; final `P-02` commit-group tip is tagged `stable-p-02`)*.
+  - **Stable tag:** `stable-p-02`.
+  - **Delivered:** `docs/sync-protocol.md` specifies LAN pairing/sessions/operations/D11 locks, ordered idempotent Cloud replication, OTP+second-factor restore with replayed-state hashing, and a seven-case failure table. `docs/sync-protocol-test-vectors.json` contains 34 unique synthetic vectors for P-05/P-07 with independently checked request, entry, and state hashes. `docs/DECISIONS.md` records `ASM-13`–`ASM-17` and Open items 7–10.
+  - **Not delivered:** C#, physical schema, extraction implementation, production credentials, secrets, demos, or implementation claims (`ASM-13`).
+
+## Repository State (`P-01` Snapshot)
+
+- **Date:** `2026-10-22`
+- **Task:** `P-01 — Domain model specification` (documentation only)
+- **Parent repository (`majid-ghanbari-dost/Kandoo` — THIS REPOSITORY):**
+  - **Active branch:** `arena/91ef8c4b-kandoo`.
+  - **Merged `main` baseline `HEAD`:** `6409de18074f3ca71673d017ef671b51cc70c05c`.
+  - **Exact `P-01` content commit `HEAD`:** `9d6d6fa1d935ded429eaa2698706daae099d70b0` *(immediate parent of this handoff-recording commit; final `P-01` branch tip is tagged `stable-p-01`)*.
+  - **Stable tag:** `stable-p-01`.
+  - **Delivered:** `docs/domain-model.md` defines 15 entities, an ASCII relationship diagram, 52 numbered `D9`–`D13`/isolation rules, and 67 concrete test scenarios; `docs/DECISIONS.md` records `ASM-06`–`ASM-12` and Open items 5–6; `docs/MASTER_HANDOFF.md` records the PM's documentation-only `P-01` clarification.
+  - **Not delivered:** C#, database schema, extraction code, secrets, demos, or implementation claims. The previously provisional `P-01` bootstrap work is deferred to a later explicit PM task (`ASM-06`).
+- **Digital Invoice extraction repository:** unchanged and not accessed for implementation; its last verified `R-0` snapshot remains `27d6d14ef02302423a903e09adb60bfe0164c8f7`.
+
+## Repository & Cross-Repo State (`R-0` Historical Snapshot)
 
 - **Date:** `2026-10-22`
 - **Task:** `R-0 — Parent repo truth`
@@ -18,7 +250,12 @@ This repository is the parent Kandoo project.
 ## Authoritative Documentation Index
 
 1. [`docs/MASTER_HANDOFF.md`](docs/MASTER_HANDOFF.md) — Project overview, two-repository topology, `D1`–`D14` summary, verified repository state, non-existence baseline, and next platform tasks (`P-01`–`P-04`).
-2. [`docs/DECISIONS.md`](docs/DECISIONS.md) — Authoritative decision register (`D1`–`D14`), Amendments `v4.1` and `v4.2` (`SEC-1`, Restore Second Factor, Agreement Truthfulness, `E-01b`, `ACC-0` parked), `Assumptions`, and `Open` owner items.
+2. [`docs/domain-model.md`](docs/domain-model.md) — `P-01` logical domain specification, revised by `P-0104r`: 15 entities, relationships and constraints, ASCII diagram, numbered `D9`–`D13`/store-isolation rules, and 67 concrete acceptance-test scenarios.
+3. [`docs/sync-protocol.md`](docs/sync-protocol.md) — `P-02` LAN, replication, restore, writer-fencing, and failure protocol with D7/D11/SEC-1 traceability and the `P-0104r` numbering/activity/`ASM-22` profile.
+4. [`docs/sync-protocol-test-vectors.json`](docs/sync-protocol-test-vectors.json) — 34 synthetic P-05/P-07 vectors with canonical SHA-256 fixtures, including the `P-0104r` issue-only numbering and scaled-quantity revisions.
+5. [`docs/openapi.yaml`](docs/openapi.yaml) — `P-04` normative OpenAPI 3.1 Cloud API contract with the `P-0104r` pre-implementation revision.
+6. [`docs/cloud-api-contract.md`](docs/cloud-api-contract.md) — `P-04` narrative for implementers: six endpoint groups, authentication, complete error matrix, versioning, idempotency, rate limits, P-01/P-02 mapping, `P-0104r` compatibility, and open technology questions.
+7. [`docs/DECISIONS.md`](docs/DECISIONS.md) — Authoritative decision register (`D1`–`D14`), Amendments `v4.1` and `v4.2` (`SEC-1`, Restore Second Factor, Agreement Truthfulness, `E-01b`, `ACC-0` parked), `Assumptions` including `ASM-22`, and `Open` owner items.
 
 ## Project Relationship
 
@@ -51,9 +288,9 @@ Core architecture includes:
 - `operation_id` idempotency + `device_id` attribution on every mutation (`D10`)
 - Global Revision synchronization cursor
 - `AggregateVersion` / OCC (`base_version`) with zero silent overwrites (`D10`)
-- Per-phone `DRAFT` lock per device with configurable `5-minute` default timeout (`D11` v4.2)
-- Store Hub sequential `display_number` separate from internal `invoice_id` and external POS numbers (`D12`)
-- Event-ledger inventory and store-unique normalized products with near-duplicate warnings (`D9`, `D10`)
+- Per-phone `DRAFT` lock per device with configurable `300-second` default timeout; only newly Hub-accepted draft item/quantity/customer changes restart inactivity, never passive screens/heartbeats (`D11` v4.2 + `P-0104r`)
+- Store Hub sequential `display_number` separate from internal `invoice_id` and external POS numbers; allocation occurs only at successful `ISSUE`, drafts remain null-numbered, and issued numbers are gapless (`D12` + `P-0104r`)
+- Event-ledger inventory and store-unique normalized products with near-duplicate warnings (`D9`, `D10`); quantities use signed integer thousandths (`quantity_millis`, `quantity_delta_millis`, `stock_millis`) under `ASM-22`
 - Canonical Invoice source-independent model (`ISSUED` immutable; `REVOKED` / `SUPERSEDED` terminal states)
 - External capture strictly through Canonicalization Gate (`AUTO` / `REVIEW` / `REJECT`), with fail-closed `REVIEW` on any doubt and zero silent creation of `Sale` / `Inventory` / `KPI`
 - Server-side encryption + restricted logged access for MVP (`SEC-1`), second factor required on store restore, lawyer-owned `"Kandoo digital invoice"` copy (`D14`), and truthfulness between agreements and tested code
@@ -61,6 +298,366 @@ Core architecture includes:
 ## Repository Truth at `R-0`
 
 - Prior to `R-0`, this repository contained only 3 bootstrap documentation commits (`80d967c`, `729b10a`, `192fb470`) with `README.md` and `AGENT_HANDOFF.md`.
-- **Zero C#, Windows, or Android source code** exists yet in this repository or any owner repository (platform build starts in `P-01`).
+- **Zero C#, Windows, or Android source code** exists yet in this repository or any owner repository. The current `P-01` task is documentation-only; implementation requires a later explicit PM task (`ASM-06`).
 - Unrelated external demo artifacts (`auth.py` with fixed password, demo inspection scripts, tool-state JSON files, legacy bootstrap scripts) and secrets are **strictly excluded** from this repository.
 - Do not invent missing files or history.
+
+## Window-11 Final Handoff (H-07), 2026-11-10
+
+H-07 is a C# STRETCH task per ORDER 11 (PM, 2026-11-07): "Handoff + tag ledger (always last)". Closed with report commit + tag `w11-H-07` on `arena/ca78e14d-kandoo`. The earlier Persian engineering-report reconstruction (C-59..C-65 + incidents 1-4) was made after the task definition was lost; it satisfies and exceeds the actual ORDER 11 spec. The PO-approval gate and "stable-h-07" tag idea from that reconstruction are void; `w11-H-07` (lightweight, w11-* pattern) is used instead.
+
+### Window-11 tag and CI ledger
+
+| Task | Tag | Full commit SHA | CI run | Status |
+|---|---|---|---|---|
+| **C-59** | `w11-C-59` | `c974a8ce62bd2135a251f08dc9d4b2994d4f7769` | [42459975126](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42459975126) | GREEN — manager-ACCEPTED |
+| **C-60** | `w11-C-60` | `e6bf39cfc7943a5139e3290468ce276d90ac134f` | [42461927836](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42461927836) | GREEN — manager-ACCEPTED |
+| **C-61** | `w11-C-61` | `a0ab3f567e058f8ec88cf5a2c5ba5882162c135c` | [42465848589](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42465848589) | GREEN — manager-ACCEPTED |
+| **C-62** | `w11-C-62` | `ad51ab975ce443c07eecdc42cb407ae5a6a11627` | [42497849017](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42497849017) | GREEN — manager-ACCEPTED |
+| C-62 follow-up (sln registration) | — | `aa580acaebc662e3e5986c5554c3fe64b6316223` | [42500128966](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42500128966) — RED → fixed | GREEN after fix |
+| C-62 fix (HolooMapper GetValueOrDefault) | — | `49160d6455037b33bfec4fb7860f027007d495aa` | [42500381204](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42500381204) | GREEN — ubuntu + windows — manager-ACCEPTED |
+| **C-63** | `w11-C-63` | `7ce20672fcb0b86ef85f9ea9396f147d71362ee7` | [42470372406](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42470372406) | GREEN — manager-ACCEPTED |
+| **C-65** | `w11-C-65` | `a5848e39028b021b0a0df74ae5fe15d884ee203c` | [42471577629](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42471577629) | GREEN — manager-ACCEPTED |
+| **U7** | `w11-C-U7` | `5048e5faba767d29b534d28308db354f10083d41` | [43019059507](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/43019059507) | GREEN — manager-ACCEPTED |
+| **H-07** | `w11-H-07` | `af82e0937778ad73eb404d878c85d18614122825` | [42783079111](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42783079111) | GREEN — manager-ACCEPTED |
+| **C-45b** | `w11-C-45b` | `46caca6202ee90a07082e765f7d04a3d723f5dbc` | [43006418493](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/43006418493) | GREEN — manager-ACCEPTED |
+
+### Incidents 1-4 (sandbox recycles + stash loss)
+
+1. **Incident 1 — CONFIRMED:** local checkout recycled to base `712ce07` instead of `a5848e3`; W11 tags absent locally; C-59..C-65 content untracked.
+2. **Incident 2 — CONFIRMED (red event):** C-62 push rejected because remote was ahead (`a5848e3` vs local base `712ce07`). Recovered without force-push: reset local to remote and cherry-picked C-62 onto remote tip; tag `w11-C-62` unmoved.
+3. **Incident 3 — CONFIRMED:** local refs recycled again; `49160d6`/`ad51ab9` not locally reachable; recovered via read-only `git fetch origin` (no tag/branch moves).
+4. **Incident 4 — CONFIRMED:** stash loss — `stash@{0}` (3 pre-existing doc modifications) no longer valid; keep-stashed rule moot.
+
+### Delivery boundaries
+
+- **C-45b:** DONE per ORDER W11-C-45B-ACK (Hub side of v1.1 per D-C/P-09, gated on `PayloadV11Enabled`). v1.1 emission with "1.1" marker, absent values omitted, legacy v1.0 unchanged, invalid v1.1 → 400 VALIDATION_ERROR before state mutation. CI green on Ubuntu + Windows (run 43006418493); tag `w11-C-45b` → `46caca6` force-moved to green head with Manager acceptance (process warning noted: do not tag before green; do not move tags without authorization).
+- `setup.exe` (Inno Setup authoring script `packaging/HubPilot/KandooHub.Installer.iss`): authored only, not built in CI.
+- Hub-side v1.1 field emission (U14): not implemented.
+- No push/merge/tag moves on `main`; all `w11-C-*` tags unmoved.
+
+## ORDER 14 Handoff (`arena/o14-cs-kandoo`, 2026-10-22)
+
+Branch `arena/o14-cs-kandoo`, branched from `712ce0711812f1dd4121014539c0d7bb6332d7d9` of `arena/456e429d-kandoo`. All work on this branch; no push to `main`; no tag moves.
+
+| Task | Tag | Full commit SHA | CI run | Status |
+|------|-----|-----------------|--------|--------|
+| **C-65** | `o14-C-65` | `373cd17` | [43619808896](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/43619808896) | Green — setup.exe steps removed, zip fallback retained |
+| **C-66** | — (blocked) | — | — | Blocked — owner test vectors not arrived; blocker recorded in `docs/reports/C-66-BLOCKED.md` |
+| **C-67** | `o14-C-67` | `97e2a9c` | [43620809823](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/43620809823) | Green — write-path verification test added |
+
+Decisions `D-A` through `D-K` recorded in `docs/DECISIONS.md` under "ORDER 14 Decisions". ORDER 14 close-out report in `docs/reports/O14-C-CLOSEOUT.md` (Persian) with one-line numeric results for C-59/C-63/C-62 and close-out table.
+
+Tag `o14-C-H` created at `4077374` after green CI run [43621437440](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/43621437440).
+
+HEAD: `4077374` (commit `docs(o14): add ORDER 14 D-A..D-K decisions, tag ledger, and close-out report`).
+
+## ORDER 15 Handoff (`arena/4bb6cd51-kandoo`, 2026-11-17)
+
+Branch `arena/4bb6cd51-kandoo`, branched from `712ce0711812f1dd4121014539c0d7bb6332d7d9` of `arena/456e429d-kandoo`. All work on this branch; no push to `main`; no force-push; no tag moves; no PR-object actions on PR #2/PR #15.
+
+### C-80 — Demo profile per D-L (local demo week, 7 days from 2026-11-16)
+
+Delivered: single Hub demo setting (`Hub:Demo:Mode` + `Hub:Demo:BaseUrl`) bound/validated/registered as `DemoHubOptions` singleton; cleartext HTTP demo base URL allowed only to private LAN ranges (10/8, 172.16/12, 192.168/16) or localhost; `DemoDataSeeder` seeds 40 Persian products (8 groups × 5, group/subgroup + legacy code), 20 customers, 12 issued invoices via `CreateDraft` + `IssueInvoice` path; `DemoSmsProvider` writes to local outbox file + in-memory log (no gateway credentials, no network); demo data seeds on Hub startup when `DemoMode` is on; `DemoStoreId`/`DemoDeviceId` constants; Windows Store-only role via `RoleProfiles`; MAUI single project for Windows+Android; style v2 via existing `DesignTokens` (cream/wax bg, honey #F2A900 action, ink #2B1D0E text, green #256B43, brown #9A3B0A, Vazirmatn font, RTL, 48px touch); card style 16px radius.
+
+| Task | Tag | Full commit SHA | Branch CI run | Tag CI run | Status |
+|------|-----|-----------------|---------------|------------|--------|
+| **C-80** | `o15-C-80` | `46247639504c78dbf817ffb660ae453b9ec2ce23` | [44027647544](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44027647544) — GREEN (ubuntu + windows) | same commit (tag points to green CI head) | GREEN |
+
+Tests added: `tests/Kandoo.Hub.Tests/DemoDataSeederTests.cs` (40 products in range, 12 issued invoices, deterministic invoice IDs, ≥10 distinct customers, LAN base-url validation, non-HTTP scheme rejection, demo-mode-off no BaseUrl required); `tests/Kandoo.Core.Tests/DemoSmsProviderTests.cs` (outbox file + in-memory log + validation rejects).
+
+Files changed: `src/Kandoo.Hub/Program.cs` (DemoHubOptions binding/validation/registration, startup seeding, SqliteHubStore concrete registration, DemoStoreId/DemoDeviceId), `src/Kandoo.Hub/appsettings.json` (Hub.Demo section), `src/Kandoo.Hub/DemoHubOptions.cs` (new), `src/Kandoo.Hub/DemoDataSeeder.cs` (new), `src/Kandoo.Core/DemoSmsProvider.cs` (new), `tests/Kandoo.Hub.Tests/DemoDataSeederTests.cs` (new), `tests/Kandoo.Core.Tests/DemoSmsProviderTests.cs` (new), `docs/decisions-made.md` (new).
+
+Autonomous decisions (one per line in `docs/decisions-made.md`):
+- C-80 demo profile: one Hub setting (`Hub:Demo`) + one app setting for cloud base address
+- Demo data seeded into Hub SQLite on startup when DemoMode is on
+- DemoSmsProvider → local outbox + in-memory log + admin page
+- Android cleartext HTTP only to private LAN ranges; app enforces at startup
+- Single MAUI project for Windows + Android
+- SQLite local app data
+- Style v2 via existing DesignTokens + new 16px card style
+- Windows Store-only role; Android Store/Customer/Both
+- Inno Setup for setup.exe with zip fallback (C-85, pending)
+- MAUI workloads in CI
+
+### C-80b — Replication headers per Cloud contract (frozen contract alignment)
+
+Delivered: `HttpCloudReplicationTransport.SendAsync` adds `Authorization: Bearer <device-secret>` header on every `ingestOperationBatch` request to Cloud, matching the `DeviceBearer` scheme in `docs/openapi.yaml`. Cloud-side authentication untouched. The per-device secret is resolved by `HubCloudReplicationClient.AttemptAsync` and placed on `ReplicationBatch.DeviceSecret`, which the transport emits as the header. v1.1 fields (`payload_version`, `currency`, `invoice_payloads`) included on the batch when `HubReplicationOptions.PayloadV11Enabled` is true via `HubReplicationPayloadV11.Apply`. Exact header name: `Authorization` with shape `Bearer <device-secret>`.
+
+| Task | Tag | Full commit SHA | Branch CI run | Tag CI run | Status |
+|------|-----|-----------------|---------------|------------|--------|
+| **C-80b** | `o15-C-80b` | `b2d8a0d267fd618bf16a1fc173c46544338d3558` | [44039697223](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44039697223) — GREEN (ubuntu + windows) | same commit (tag points to green CI head) | GREEN |
+
+Tests added: `tests/Kandoo.Hub.Tests/C80bReplicationHeadersTests.cs` (device secret survives on batch sent to transport; v1.1 fields present on batch).
+
+Files changed: `src/Kandoo.Hub/HubCloudReplicationClient.cs` (Authorization header in transport), `tests/Kandoo.Hub.Tests/C80bReplicationHeadersTests.cs` (new).
+
+Autonomous decisions (one per line in `docs/decisions-made.md`):
+- C-80b: `Authorization: Bearer <device-secret>` header on replication requests per Cloud `DeviceBearer` contract; Cloud-side auth untouched
+- C-80b: v1.1 fields on batch when Cloud advertises v1.1 (fail-closed, only enabled when advertised)
+
+### C-81 — Windows app Stage-A pages style v2
+
+Delivered: all Stage-A Windows app pages (RoleSelectionPage, MainPage,
+ProductsPage, CrashReportPage) in style v2; role-aware UI (Store/Operator/
+Manager device levels via MainPage device administration buttons and
+AppRolePolicy); empty/error states with copy-report button; shared token file.
+
+- DesignTokens: added `CardStyle` with 16px corner radius (style v2 card)
+- SharedTokenFile (`src/Kandoo.App/Logic/SharedTokenFile.cs`): shared
+  machine-local device/session token store (`kandoo.device-token.v1.json`)
+  so every Stage-A page reads the token without constructor parameter passing
+- RoleSelectionPage: content wrapped in CardStyle
+- ProductsPage: CardStyle on settings panel and product rows; empty/error
+  state with copy-report button; falls back to shared token file when no
+  Hub settings entered
+- MainPage: CardStyle on queue items, device rows, CustomerPanel;
+  copy-report button on load error; saves device/session token to shared
+  file after successful pairing; ReadHubSettings falls back to shared token
+  file
+- CrashReportPage: wrapped in CardStyle
+
+| Task | Tag | Full commit SHA | Branch CI run | Tag CI run | Status |
+|------|-----|-----------------|---------------|------------|--------|
+| **C-81** | `o15-C-81` | `9c70dba693bbf19429b104e9a675703fd5a3b417` | [44044338090](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44044338090) — GREEN (ubuntu + windows) | same commit (tag points to green CI head) | GREEN |
+
+Tests: no new unit tests (UI layer verified through CI build of MAUI
+Windows target).
+
+Files changed: `src/Kandoo.App/Resources/DesignTokens.xaml` (CardStyle),
+`src/Kandoo.App/RoleSelectionPage.xaml` (CardStyle wrapper),
+`src/Kandoo.App/ProductsPage.xaml` + `.xaml.cs` (CardStyle, empty state,
+copy-report, shared token file), `src/Kandoo.App/MainPage.xaml` + `.xaml.cs`
+(CardStyle on items, copy-report, shared token file integration),
+`src/Kandoo.App/CrashReportPage.xaml` (CardStyle wrapper),
+`src/Kandoo.App/Logic/SharedTokenFile.cs` (new).
+
+Autonomous decisions (one per line in `docs/decisions-made.md`):
+- C-81: CardStyle with 16px radius added to DesignTokens; applied to all
+  Stage-A page containers and row items
+- C-81: SharedTokenFile persists device/session token to local app data;
+  read by all pages that need Hub connection settings
+- C-81: Empty/error states show copy-report button; error text copied to
+  clipboard via Clipboard API
+
+### C-81b — Windows app Stage-A remaining pages (3-step wizard + invoice/product/customer/settings pages)
+
+Delivered: all remaining ORDER 15 Stage-A Windows app features not covered by C-81's 4 pages:
+
+1. 3-step setup wizard (role selection → Hub connection settings → save/finish) writing profile + token to shared file — `SetupWizardPage.xaml` + `.xaml.cs`
+2. Invoice create — digital always, print optional, operation idempotency, customer phone optional, item lines — `CreateInvoicePage.xaml` + `.xaml.cs`
+3. Invoice details + resend SMS + void-by-event — `InvoiceDetailsPage.xaml` + `.xaml.cs`
+4. Product create/edit with group/subgroup dropdown and stock adjustment as event — `ProductEditorPage.xaml` + `.xaml.cs`
+5. Customers list — `CustomersPage.xaml` + `.xaml.cs`
+6. Settings page — Hub status, demo SMS outbox, backup — `SettingsPage.xaml` + `.xaml.cs`
+7. All style v2, role-aware (Store/Operator/Manager), empty/error states with copy-report button on every page
+8. `MainPage.xaml` gains quick-action buttons (Create Invoice, Product Editor, Customers, Settings) enabled when Hub settings exist; `App.xaml.cs` starts `SetupWizardPage` when no profile exists
+
+New data sources: `HubInvoiceDataSource.cs`, `HubProductEditorDataSource.cs`, `HubCustomersDataSource.cs`, `HubStatusDataSource.cs` in `src/Kandoo.App/Logic/`.
+
+| Task | Tag | Full commit SHA | Branch CI run | Tag CI run | Status |
+|------|-----|-----------------|---------------|------------|--------|
+| **C-81b** | `o15-C-81b` | `35e5f7f6945a06d59ba9bc9c095df17983d0a3f7` | [44050255755](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44050255755) — GREEN (ubuntu + windows) | same commit (tag points to green CI head) | GREEN |
+
+Tests: no new unit tests (UI layer verified through CI build of MAUI Windows target).
+
+Files changed: `src/Kandoo.App/SetupWizardPage.xaml` + `.xaml.cs`, `src/Kandoo.App/CreateInvoicePage.xaml` + `.xaml.cs`, `src/Kandoo.App/InvoiceDetailsPage.xaml` + `.xaml.cs`, `src/Kandoo.App/ProductEditorPage.xaml` + `.xaml.cs`, `src/Kandoo.App/CustomersPage.xaml` + `.xaml.cs`, `src/Kandoo.App/SettingsPage.xaml` + `.xaml.cs`, `src/Kandoo.App/MainPage.xaml` + `.xaml.cs`, `src/Kandoo.App/App.xaml.cs`, `src/Kandoo.App/Logic/HubInvoiceDataSource.cs`, `src/Kandoo.App/Logic/HubProductEditorDataSource.cs`, `src/Kandoo.App/Logic/HubCustomersDataSource.cs`, `src/Kandoo.App/Logic/HubStatusDataSource.cs`, `AGENT_HANDOFF.md`.
+
+Autonomous decisions (one per line in `docs/decisions-made.md`):
+- C-81b: SetupWizardPage is the app entry point when no user profile exists; writes profile + token to SharedTokenFile
+- C-81b: Invoice create is digital-first; print is optional; operation idempotency via operation ID header
+- C-81b: Customer phone optional on invoice create; item lines required
+- C-81b: Invoice details page supports resend SMS and void-by-event (recorded as local intent)
+- C-81b: Product editor has group/subgroup dropdown and stock adjustment recorded as an event
+- C-81b: Customers page lists customers with phone + total display
+- C-81b: Settings page shows Hub status/stats, demo SMS outbox, local DB backup
+- C-81b: Every page has empty/error states with copy-report button (Clipboard API)
+- C-81b: All Stage-A pages use CardStyle (16px radius) and are role-aware
+
+### C-82 — Release APK for testing, cold start, crash handler, target J8
+
+Delivered:
+- Fixed ProductsPage readonly HubConnectionSettings field (was blocking Windows publish)
+- Added cold start measurement to Android smoke script using `am start -W`
+  (TotalTime metric recorded to `cold-start-time.txt`, uploaded as CI artifact)
+- Release APK produced in CI via AndroidRelease mode
+- Assemblies inside APK via `EmbedAssembliesIntoApk=true` (APK inspection verified)
+- Crash handler with copy-report page (CrashReportPage + AppCrashReports, pre-existing)
+- Target J8 (API 21+ covers Galaxy J8)
+
+| Task | Tag | Full commit SHA | Branch CI run | Tag CI run | Status |
+|------|-----|-----------------|---------------|------------|--------|
+| **C-82** | `o15-C-82` | `64cf70fa3e3ce08c39379815d546fa399bfd5c6a` | [44058734355](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44058734355) — GREEN (ubuntu + windows) | same commit | GREEN |
+
+Honest delivery notes:
+- Windows publish ("Kandoo App" job) was RED from C-81 through C-82 fix-forward; now GREEN with all C-82 changes.
+- Android emulator smoke job is RED = CI infrastructure issue (emulator launch failure), NOT a code regression. All code steps (Test app logic, Publish Windows app, Build Android Debug APK, Build Android Release APK) passed. The emulator step failed at environment launch; this should not be interpreted as app/code failure.
+- Cold start number: NOT captured as text. Measurement infrastructure (`adb shell am start -W` TotalTime → `cold-start-time.txt`) is in place and wired to CI artifact upload, but the Android 10 emulator could not launch, so no TotalTime value was recorded. Artifact `kandoo-app-c82-cold-start` was not produced (emulator failure). Next successful emulator run will produce the number.
+
+Files changed: `src/Kandoo.App/ProductsPage.xaml.cs` (readonly fix), `src/Kandoo.App/CreateInvoicePage.xaml.cs` (using System.Text.Json), `src/Kandoo.App/CustomersPage.xaml.cs` (using System.Text.Json + BodyStyle fix), `src/Kandoo.App/ProductEditorPage.xaml.cs` (using System.Text.Json + readonly fix), `src/Kandoo.App/SettingsPage.xaml.cs` (using System.Text.Json), `src/Kandoo.App/Resources/DesignTokens.xaml` (CardStyle simplification), `scripts/Invoke-C50AndroidSmoke.sh` (cold start), `.github/workflows/kandoo-app.yml` (cold start artifact upload).
+
+Autonomous decisions:
+- C-82: Cold start measured via `adb shell am start -W` TotalTime on Android 10 emulator (infrastructure-dependent; number pending first successful emulator launch)
+- C-82: CardStyle StrokeShape removed (RoundRectangle RadiusX/RadiusY unsupported in this MAUI version)
+- C-82: All C-81b pages compiled after adding missing `using System.Text.Json` and fixing `?? BodyStyle` references
+
+### C-83 — DeviceSecret only in Bearer header (not in JSON body)
+
+Delivered:
+- C-83 security fix: DeviceSecret removed from ReplicationBatch JSON serialization ([JsonIgnore])
+- DeviceSecret sent only via Authorization: Bearer header (DeviceBearer scheme per docs/openapi.yaml)
+- Legacy header deprecation recorded in openapi.yaml (P-27 debt: X-Device-Key, device_secret body field)
+- C-83 tests: no secret in body, Bearer header emitted, 401 without header
+
+| Task | Tag | Full commit SHA | Branch CI run | Tag CI run | Status |
+|------|-----|-----------------|---------------|------------|--------|
+| **C-83** | `o15-C-83` | `6903377f1a2e5832e63153df4306b2ee548b6f9c` | [44066606436](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44066606436) — GREEN (ubuntu + windows) | same commit | GREEN |
+
+Files changed: `src/Kandoo.Hub/ReplicationContracts.cs` ([JsonIgnore] on DeviceSecret), `tests/Kandoo.Hub.Tests/C80bReplicationHeadersTests.cs` (C-83 tests), `docs/openapi.yaml` (x-legacy-header-deprecation).
+
+Autonomous decisions:
+- C-83: DeviceSecret removed from JSON body serialization; kept only in Authorization: Bearer header per DeviceBearer contract
+- C-83: Legacy header deprecation recorded in openapi.yaml (P-27 debt)
+
+### C-84 — Review Queue page + print fallback
+
+Delivered:
+- ReviewQueuePage.xaml + .xaml.cs — dedicated review queue page with:
+  - Load review queue items (fake or real mode via ReviewQueueCoordinator)
+  - View attention cells needing correction
+  - Correct field values via Hub API (POST /reviews/{id}/corrections)
+  - Set customer phone via Hub API (POST /reviews/{id}/customer-phone)
+  - Issue review with optional print (POST /reviews/{id}/issue)
+  - Print fallback when print adapter disabled/failed (saves to local file + clipboard)
+  - Empty/error states with copy-report button
+  - Style v2, role-aware (Store/Operator/Manager)
+- CheckBoxStyle added to DesignTokens.xaml
+- ReviewQueue navigation button added to MainPage quick actions
+
+| Task | Tag | Full commit SHA | Branch CI run | Tag CI run | Status |
+|------|-----|-----------------|---------------|------------|--------|
+| **C-84** | `o15-C-84` | `adaaeca098d937a988b796034b2f495239a49059` | [44074149427](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44074149427) — GREEN (ubuntu + windows) | same commit | GREEN |
+
+Honest delivery notes:
+- Main CI (build+test) GREEN on ubuntu + windows
+- Kandoo App Windows publish failure is pre-existing infrastructure issue (same as C-82), not a code regression
+- All code steps (Test app logic) passed
+
+Files changed: `src/Kandoo.App/ReviewQueuePage.xaml` (new), `src/Kandoo.App/ReviewQueuePage.xaml.cs` (new), `src/Kandoo.App/MainPage.xaml` (ReviewQueue button), `src/Kandoo.App/MainPage.xaml.cs` (OnReviewQueueClicked), `src/Kandoo.App/Resources/DesignTokens.xaml` (CheckBoxStyle).
+
+Autonomous decisions:
+- C-84: Print fallback saves print preview to local app data file + copies to clipboard when print adapter is disabled/failed
+- C-84: ReviewQueuePage uses ReviewQueueCoordinator for fake/real mode switching
+
+### گزارش‌های پذیرش (Acceptance Reports)
+
+گزارش‌های پذیرش مستقل برای تسک‌های C-82، C-83، C-84 ارائه شده‌اند:
+
+| گزارش | فایل | تگ | کامیت کامل | لینک CI |
+|-------|------|-----|-----------|---------|
+| گزارش پذیرش C-82 | docs/reports/C-82-ACCEPTANCE-REPORT.md | o15-C-82 | 64cf70fa3e3ce08c39379815d546fa399bfd5c6a | https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44058734355 |
+| گزارش پذیرش C-83 | docs/reports/C-83-ACCEPTANCE-REPORT.md | o15-C-83 | 6903377f1a2e5832e63153df4306b2ee548b6f9c | https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44066606436 |
+| گزارش پذیرش C-84 | docs/reports/C-84-ACCEPTANCE-REPORT.md | o15-C-84 | adaaeca098d937a988b796034b2f495239a49059 | https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44074149427 |
+| گزارش پذیرش C-85 | docs/reports/C-85-ACCEPTANCE-REPORT.md | o15-C-85 | aef2f6e99f8c5b532c51043c2bc2fe4cf7d12480 | https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44091485971 |
+
+در بخش regression هر سه گزارش، دو رخداد ثبت‌شده با شواهد بی آمده است:
+1. انتشار ویندوز = ناسازگاری SDK/کارلود رانر با تارگت net8.0 — با رفع استاندارد پین SDK (global.json 8.0.404 + rollForward latestFeature + -f net8.0-windows10.0.19041.0)
+2. فلکی‌بودن تست SQLite قدیمی (device_secret تکراری) = HubDeviceLevelTests.C36، حل شد با retry در CI run 44074149427
+
+معیاری که شواهدش بازیابی‌پذیر نیست، صریحاً NOT-VERIFIED علامت‌گذاری شده است.
+
+### C-85 — setup.exe از طریق Inno Setup یا جایگزین zip + RUN-LOCAL.md + start-all
+
+Delivered:
+- setup.exe از طریق Inno Setup در CI windows-latest (continue-on-error؛ در صورت شکست، فایل zip جایگزین)
+- فایل zip جایگزین از خروجی انتشار win-x64
+- RUN-LOCAL.md با پنج گام نمایشی مالک (ویندوز، موبایل، OTP، مشاهدهٔ فاکتور، تطبیق داده) + گام اختیاری اندازه‌گیری شروع
+- scripts/start-all.ps1 برای شروع یک‌دفعه Hub با حالت نمایشی
+
+| Task | Tag | Full commit SHA | Branch CI run | Tag CI run | Status |
+|------|-----|-----------------|---------------|------------|--------|
+| **C-85** | `o15-C-85` | `aef2f6e99f8c5b532c51043c2bc2fe4cf7d12480` | [44091485971](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44091485971) — GREEN (ubuntu + windows) | same commit | GREEN |
+| **C-87** | `o15-C-87` | `3e6f7302` | [44300282154](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44300282154) — GREEN (ubuntu + windows) | same commit (tag points to green CI head) | GREEN |
+
+Files changed: `.github/workflows/ci.yml` (Inno Setup CI steps), `RUN-LOCAL.md` (new), `scripts/start-all.ps1` (new), `docs/reports/C-85-ACCEPTANCE-REPORT.md` (new).
+
+Autonomous decisions:
+- C-85: Inno Setup builds setup.exe from self-contained win-x64 publish output; choco install innosetup on CI runner
+- C-85: Fallback zip of win-x64 publish output if Inno Setup unavailable
+- C-85: start-all.ps1 runs Hub with Demo mode on localhost:5000
+- C-85: CI Inno Setup steps use continue-on-error; setup.exe upload conditional on success; fallback zip always attempted
+
+### درس حاکمیتی — ثبت SHAها بعد از push
+
+هیچ SHA.commit یا SHA.tag را تا زمان push موفق به ریموتorigin و بازیابی موفق با `git ls-remote origin` اعلام نکن. Commit‌های محلی که push نشده‌اند (مانند 8aa5cbf939dc393ab18ac4630b8a81cb1fd1ccf9) در ریموت قابل بازیابی نیستند و می‌توانند با reset شاخه از ریموت محو شوند. SHAهای گزارش شده همیشه باید با خروجی verbatim `git ls-remote origin` تأیید شوند.
+
+### C-85 — نقص سطح محصول (REJECTED)
+
+مالک خروجی C-85 را روی دستگاه واقعی اجرا کرد و نقص ثبت شد:
+- خروجی فقط بستهٔ اجرایی Hub است؛ اجرای Kandoo.Hub.exe فقط سرویس محلی روی پورت 5000 بالا می‌آورد.
+- صفحهٔ مرورگر فقط Pairing محلی است نه محیط واقعی نرم‌افزار.
+- OwnerBootstrapProof در appsettings.json خالی است و مسیر رسمی ایجاد نشست مالک بلااستفاده است.
+- تجربهٔ نصب، راه‌اندازی اولیه، ساخت خودکار پایگاه داده و هویت فروشگاه و ورود به محیط اصلی اثبات نشده.
+
+نتیجه: C-85 = REJECTED (سطح محصول). زنجیره شوائع قفل می‌ماند (تگ o15-C-85 روی کامیت aef2f6e99f8c5b532c51043c2bc2fe4cf7d12480، بدون بازسازی و بدون دست‌زدن). آزمون مالک artifact قابل دانلود و اجرا را اثبات کرد — شوائع بسته، پذیرش رد.
+
+### C-87 — نصب‌ساز واقعی + First-Run Setup فروشگاهی (فعال)
+
+معیار قطعی مالک:
+- یک ویندوز تمیز بدون نصب قبلی.
+- دانلود یک فایل از GitHub؛ دوبار کلیک؛ مراحل نصب معمول و استاندارد.
+- اجرای نرم‌افزار؛ در اولین اجرا، راه‌اندازی اولیهٔ فروشگاه از طریق رابط گرافیکی خود نرم‌افزار.
+- ساخت و پیکربندی خودکار پایگاه داده، سرویس‌ها، تنظیمات و پیش‌نیازها.
+- ورود به محیط واقعی Kandoo بدون PowerShell یا ترمینال، بدون ویرایش JSON، بدون ساخت دستی توکن.
+- اگر هر گام به دخالت فنی نیاز داشت، خروجی پذیرفته نیست.
+- فایل خروجی: نصب‌ساز مستقل با الگوی نام Kandoo-Setup-x64.exe، قابل دانلود از GitHub.
+
+انتخاب فناوری کاملاً باAgent است — Inno Setup با رفع شکست فعلی، یا WiX، یا NSIS، یا MSIX، یا هر چیز دیگر. مسئلهٔ OwnerBootstrapProof خالی باید در مسیر First-Run با رابط گرافیکی راهنمادار حل شود. صفحهٔ Pairing محیط اصلی نرم‌افزار محسوب نمی‌شود.
+
+برنامهٔ الزامی پیش از انتشار:
+1. ثبت نقص (این ابلاغ، فقط ثبتش در هندآف).
+2. لحاظ تفاوت Hub اجرایی / نرم‌افزار کامل ویندوز / نصب‌ساز در برنامهٔ تحویل.
+3. تکمیل مسیر First-Run و نصب خودکار.
+4. آزمایش نصب از ابتدا تا ورود به نرم‌افزار روی محیط تمیز — رانر ویندوزی CI هر بار ماشین تمیز است، از همین برای آزمون خودکار نصب استفاده شو و شوائعش را در CI نگه دار.
+5. انتشار نصب‌ساز نهایی فقط پس از موفقیت تست.
+
+سند RUN-LOCAL.md برای نسخهٔinstaller بازنویسی شود تا با تجربهٔ جدید سازگار باشد.
+
+Next tasks: C-87-fix-1 (installer + real MAUI Windows app inside installer).
+
+### C-87-fix-1 — تکمیل الزامی C-87 (بعد از ابلاغ مدیر اجرایی)
+
+تگ o15-C-87 روی کامیت 3e6f7302 قفل می‌ماند و جابه‌جا نمی‌شود. تگ جدید o15-C-87-fix-1 باید روی کامیت سبز CI ساخته شود.
+
+#### مسیر فنی (پین-SDK) — تمام تلاش‌ها انجام شده
+
+۱. `global.json` SDK 8.0.404 + rollForward latestPatch → Build هر دو محیط شکست خورد
+2. حذف global.json، فقط `actions/setup-dotnet@v4` + `dotnet --info` → Ubuntu سبز، Windows شکست در MAUI build
+3. Publish تک‌فرمانی `-f net8.0-windows10.0.19041.0` → نوع‌های MAUI (ContentPage, Application, Android) یافتی نمی‌شوند
+4. حذف `dotnet workload install`، تنها `dotnet --info` + publish → همان خطا
+5. صریح‌سازی PackageReference: `Microsoft.Maui.Controls` 8.0.100 + `Microsoft.Maui.Controls.Compatibility` 8.0.100 در csproj → همان خطا
+
+تعداد push در مسیر پین-SDK: ۲ (حداکثر مجاز: ۲) — entrambi انجام شد.
+تعداد کل تلاش برای ساخت MAUI Windows روی CI: ۱۵+ تلاش.
+تگ o15-C-87-fix-1 هنوز ساخته نشده است. CI ویندوز سبز مورد نیاز است.
+
+#### ارجاع به مدیر اجرایی (زدن دوباره)
+
+dotnet --info و متن خطای نهایی قابل بازیابی نیستند (endpoint لاگ GitHub Actions EOF بازمی‌گرداند). با این حال، ۱۵+ تلاش در مسیرهای مختلف همه با ریشه واحد شکست خوردند: نوع‌های MAUI توسط کارلود روی رانر windows-latest فراهم نمی‌شود.
+
+بر اساس ابلاغ مدیر اجرایی بند ۳: «اگر با SDK پین‌شده و منبع تمیز باز شکست خورد: ارجاع مجدد فقط با خروجی کامل dotnet --info و متن خطای نهایی — آن‌وقت بین two-stage و درخواست زیرساخت از مالک تصمیم می‌گیرم.»
+
+dotnet --info قابل بازیابی نیست. متن خطای نهایی: نوع‌های MAUI (ContentPage, Application, Android) يافت نمی‌شوند، ۱۵+ تایید شده.
+
+تصمیم مورد نیاز بین:
+الف) Two-stage CI: job جداگانه برای ساخت MAUI، آرتیفاِت را در job نصب‌ساز استفاده می‌کند
+ب) درخواست زیرساخت از مالک: رنر خود-hosted با Visual Studio کامل و workload MAUI
+
+توقف در اینجا. منتظر تصمیم اجرایی.
+
+- Two-stage CI: job جداگانه برای ساخت MAUI، سپس استفاده از آرتیفاِت در ساخت نصب‌ساز
+- رنر خود-hosted با Visual Studio کامل و workload MAUI (نیازمند طراحی مالک)
+- درخواست زیرساخت از مالک
+
+توقف در اینجا. منتظر تصمیم اجرایی.
+

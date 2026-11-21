@@ -1,0 +1,607 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kandoo Canonical Invoice v0 — E-11 consumer contract",
+  "description": "Cross-repository Canonical Invoice v0 contract. This published E-11 schema applies the mandated signed quantity_millis encoding and allocates display_number only at ISSUE. Monetary values remain integer rials; lifecycle and issued-content integrity checks also require semantic validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "invoice_id",
+    "display_number",
+    "operation_id",
+    "device_id",
+    "public_token",
+    "store_id",
+    "customer",
+    "state",
+    "state_history",
+    "line_items",
+    "summary",
+    "attention_cells",
+    "header",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0",
+      "description": "Canonical Invoice contract version."
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "A",
+        "B"
+      ],
+      "description": "A is native Kandoo issuance; B is capture alongside an existing POS."
+    },
+    "invoice_id": {
+      "$ref": "#/$defs/nonEmptyString"
+    },
+    "display_number": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "description": "Null before ISSUE. Allocated as a non-empty native identifier at ISSUE and retained by REVOKED and SUPERSEDED records."
+    },
+    "operation_id": {
+      "$ref": "#/$defs/nonEmptyString"
+    },
+    "device_id": {
+      "$ref": "#/$defs/nonEmptyString"
+    },
+    "public_token": {
+      "type": "string",
+      "minLength": 22,
+      "pattern": "^[A-Za-z0-9_-]{22,}$",
+      "description": "Unpadded base64url-form public token; producers must generate at least 128 random bits."
+    },
+    "store_id": {
+      "$ref": "#/$defs/nonEmptyString"
+    },
+    "customer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "phone",
+        "phone_status"
+      ],
+      "properties": {
+        "phone": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "phone_status": {
+          "type": "string",
+          "enum": [
+            "claimed",
+            "verified"
+          ]
+        }
+      }
+    },
+    "state": {
+      "$ref": "#/$defs/lifecycleState"
+    },
+    "state_history": {
+      "type": "array",
+      "description": "Ordered lifecycle transitions, beginning at DRAFT. Must terminate at state.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "from_state",
+          "to_state",
+          "operation_id",
+          "device_id"
+        ],
+        "properties": {
+          "from_state": {
+            "$ref": "#/$defs/lifecycleState"
+          },
+          "to_state": {
+            "$ref": "#/$defs/lifecycleState"
+          },
+          "operation_id": {
+            "$ref": "#/$defs/nonEmptyString"
+          },
+          "device_id": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        }
+      }
+    },
+    "line_items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "product_name",
+          "quantity_millis",
+          "unit_price",
+          "line_total"
+        ],
+        "properties": {
+          "product_name": {
+            "$ref": "#/$defs/nonEmptyString"
+          },
+          "quantity_millis": {
+            "type": "integer",
+            "description": "Signed integer thousandths of a unit (ASM-22): 1000 represents 1.000. No fractional JSON number or implicit rounding is permitted."
+          },
+          "unit_price": {
+            "$ref": "#/$defs/nonNegativeRials"
+          },
+          "line_total": {
+            "$ref": "#/$defs/nonNegativeRials"
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subtotal",
+        "extra_amounts",
+        "payable"
+      ],
+      "properties": {
+        "subtotal": {
+          "$ref": "#/$defs/nonNegativeRials"
+        },
+        "extra_amounts": {
+          "type": "object",
+          "default": {},
+          "description": "Named additional integer-rial amounts. Use an empty object when there are none.",
+          "additionalProperties": {
+            "$ref": "#/$defs/nonNegativeRials"
+          }
+        },
+        "payable": {
+          "$ref": "#/$defs/nonNegativeRials"
+        },
+        "tax_lines": {
+          "type": "array",
+          "default": [],
+          "description": "Optional structure reserved for ACC-0 tax lines; E-01b applies only structural type checks, not accounting rules.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "label",
+              "amount",
+              "provenance"
+            ],
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "amount": {
+                "type": "integer",
+                "description": "Integer rials; no tax computation, sign rule, or reconciliation is applied in E-01b."
+              },
+              "provenance": {
+                "$ref": "#/$defs/provenanceLabel"
+              }
+            }
+          }
+        },
+        "discount_lines": {
+          "type": "array",
+          "default": [],
+          "description": "Optional structure reserved for ACC-0 discount lines; E-01b applies only structural type checks, not accounting rules.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "label",
+              "amount",
+              "provenance"
+            ],
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "amount": {
+                "type": "integer",
+                "description": "Integer rials; no discount computation, sign rule, or reconciliation is applied in E-01b."
+              },
+              "provenance": {
+                "$ref": "#/$defs/provenanceLabel"
+              }
+            }
+          }
+        },
+        "rounding": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": null,
+          "description": "Optional integer-or-null structure reserved for ACC-0; E-01b applies no rounding behavior."
+        }
+      }
+    },
+    "attention_cells": {
+      "type": "array",
+      "default": [],
+      "description": "Unresolved cell evidence for review; must be empty before validation/issuance.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "field",
+          "raw_value",
+          "reason"
+        ],
+        "properties": {
+          "field": {
+            "$ref": "#/$defs/nonEmptyString"
+          },
+          "raw_value": {
+            "type": "string"
+          },
+          "reason": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        }
+      }
+    },
+    "header": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Optional printed header data. Missing or null values are unavailable, not inferred.",
+      "properties": {
+        "captured_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "description": "Capture timestamp supplied by Probe; when present its provenance label is derived."
+        },
+        "printed_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "printed_time": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "invoice_number": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "image_sha256",
+        "template_library_id",
+        "engine_version",
+        "fields"
+      ],
+      "properties": {
+        "image_sha256": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          ]
+        },
+        "template_library_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "engine_version": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "invoice_id",
+            "display_number",
+            "operation_id",
+            "device_id",
+            "public_token",
+            "store_id",
+            "customer",
+            "line_items",
+            "summary",
+            "header"
+          ],
+          "properties": {
+            "invoice_id": {
+              "$ref": "#/$defs/provenanceLabel"
+            },
+            "display_number": {
+              "$ref": "#/$defs/provenanceLabel"
+            },
+            "operation_id": {
+              "$ref": "#/$defs/provenanceLabel"
+            },
+            "device_id": {
+              "$ref": "#/$defs/provenanceLabel"
+            },
+            "public_token": {
+              "$ref": "#/$defs/provenanceLabel"
+            },
+            "store_id": {
+              "$ref": "#/$defs/provenanceLabel"
+            },
+            "customer": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "phone",
+                "phone_status"
+              ],
+              "properties": {
+                "phone": {
+                  "$ref": "#/$defs/provenanceLabel"
+                },
+                "phone_status": {
+                  "$ref": "#/$defs/provenanceLabel"
+                }
+              }
+            },
+            "line_items": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "product_name",
+                  "quantity_millis",
+                  "unit_price",
+                  "line_total"
+                ],
+                "properties": {
+                  "product_name": {
+                    "$ref": "#/$defs/provenanceLabel"
+                  },
+                  "quantity_millis": {
+                    "$ref": "#/$defs/provenanceLabel"
+                  },
+                  "unit_price": {
+                    "$ref": "#/$defs/provenanceLabel"
+                  },
+                  "line_total": {
+                    "$ref": "#/$defs/provenanceLabel"
+                  }
+                }
+              }
+            },
+            "summary": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "subtotal",
+                "extra_amounts",
+                "payable"
+              ],
+              "properties": {
+                "subtotal": {
+                  "$ref": "#/$defs/provenanceLabel"
+                },
+                "extra_amounts": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/$defs/provenanceLabel"
+                  }
+                },
+                "payable": {
+                  "$ref": "#/$defs/provenanceLabel"
+                }
+              }
+            },
+            "header": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "captured_at",
+                "printed_date",
+                "printed_time",
+                "invoice_number"
+              ],
+              "properties": {
+                "captured_at": {
+                  "$ref": "#/$defs/provenanceLabel"
+                },
+                "printed_date": {
+                  "$ref": "#/$defs/provenanceLabel"
+                },
+                "printed_time": {
+                  "$ref": "#/$defs/provenanceLabel"
+                },
+                "invoice_number": {
+                  "$ref": "#/$defs/provenanceLabel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "issued_content_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "SHA-256 over the immutable-content projection, required at ISSUED and retained by terminal states."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "enum": [
+              "ISSUED",
+              "REVOKED",
+              "SUPERSEDED"
+            ]
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "then": {
+        "required": [
+          "issued_content_sha256"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "enum": [
+              "DRAFT",
+              "EXTRACTED",
+              "VALIDATED"
+            ]
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "then": {
+        "not": {
+          "required": [
+            "issued_content_sha256"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "enum": [
+              "DRAFT",
+              "EXTRACTED",
+              "VALIDATED"
+            ]
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "then": {
+        "properties": {
+          "display_number": {
+            "type": "null"
+          },
+          "provenance": {
+            "properties": {
+              "fields": {
+                "properties": {
+                  "display_number": {
+                    "const": "unavailable"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "enum": [
+              "ISSUED",
+              "REVOKED",
+              "SUPERSEDED"
+            ]
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "then": {
+        "properties": {
+          "display_number": {
+            "$ref": "#/$defs/nonEmptyString"
+          },
+          "provenance": {
+            "properties": {
+              "fields": {
+                "properties": {
+                  "display_number": {
+                    "const": "native"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "nonNegativeRials": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Exact, non-negative whole number of Iranian rials; floating-point amounts are forbidden."
+    },
+    "lifecycleState": {
+      "type": "string",
+      "enum": [
+        "DRAFT",
+        "EXTRACTED",
+        "VALIDATED",
+        "ISSUED",
+        "REVOKED",
+        "SUPERSEDED"
+      ]
+    },
+    "provenanceLabel": {
+      "type": "string",
+      "enum": [
+        "native",
+        "captured",
+        "derived",
+        "untrusted",
+        "unavailable"
+      ]
+    }
+  },
+  "x-contract-version": "v0"
+}

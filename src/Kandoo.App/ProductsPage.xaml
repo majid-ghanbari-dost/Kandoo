@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Kandoo.App.ProductsPage"
+             Title="فهرست کالاها"
+             Style="{StaticResource PageStyle}">
+    <Grid RowDefinitions="Auto,*">
+        <Border Grid.Row="0" Style="{StaticResource CardStyle}">
+            <VerticalStackLayout Style="{StaticResource RootStackStyle}">
+                <Label Style="{StaticResource TitleStyle}" Text="فهرست کالاها" />
+                <Label Style="{StaticResource BodyStyle}" Text="لیست کالاها را از هاب واقعی بارگذاری می‌کند." />
+                <Entry x:Name="GroupIdEntry"
+                       Style="{StaticResource InputStyle}"
+                       Placeholder="فیلتر گروه (اختیاری)"
+                       SemanticProperties.Description="شناسه گروه برای فیلتر محصولات" />
+                <HorizontalStackLayout Style="{StaticResource ButtonRowStyle}">
+                    <Button x:Name="LoadButton"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            Text="بارگذاری کالاها"
+                            Clicked="OnLoadClicked"
+                            IsEnabled="False"
+                            SemanticProperties.Description="بارگذاری فهرست کالا از هاب" />
+                </HorizontalStackLayout>
+                <Label x:Name="StatusLabel" Style="{StaticResource CaptionStyle}" Text="تنظیمات Hub را وارد کنید." />
+            </VerticalStackLayout>
+        </Border>
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout x:Name="ProductItems" Style="{StaticResource RowStackStyle}">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource CardStyle}">
+                            <VerticalStackLayout Style="{StaticResource RowStackStyle}">
+                                <Label Style="{StaticResource SectionTitleStyle}" Text="{Binding Name}" />
+                                <Label Style="{StaticResource BodyStyle}" Text="{Binding GroupDisplay}" />
+                                <Label Style="{StaticResource AmountStyle}" Text="{Binding PriceDisplay}" />
+                                <Label Style="{StaticResource CaptionStyle}" Text="{Binding ActiveDisplay}" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
+        </ScrollView>
+        <!-- Empty state shown when no products are loaded or an error occurs. -->
+        <VerticalStackLayout Grid.Row="1"
+                             x:Name="EmptyState"
+                             IsVisible="False"
+                             HorizontalOptions="Center"
+                             VerticalOptions="Center"
+                             Spacing="{StaticResource Space3}">
+            <Label Style="{StaticResource SectionTitleStyle}"
+                   Text="هیچ کالا یافت نشد"
+                   HorizontalTextAlignment="Center" />
+            <Label Style="{StaticResource BodyStyle}"
+                   Text="فهرست کالاها خالی است. بارگذاری را اجرا کنید یا تنظیمات Hub را بررسی کنید."
+                   HorizontalTextAlignment="Center" />
+            <Button x:Name="CopyReportButton"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Text="کپی گزارش خطا"
+                    Clicked="OnCopyReportClicked"
+                    IsVisible="False"
+                    SemanticProperties.Description="کپی گزارش خطا در حافظه موقت" />
+            <Label x:Name="EmptyStateErrorLabel"
+                   Style="{StaticResource CaptionStyle}"
+                   HorizontalTextAlignment="Center"
+                   MaxLines="3" />
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

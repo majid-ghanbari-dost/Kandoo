@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Kandoo.App.SettingsPage"
+             Title="تنظیمات"
+             Style="{StaticResource PageStyle}">
+    <ScrollView>
+        <Border Style="{StaticResource CardStyle}">
+            <VerticalStackLayout Style="{StaticResource RootStackStyle}">
+                <Label Style="{StaticResource TitleStyle}" Text="تنظیمات برنامه" />
+
+                <Label Style="{StaticResource SectionTitleStyle}" Text="وضعیت هاب" />
+                <Button x:Name="RefreshStatusButton"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Text="بررسی وضعیت هاب"
+                        Clicked="OnRefreshStatusClicked" />
+                <Label x:Name="StatusValueLabel" Style="{StaticResource BodyStyle}" />
+                <Label x:Name="StatsValueLabel" Style="{StaticResource AmountStyle}" />
+
+                <Label Style="{StaticResource SectionTitleStyle}" Text="پیامک دموی SMS" />
+                <Label Style="{StaticResource BodyStyle}"
+                       Text="در حالت نمایشی، پیامک‌ها در outbox محلی ذخیره می‌شوند و از شبکه خارج نمی‌شوند." />
+                <Button x:Name="ShowOutboxButton"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Text="نمایش outbox پیامک دمو"
+                        Clicked="OnShowOutboxClicked" />
+                <Label x:Name="OutboxValueLabel" Style="{StaticResource BodyStyle}" />
+
+                <Label Style="{StaticResource SectionTitleStyle}" Text="پشتیبان‌گیری" />
+                <Button x:Name="BackupButton"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Text="پشتیبان‌گیری از دیتابیس محلی"
+                        Clicked="OnBackupClicked" />
+                <Label x:Name="BackupValueLabel" Style="{StaticResource BodyStyle}" />
+
+                <Label x:Name="StatusLabel" Style="{StaticResource BodyStyle}" />
+                <Button x:Name="CopyReportButton"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Text="کپی گزارش خطا"
+                        Clicked="OnCopyReportClicked"
+                        IsVisible="False"
+                        SemanticProperties.Description="کپی گزارش خطا در حفظه موقت" />
+                <Label x:Name="CopyStatusLabel" Style="{StaticResource BodyStyle}" />
+                <Button Style="{StaticResource SecondaryButtonStyle}"
+                        Text="بازگشت"
+                        Clicked="OnBackClicked"
+                        SemanticProperties.Description="بازگشت به صفحه قبلی" />
+            </VerticalStackLayout>
+        </Border>
+    </ScrollView>
+</ContentPage>

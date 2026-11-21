@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Kandoo.C30.Avalonia.MainView"
+             FlowDirection="RightToLeft">
+    <ScrollViewer>
+        <StackPanel Margin="24" Spacing="16" FlowDirection="RightToLeft">
+            <TextBlock Text="فاکتور دیجیتال کندو"
+                       FontSize="28"
+                       FontWeight="Bold"
+                       TextWrapping="Wrap"
+                       AutomationProperties.Name="عنوان صفحه فاکتور دیجیتال کندو" />
+            <TextBlock Text="نمونه موقت برای بررسی راست‌به‌چپ و فراخوانی واقعی قرارداد Hub"
+                       FontSize="16"
+                       TextWrapping="Wrap"
+                       AutomationProperties.Name="توضیح نمونه آزمایشی" />
+            <TextBox x:Name="Endpoint"
+                     Text="http://127.0.0.1:5187/openapi/v1.json"
+                     FlowDirection="LeftToRight"
+                     AutomationProperties.Name="نشانی قرارداد OpenAPI هاب" />
+            <Button Content="بررسی اتصال"
+                    Click="OnProbeClicked"
+                    AutomationProperties.Name="فراخوانی قرارداد OpenAPI از هاب" />
+            <TextBlock x:Name="ProbeResult"
+                       Text="هنوز اتصال بررسی نشده است."
+                       FontSize="16"
+                       TextWrapping="Wrap"
+                       AutomationProperties.Name="نتیجه فراخوانی هاب" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

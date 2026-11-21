@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Kandoo.App.CustomerOtpPage"
+             Title="ورود مشتری"
+             Style="{StaticResource PageStyle}">
+    <ScrollView>
+        <Border Style="{StaticResource CardStyle}">
+            <VerticalStackLayout Style="{StaticResource RootStackStyle}">
+                <Label Style="{StaticResource TitleStyle}" Text="ورود مشتری" />
+                <Label Style="{StaticResource BodyStyle}" Text="کد تایید را از طریق پیامک دریافت کنید و اینجا وارد نمایید." />
+
+                <Label Style="{StaticResource SectionTitleStyle}" Text="شماره موبایل" />
+                <Entry x:Name="PhoneEntry"
+                       Style="{StaticResource InputStyle}"
+                       Placeholder="۰۹۱۲۳۴۵۶۷۸۹"
+                       Keyboard="Telephone"
+                       SemanticProperties.Description="شماره موبایل مشتری" />
+
+                <Button x:Name="RequestOtpButton"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Text="دریافت کد تایید"
+                        Clicked="OnRequestOtpClicked"
+                        SemanticProperties.Description="درخواست کد تایید از طریق پیامک" />
+                <Label x:Name="OtpStatusLabel" Style="{StaticResource CaptionStyle}" />
+
+                <Label Style="{StaticResource SectionTitleStyle}" Text="کد تایید (۶ عددی)" />
+                <Entry x:Name="OtpCodeEntry"
+                       Style="{StaticResource InputStyle}"
+                       Placeholder="۱۲۳۴۵۶"
+                       Keyboard="Numeric"
+                       MaxLength="6"
+                       SemanticProperties.Description="کد تایید ۶ رقمی" />
+
+                <Button x:Name="VerifyOtpButton"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Text="تایید کد"
+                        Clicked="OnVerifyOtpClicked"
+                        IsEnabled="False"
+                        SemanticProperties.Description="تایید کد دریافت‌شده" />
+                <Label x:Name="VerifyStatusLabel" Style="{StaticResource CaptionStyle}" />
+
+                <!-- Empty/customer state -->
+                <VerticalStackLayout x:Name="CustomerState"
+                                     IsVisible="False"
+                                     HorizontalOptions="Center"
+                                     VerticalOptions="Center"
+                                     Spacing="{StaticResource Space3}">
+                    <Label Style="{StaticResource SectionTitleStyle}"
+                           Text="وارد سیستم شدید"
+                           HorizontalTextAlignment="Center" />
+                    <Label x:Name="CustomerPhoneLabel"
+                           Style="{StaticResource BodyStyle}"
+                           HorizontalTextAlignment="Center" />
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </Border>
+    </ScrollView>
+</ContentPage>
