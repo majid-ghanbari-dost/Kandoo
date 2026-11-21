@@ -67,7 +67,7 @@ public partial class CustomerOtpPage : ContentPage
             using var document = JsonDocument.Parse(content);
             var root = document.RootElement;
             var status = root.TryGetProperty("status", out var s) ? s.GetString() : string.Empty;
-            _challengeId = root.TryGetProperty("challenge_id", out var cid) ? Guid.Parse(cid.GetString()!) : Guid.Empty;
+            _challengeId = root.TryGetProperty("challenge_id", out var cid) ? cid.GetString() : string.Empty;
 
             if (status == "OTP_SENT" || status == "DUPLICATE")
             {
@@ -130,7 +130,7 @@ public partial class CustomerOtpPage : ContentPage
 
             if (status == "VERIFIED")
             {
-                _verifiedPhone = phone;
+                _verifiedPhone = _requestedPhone;
                 var tokenProp = root.TryGetProperty("access_token", out var tok) ? tok.GetString() : string.Empty;
                 if (!string.IsNullOrEmpty(tokenProp))
                 {
@@ -171,7 +171,7 @@ public partial class CustomerOtpPage : ContentPage
 
         if (verified)
         {
-            StatusLabel.Text = "ورود مشتری فعال است.";
+            OtpStatusLabel.Text = "ورود مشتری فعال است.";
         }
     }
 }
