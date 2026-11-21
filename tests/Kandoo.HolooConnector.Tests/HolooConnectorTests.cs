@@ -171,7 +171,7 @@ public class HolooConnectorTests
         var store = new HolooShadowStore();
         store.AppendHistory(new HistoryShadowRecord("INV-1", "C100", "P100", 2, 5000m));
 
-        Assert.Equal(1, store.History.Count);
+        Assert.Single(store.History);
         Assert.Equal("INV-1", store.History[0].InvoiceCode);
         Assert.Equal("C100", store.History[0].CustomerCode);
     }
