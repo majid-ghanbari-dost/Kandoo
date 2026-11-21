@@ -415,9 +415,7 @@ jobs:
           Write-Host "SMOKE_STEP=1_installer PASS"
 
           # 2. Layout assertions (C-95: no separate launcher; MAUI app is the entry point)
-          foreach ($f in @("$installDir\hostfxr.dll")) {
-            if (-not (Test-Path -LiteralPath $f -PathType Leaf)) { throw "MISSING $f" }
-          }
+          # Each component (Hub, App) has its own self-contained runtime in its own folder.
           foreach ($f in @("$installDir\hub\Kandoo.Hub.exe", "$installDir\app\Kandoo.App.exe")) {
             if (-not (Test-Path -LiteralPath $f -PathType Leaf)) { throw "MISSING $f" }
           }
