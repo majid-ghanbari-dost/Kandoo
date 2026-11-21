@@ -1,16 +1,18 @@
 <#
-Kandoo installer smoke test (CI, windows-latest).
+Kandoo installer smoke test (CI, windows-latest). Layout v2 (C-95): NO separate launcher.
 
 Installs the freshly built setup.exe silently and checks the result. It runs ALL checks even if one
-fails, writes a per-check outcome file, emits ::error:: / ::warning:: annotations (so results are
-readable through the annotations API), and exits 1 at the end if any HARD check failed.
+fails, writes a per-check outcome file, emits ::error:: / ::warning:: annotations, and exits 1 at the end
+if any HARD check failed.
 
 Checks:
-  install        silent install, exit code 0
-  layout         launcher + hostfxr in root, hub\ and app\ sub-folders, launcher runtimeconfig self-contained
-  launcher-smoke Kandoo.SetupLauncher.exe --smoke with a hidden machine .NET (DOTNET_ROOT bogus, PATH without dotnet)
-  hub-health     installed hub\Kandoo.Hub.exe answers GET /health with 200
-  maui-app       (SOFT) installed app\Kandoo.App.exe stays alive for 15 s
+  install            silent install, exit code 0
+  layout             hub\Kandoo.Hub.exe and app\Kandoo.App.exe exist, each folder has its own hostfxr.dll + coreclr.dll,
+                     no exe in the install root, no leftover Kandoo.SetupLauncher.exe
+  shortcuts          Start Menu shortcut "Kandoo" exists and its target file exists
+  app-selfcontained  app\Kandoo.App.runtimeconfig.json declares includedFrameworks (no machine .NET needed)
+  hub-health         installed hub\Kandoo.Hub.exe answers GET /health with 200
+  maui-app           (SOFT) installed app\Kandoo.App.exe stays alive for 15 s
 #>
 param(
     [string]$SetupPath = 'packaging/HubPilot/Output/Kandoo-Setup-x64.exe',
@@ -93,44 +95,39 @@ Invoke-Check 'install' {
 # 2. Layout --------------------------------------------------------------------------------------
 Invoke-Check 'layout' {
     Assert-Installed
-    foreach ($f in @('Kandoo.SetupLauncher.exe', 'hostfxr.dll', 'coreclr.dll', 'hub\Kandoo.Hub.exe', 'app\Kandoo.App.exe')) {
+    foreach ($f in @('hub\Kandoo.Hub.exe', 'hub\hostfxr.dll', 'hub\coreclr.dll', 'app\Kandoo.App.exe', 'app\hostfxr.dll', 'app\coreclr.dll')) {
         if (-not (Test-Path -LiteralPath (Join-Path $InstallDir $f) -PathType Leaf)) { throw "MISSING $f" }
     }
-    foreach ($f in @('Kandoo.Hub.exe', 'Kandoo.App.exe')) {
+    foreach ($f in @('Kandoo.Hub.exe', 'Kandoo.App.exe', 'Kandoo.SetupLauncher.exe')) {
         if (Test-Path -LiteralPath (Join-Path $InstallDir $f) -PathType Leaf) { throw "UNEXPECTED $f in the install root" }
     }
-    $rc = Join-Path $InstallDir 'Kandoo.SetupLauncher.runtimeconfig.json'
-    if (-not (Test-Path -LiteralPath $rc -PathType Leaf)) { throw 'MISSING Kandoo.SetupLauncher.runtimeconfig.json' }
-    if ((Get-Content -LiteralPath $rc -Raw) -notmatch 'includedFrameworks') { throw 'launcher runtimeconfig has no includedFrameworks (not self-contained)' }
-    $coreclr = (Get-Item -LiteralPath (Join-Path $InstallDir 'coreclr.dll')).VersionInfo.FileVersion
-    "root coreclr=$coreclr, launcher self-contained, hub\ and app\ present"
+    $hubCoreclr = (Get-Item -LiteralPath (Join-Path $InstallDir 'hub\coreclr.dll')).VersionInfo.FileVersion
+    $appCoreclr = (Get-Item -LiteralPath (Join-Path $InstallDir 'app\coreclr.dll')).VersionInfo.FileVersion
+    "hub coreclr=$hubCoreclr, app coreclr=$appCoreclr, two separate runtimes"
 }
 
-# 3. Launcher smoke with a hidden machine-wide .NET ------------------------------------------------
-Invoke-Check 'launcher-smoke' {
+# 3. Shortcuts must point at files that exist -------------------------------------------------------
+Invoke-Check 'shortcuts' {
     Assert-Installed
-    $smokeFile = Join-Path $InstallDir 'smoke.txt'
-    Remove-Item -LiteralPath $smokeFile -ErrorAction SilentlyContinue
-    $cleanPath = (($env:PATH -split ';') | Where-Object { $_ -and ($_ -notlike '*dotnet*') }) -join ';'
-    $envVars = @{
-        'DOTNET_ROOT'             = 'C:\no-dotnet'
-        'DOTNET_ROOT(x86)'        = 'C:\no-dotnet'
-        'DOTNET_MULTILEVEL_LOOKUP' = '0'
-        'PATH'                    = $cleanPath
-    }
-    $p = Start-Proc -File (Join-Path $InstallDir 'Kandoo.SetupLauncher.exe') -Arguments @('--smoke', $smokeFile) -WorkDir $InstallDir -EnvVars $envVars
-    if (-not $p.WaitForExit(30000)) {
-        try { $p.Kill($true) } catch { }
-        throw 'launcher did not exit within 30 s (a stuck error dialog?)'
-    }
-    if ($p.ExitCode -ne 0) { throw "launcher exit code $($p.ExitCode)" }
-    if (-not (Test-Path -LiteralPath $smokeFile -PathType Leaf)) { throw 'launcher exited 0 but wrote no smoke file' }
-    $first = Get-Content -LiteralPath $smokeFile -TotalCount 1
-    if ($first -notmatch '^KANDOO_LAUNCHER_OK') { throw "unexpected smoke output: $first" }
-    $first
+    $lnk = Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs\Kandoo\Kandoo.lnk'
+    if (-not (Test-Path -LiteralPath $lnk -PathType Leaf)) { throw "Start Menu shortcut not found: $lnk" }
+    $shell = New-Object -ComObject WScript.Shell
+    $target = $shell.CreateShortcut($lnk).TargetPath
+    if (-not $target) { throw 'shortcut has an empty target' }
+    if (-not (Test-Path -LiteralPath $target -PathType Leaf)) { throw "shortcut target does not exist: $target" }
+    "shortcut target = $target"
 }
 
-# 4. Hub from the INSTALLED folder -----------------------------------------------------------------
+# 4. The MAUI app must not need a machine-wide .NET -------------------------------------------------
+Invoke-Check 'app-selfcontained' {
+    Assert-Installed
+    $rc = Join-Path $InstallDir 'app\Kandoo.App.runtimeconfig.json'
+    if (-not (Test-Path -LiteralPath $rc -PathType Leaf)) { throw 'MISSING app\Kandoo.App.runtimeconfig.json' }
+    if ((Get-Content -LiteralPath $rc -Raw) -notmatch 'includedFrameworks') { throw 'app runtimeconfig has no includedFrameworks (not self-contained)' }
+    'app runtimeconfig declares includedFrameworks'
+}
+
+# 5. Hub from the INSTALLED folder -----------------------------------------------------------------
 Invoke-Check 'hub-health' {
     Assert-Installed
     $hubDir = Join-Path $InstallDir 'hub'
@@ -157,7 +154,7 @@ Invoke-Check 'hub-health' {
     }
 }
 
-# 5. MAUI app (SOFT: reported as a warning, does not fail the job) ----------------------------------
+# 6. MAUI app (SOFT: reported as a warning, does not fail the job) ----------------------------------
 Invoke-Check 'maui-app' -Soft {
     Assert-Installed
     $appDir = Join-Path $InstallDir 'app'
@@ -176,7 +173,6 @@ Invoke-Check 'maui-app' -Soft {
 $outcomeFile = Join-Path $artifactDirFull 'smoke-outcome.txt'
 $outcomes | Out-File -FilePath $outcomeFile -Encoding utf8
 Copy-Item -LiteralPath (Join-Path $InstallDir 'setup.log') -Destination (Join-Path $artifactDirFull 'setup.log') -Force -ErrorAction SilentlyContinue
-Copy-Item -LiteralPath (Join-Path $InstallDir 'smoke.txt') -Destination (Join-Path $artifactDirFull 'smoke.txt') -Force -ErrorAction SilentlyContinue
 
 if ($env:GITHUB_STEP_SUMMARY) {
     $summary = [System.Collections.Generic.List[string]]::new()
