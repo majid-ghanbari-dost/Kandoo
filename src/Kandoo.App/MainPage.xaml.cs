@@ -9,7 +9,9 @@ public partial class MainPage : ContentPage
     private readonly ReviewQueueCoordinator _coordinator;
     private readonly IUserProfileStore _profiles;
     private readonly LocalUserProfile _profile;
+    private readonly SharedTokenFile _tokenFile = new();
     private bool _initialLoadComplete;
+    private string? _lastError;
 
     public MainPage(LocalUserProfile profile, IUserProfileStore profiles)
     {
@@ -21,6 +23,7 @@ public partial class MainPage : ContentPage
             settings => new HubReviewQueueDataSource(_httpClient, settings));
         UpdateModePresentation();
         UpdateRolePresentation();
+        UpdateActionButtonState();
     }
 
     protected override async void OnAppearing()
@@ -81,6 +84,18 @@ public partial class MainPage : ContentPage
             PairingCodeEntry.Text = string.Empty;
             PairingStatusLabel.Text = $"جفت‌سازی انجام شد؛ سطح {result.OperatorLevel ?? "ثبت نشده"}.";
             StatusLabel.Text = "جفت‌سازی انجام شد؛ اکنون صف را بارگذاری کنید.";
+
+            // Persist the device/session token to the shared token file so all
+            // Stage-A pages can access it without re-entering credentials.
+            try
+            {
+                var storeId = Guid.Parse(StoreIdEntry.Text);
+                _tokenFile.Save(new DeviceTokenRecord(SessionTokenEntry.Text, storeId));
+            }
+            catch (Exception)
+            {
+                // Token persistence is best-effort; pairing still succeeded.
+            }
         }
         catch (Exception exception) when (IsExpected(exception))
         {
@@ -165,43 +180,84 @@ public partial class MainPage : ContentPage
         DevicesStatusLabel.Text = "نشست مالک لازم است.";
     }
 
-    private HubConnectionSettings ReadHubSettings()
+    private HubConnectionSettings? ReadHubSettings()
     {
-        if (!Guid.TryParse(StoreIdEntry.Text, out var storeId))
+        if (!string.IsNullOrWhiteSpace(StoreIdEntry.Text) &&
+            Guid.TryParse(StoreIdEntry.Text, out var storeId))
         {
-            throw new FormatException("شناسه فروشگاه معتبر نیست.");
+            return new HubConnectionSettings(
+                HubBaseUrlEntry.Text ?? string.Empty,
+                storeId,
+                SessionTokenEntry.Text ?? string.Empty);
         }
 
-        return new HubConnectionSettings(
-            HubBaseUrlEntry.Text ?? string.Empty,
-            storeId,
-            SessionTokenEntry.Text ?? string.Empty);
+        // Fall back to shared token file for devices already paired.
+        var record = _tokenFile.Load();
+        if (record is not null)
+        {
+            StatusLabel.Text = "نشست دستگاه از فایل توکن مشترک بارگذاری شد.";
+            return new HubConnectionSettings(string.Empty, record.StoreId, record.Token);
+        }
+
+        return null;
     }
 
     private async Task LoadQueueAsync()
     {
         LoadButton.IsEnabled = false;
         StatusLabel.Text = "در حال بارگذاری…";
+        _lastError = null;
         try
         {
             HubConnectionSettings? settings = null;
             if (_coordinator.Mode == ReviewDataMode.Real)
             {
                 settings = ReadHubSettings();
+                if (settings is not null)
+                {
+                    // Persist to shared token file for other Stage-A pages.
+                    try
+                    {
+                        _tokenFile.Save(new DeviceTokenRecord(settings.SessionToken, settings.StoreId));
+                    }
+                    catch (Exception)
+                    {
+                        // Best-effort persistence.
+                    }
+                }
             }
 
             var rows = await _coordinator.LoadAsync(settings);
             BindableLayout.SetItemsSource(QueueItems, rows);
             StatusLabel.Text = FormattableString.Invariant($"{rows.Count} مورد بارگذاری شد.");
+            CopyReportButton.IsVisible = false;
         }
         catch (Exception exception) when (IsExpected(exception))
         {
+            _lastError = exception.Message;
             BindableLayout.SetItemsSource(QueueItems, Array.Empty<ReviewQueueRow>());
             StatusLabel.Text = exception.Message;
+            CopyReportButton.IsVisible = true;
         }
         finally
         {
             LoadButton.IsEnabled = true;
+        }
+    }
+
+    private async void OnCopyReportClicked(object? sender, EventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(_lastError))
+            return;
+
+        try
+        {
+            await Clipboard.Default.SetTextAsync(_lastError);
+            CopyStatusLabel.Text = "گزارش کپی شد.";
+        }
+        catch (Exception exception)
+        {
+            CopyStatusLabel.Text = $"کپی ناموفق: {exception.Message}";
         }
     }
 
@@ -211,6 +267,99 @@ public partial class MainPage : ContentPage
         {
             var settings = ReadHubSettings();
             await Navigation.PushAsync(new ProductsPage(settings));
+        }
+        catch (Exception exception) when (IsExpected(exception))
+        {
+            StatusLabel.Text = exception.Message;
+        }
+    }
+
+    private async void OnReviewQueueClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            var settings = ReadHubSettings();
+            await Navigation.PushAsync(new ReviewQueuePage(_coordinator, settings));
+        }
+        catch (Exception exception) when (IsExpected(exception))
+        {
+            StatusLabel.Text = exception.Message;
+        }
+    }
+
+    private async void OnCreateInvoiceClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            var settings = ReadHubSettings();
+            if (settings is null)
+            {
+                StatusLabel.Text = "تنظیمات هاب لازم است.";
+                return;
+            }
+            await Navigation.PushAsync(new CreateInvoicePage(settings));
+        }
+        catch (Exception exception) when (IsExpected(exception))
+        {
+            StatusLabel.Text = exception.Message;
+        }
+    }
+
+    private async void OnProductEditorClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            var settings = ReadHubSettings();
+            if (settings is null)
+            {
+                StatusLabel.Text = "تنظیمات هاب لازم است.";
+                return;
+            }
+            await Navigation.PushAsync(new ProductEditorPage(settings));
+        }
+        catch (Exception exception) when (IsExpected(exception))
+        {
+            StatusLabel.Text = exception.Message;
+        }
+    }
+
+    private async void OnCustomersClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            var settings = ReadHubSettings();
+            if (settings is null)
+            {
+                StatusLabel.Text = "تنظیمات هاب لازم است.";
+                return;
+            }
+            await Navigation.PushAsync(new CustomersPage(settings));
+        }
+        catch (Exception exception) when (IsExpected(exception))
+        {
+            StatusLabel.Text = exception.Message;
+        }
+    }
+
+    private async void OnSettingsClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            var settings = ReadHubSettings();
+            await Navigation.PushAsync(new SettingsPage(settings));
+        }
+        catch (Exception exception) when (IsExpected(exception))
+        {
+            StatusLabel.Text = exception.Message;
+        }
+    }
+
+    private async void OnReturnsClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            var settings = ReadHubSettings();
+            await Navigation.PushAsync(new ReturnsPage(settings));
         }
         catch (Exception exception) when (IsExpected(exception))
         {
@@ -275,6 +424,16 @@ public partial class MainPage : ContentPage
         }
 
         return Guid.TryParse(button.CommandParameter?.ToString(), out deviceId) && deviceId != Guid.Empty;
+    }
+
+    private void UpdateActionButtonState()
+    {
+        var hasSettings = ReadHubSettings() is not null;
+        CreateInvoiceButton.IsEnabled = hasSettings;
+        ProductEditorButton.IsEnabled = hasSettings;
+        CustomersButton.IsEnabled = hasSettings;
+        ReturnsButton.IsEnabled = hasSettings;
+        SettingsButton.IsEnabled = true; // Settings page works without Hub settings for local backup
     }
 
     private static bool IsExpected(Exception exception) => exception is ArgumentException or

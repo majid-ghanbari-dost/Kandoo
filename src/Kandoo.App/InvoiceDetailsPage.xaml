@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Kandoo.App.InvoiceDetailsPage"
+             Title="جزئیات فاکتور"
+             Style="{StaticResource PageStyle}">
+    <ScrollView>
+        <Border Style="{StaticResource CardStyle}">
+            <VerticalStackLayout Style="{StaticResource RootStackStyle}">
+                <Label Style="{StaticResource TitleStyle}" Text="جزئیات فاکتور" />
+
+                <Label x:Name="InvoiceIdLabel" Style="{StaticResource SectionTitleStyle}" />
+                <Label x:Name="InvoiceNumberLabel" Style="{StaticResource BodyStyle}" />
+                <Label x:Name="StatusLabel" Style="{StaticResource CaptionStyle}" />
+                <Label x:Name="DateLabel" Style="{StaticResource CaptionStyle}" />
+                <Label x:Name="TotalLabel" Style="{StaticResource AmountStyle}" />
+
+                <Label Style="{StaticResource SectionTitleStyle}" Text="محصولات" />
+                <VerticalStackLayout x:Name="ItemsList" Style="{StaticResource RowStackStyle}" />
+
+                <HorizontalStackLayout Style="{StaticResource ButtonRowStyle}">
+                    <Button x:Name="ResendSmsButton"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Text="ارسال دوباره پیامک"
+                            Clicked="OnResendSmsClicked" />
+                    <Button x:Name="VoidButton"
+                            Style="{StaticResource DangerButtonStyle}"
+                            Text="ابطال (رخداد)"
+                            Clicked="OnVoidClicked" />
+                </HorizontalStackLayout>
+
+                <Label x:Name="OperationStatusLabel" Style="{StaticResource BodyStyle}" />
+                <Button x:Name="CopyReportButton"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Text="کپی گزارش خطا"
+                        Clicked="OnCopyReportClicked"
+                        IsVisible="False"
+                        SemanticProperties.Description="کپی گزارش خطا در حافظه موقت" />
+                <Label x:Name="CopyStatusLabel" Style="{StaticResource BodyStyle}" />
+                <Button Style="{StaticResource SecondaryButtonStyle}"
+                        Text="بازگشت"
+                        Clicked="OnBackClicked"
+                        SemanticProperties.Description="بازگشت به صفحه قبلی" />
+            </VerticalStackLayout>
+        </Border>
+    </ScrollView>
+</ContentPage>
