@@ -7,7 +7,7 @@
 
 | وظیفه | شاخه | SHA کامل | آدرس رن CI | نتیجه | نام آرتیفاکت |
 |-------|-------|---------|-----------|-------|--------------|
-| C-90 | `arena/kandoo-c90-windows-store` | `fc38ecb8` | https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44873294743 | سبز (هر دو جاب) | kandoo-hub-c87-setup-exe (۸۹٫۷۵ MB), kandoo-install-smoke (۲۲٫۸۲ KB) |
+| C-90 | `arena/kandoo-c90-windows-store` | `286f28cbb4503bd148635facf293283c3ac43238` | https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44922803863 | سبز (ubuntu + windows) | kandoo-hub-c87-setup-exe, kandoo-install-smoke |
 
 ## جزئیات تغییرات
 
@@ -57,4 +57,4 @@
 
 ## نتیجه نهایی
 
-CI هر دو جاب سبز است، هر دو آرتیفاکت موجود است، PR #13 ایجاد شده و در انتظار بررسی مدیر است.
+CI هر دو جاب سبز است (ubuntu-success, windows-success). تگ `o16-c90` روی کامیت `286f28cbb4503bd148635facf293283c3ac43238` ایجاد شده است. PR #13 ایجاد شده و در انتظار بررسی مدیر است.
