@@ -139,7 +139,7 @@ public class HolooConnectorTests
     {
         var store = new HolooShadowStore();
         var sync = new HolooIncrementalSync(store);
-        Assert.False(sync.CanDeltaSync(new HolooSchemaVersion("H1-6", true)));
+        Assert.False(sync.CanDeltaSync(HolooSchemaVersion.Known("H1-6")));
     }
 
     [Fact]

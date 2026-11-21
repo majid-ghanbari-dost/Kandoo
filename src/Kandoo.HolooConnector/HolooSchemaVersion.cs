@@ -21,6 +21,11 @@ public sealed class HolooSchemaVersion
     public static HolooSchemaVersion Unknown { get; } = new("unknown", false);
 
     /// <summary>
+    /// Creates a known schema version value. Used in tests and callers that know the version upfront.
+    /// </summary>
+    public static HolooSchemaVersion Known(string value) => new(value, true);
+
+    /// <summary>
     /// Reads schema version from bundle/structure.csv if a version marker row exists.
     /// Falls back to Unknown when the file is absent or has no version marker.
     /// </summary>
