@@ -108,6 +108,14 @@ public sealed class ReplicationBatch
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<HubInvoiceReplicationPayloadV11>? InvoicePayloads { get; set; }
 
+    [JsonPropertyName("device_secret")]
+    [JsonIgnore] // C-83: DeviceSecret must NOT be serialized in the JSON body.
+                 // It is sent only via the Authorization: Bearer header
+                 // (DeviceBearer scheme per docs/openapi.yaml). Cloud-side auth
+                 // rejects any secret in the body; keeping it there would leak
+                 // the per-device secret in request logs and body snapshots.
+    public string? DeviceSecret { get; set; }
+
     public static ReplicationBatch Create(HubWriterIdentity writer, Guid storeId, IReadOnlyList<ReplicationLogEntry> entries)
     {
         if (entries.Count == 0)
@@ -135,6 +143,7 @@ public interface IHubReplicationSource
     int GetOutboxDepth(Guid storeId);
     bool IsWriterFenced(Guid storeId);
     void MarkWriterFenced(Guid storeId, HubWriterIdentity writer, string reason);
+    string? GetDeviceSecret(Guid storeId, Guid deviceId);
 }
 
 public sealed record CloudTransportResponse(HttpStatusCode HttpStatus, JsonElement? Body, TimeSpan? RetryAfter = null);
@@ -142,6 +151,13 @@ public sealed record CloudTransportResponse(HttpStatusCode HttpStatus, JsonEleme
 public interface ICloudReplicationTransport
 {
     Task<CloudTransportResponse> SendAsync(ReplicationBatch batch, CancellationToken cancellationToken);
+}
+
+/// <summary>Discovers the Cloud API's advertised protocol version.</summary>
+public interface ICloudVersionClient
+{
+    /// <summary>Returns the protocol version advertised by Cloud, or null if undiscoverable.</summary>
+    Task<string?> GetAdvertisedProtocolVersionAsync(CancellationToken cancellationToken = default);
 }
 
 public sealed record HubReplicationResult(

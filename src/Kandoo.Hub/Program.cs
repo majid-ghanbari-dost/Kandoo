@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Net.Http;
 using System.Text.Json;
 using Kandoo.Capture;
 using Kandoo.Core;
@@ -31,11 +32,48 @@ var sqliteConnection = builder.Configuration.GetConnectionString("HubSqlite")
     ?? "Data Source=kandoo-hub.db;Pooling=False";
 var hubStore = new SqliteHubStore(sqliteConnection);
 builder.Services.AddSingleton<IHubStore>(hubStore);
+builder.Services.AddSingleton<SqliteHubStore>(hubStore);
 builder.Services.AddSingleton<IHubAccessStore>(hubStore);
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<HubStatsService>();
 builder.Services.AddSingleton<IClock, SystemHubClock>();
-builder.Services.AddSingleton<HubReplicationOptions>();
+builder.Services.AddSingleton<ICloudVersionClient>(sp =>
+{
+    var cloudUrl = builder.Configuration["Hub:CloudUrl"];
+    if (string.IsNullOrEmpty(cloudUrl))
+    {
+        return new CloudVersionClient(new HttpClient(), string.Empty);
+    }
+    return new CloudVersionClient(new HttpClient { BaseAddress = new Uri(cloudUrl.TrimEnd('/')) }, cloudUrl);
+});
+builder.Services.AddSingleton<HubReplicationOptions>(sp =>
+{
+    var cloudUrl = builder.Configuration["Hub:CloudUrl"];
+    var v11Enabled = false;
+    if (!string.IsNullOrEmpty(cloudUrl))
+    {
+        try
+        {
+            using var client = new HttpClient();
+            var response = client.GetAsync($"{cloudUrl.TrimEnd('/')}/health").GetAwaiter().GetResult();
+            if (response.IsSuccessStatusCode)
+            {
+                var content = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                using var document = JsonDocument.Parse(content);
+                if (document.RootElement.TryGetProperty("protocol_version", out var version)
+                    && version.GetString() == "1.1")
+                {
+                    v11Enabled = true;
+                }
+            }
+        }
+        catch
+        {
+            // Fail-closed: if Cloud is not reachable, v1.1 remains disabled.
+        }
+    }
+    return new HubReplicationOptions { PayloadV11Enabled = v11Enabled };
+});
 builder.Services.AddSingleton<HubOperationService>();
 builder.Services.AddSingleton(new HubProductCatalogService(hubStore));
 builder.Services.AddSingleton<IHubInvoicePrintAdapter, DisabledHubInvoicePrintAdapter>();
@@ -57,6 +95,12 @@ var backupOptions = new HubBackupOptions();
 builder.Configuration.GetSection("Hub:Backup").Bind(backupOptions);
 backupOptions.Validate();
 builder.Services.AddSingleton(backupOptions);
+
+var demoOptions = new DemoHubOptions();
+builder.Configuration.GetSection("Hub:Demo").Bind(demoOptions);
+demoOptions.Validate();
+builder.Services.AddSingleton(demoOptions);
+
 builder.Services.AddSingleton(provider => new SqliteBackupService(
     hubStore,
     backupOptions,
@@ -82,6 +126,37 @@ if (captureOptions.Enabled)
 }
 
 var app = builder.Build();
+
+// C-87 First-Run Setup: log whether OwnerBootstrapProof is configured so the
+// First-Run Setup wizard can confirm owner bootstrap is available. If empty,
+// owner sessions return 503 OWNER_BOOTSTRAP_UNAVAILABLE until the First-Run
+// Setup configures it via the Hub__OwnerBootstrapProof environment variable.
+var bootstrapProof = builder.Configuration["Hub:OwnerBootstrapProof"];
+if (string.IsNullOrWhiteSpace(bootstrapProof))
+{
+    Console.WriteLine("WARN: Hub:OwnerBootstrapProof is not configured. Owner bootstrap is unavailable until First-Run Setup configures it.");
+}
+else
+{
+    Console.WriteLine("INFO: Hub:OwnerBootstrapProof is configured. Owner bootstrap is available.");
+}
+
+// Order 15 demo profile (C-80): seed realistic demo data into the Hub store when
+// demo mode is enabled, so both Windows and Android demo clients read the same
+// LAN authority data.
+if (app.Services.GetRequiredService<DemoHubOptions>().Mode)
+{
+    using var scope = app.Services.CreateScope();
+    var services = scope.ServiceProvider;
+    var seeder = new DemoDataSeeder(
+        services.GetRequiredService<SqliteHubStore>(),
+        services.GetRequiredService<HubProductCatalogService>(),
+        DemoStoreId,
+        DemoDeviceId,
+        services.GetRequiredService<IClock>());
+    seeder.Seed();
+}
+
 app.UseSwagger(options => options.RouteTemplate = "openapi/{documentName}.json");
 app.MapHubHostLocalPages();
 app.MapHubApiFirstEndpoints();
@@ -819,4 +894,8 @@ static object LockBody(DraftLock current) => new
 
 public partial class Program
 {
+    internal static readonly Guid DemoStoreId =
+        Guid.Parse("01010101-0101-0101-0101-010101010101");
+    internal static readonly Guid DemoDeviceId =
+        Guid.Parse("02020202-0202-0202-0202-020202020202");
 }

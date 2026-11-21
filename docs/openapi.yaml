@@ -10,6 +10,17 @@ info:
     P-0104r pre-implementation revision. It does not claim an implemented service. Store Hub authority, P-02 canonical hashes,
     strict store isolation, SEC-1 restore second factor, SMS stub, lawyer-copy gates, issue-only display numbering, accepted-change-only
     lock activity, and ASM-22 scaled quantities are mandatory. Path version /v1 is independent of kandoo.sync.v0 and Canonical Invoice v0.
+  x-legacy-header-deprecation:
+    - header: X-Device-Key
+      deprecated_in: P-27
+      removed_in: C-83
+      reason: Device secret must be sent only via Authorization: Bearer (DeviceBearer scheme).
+        Sending device_secret in the JSON body or X-Device-Key header is deprecated and rejected by Cloud.
+    - header: device_secret (JSON body field on ReplicationBatch)
+      deprecated_in: P-27
+      removed_in: C-83
+      reason: Device secret must not be serialized in the request body. It is sent only via
+        Authorization: Bearer header per the DeviceBearer security scheme.
   license:
     name: Proprietary
     identifier: LicenseRef-Proprietary
