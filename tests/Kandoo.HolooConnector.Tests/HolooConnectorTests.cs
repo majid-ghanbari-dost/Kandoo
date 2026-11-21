@@ -57,4 +57,40 @@ public class HolooConnectorTests
         Assert.Equal(11, objects.Length);
         Assert.All(objects, o => Assert.NotEmpty(HolooColumnMap.For(o)));
     }
+
+    [Fact]
+    public void SchemaVersion_known_trusted_versions_return_instance()
+    {
+        var v1 = HolooSchemaVersion.Known("H1-6");
+        var v2 = HolooSchemaVersion.Known("H1-7");
+        var v3 = HolooSchemaVersion.Known("H1-8");
+
+        Assert.NotNull(v1);
+        Assert.NotNull(v2);
+        Assert.NotNull(v3);
+        Assert.Equal("H1-6", v1!.Value);
+        Assert.Equal("H1-7", v2!.Value);
+        Assert.Equal("H1-8", v3!.Value);
+    }
+
+    [Fact]
+    public void SchemaVersion_unknown_or_empty_returns_null()
+    {
+        Assert.Null(HolooSchemaVersion.Known(null));
+        Assert.Null(HolooSchemaVersion.Known(""));
+        Assert.Null(HolooSchemaVersion.Known("   "));
+        Assert.Null(HolooSchemaVersion.Known("H9-99"));
+        Assert.Null(HolooSchemaVersion.Known("unknown"));
+    }
+
+    [Fact]
+    public void SchemaVersion_tryparse_matches_known()
+    {
+        Assert.True(HolooSchemaVersion.TryParse("H1-6", out var v));
+        Assert.NotNull(v);
+        Assert.Equal("H1-6", v!.Value);
+
+        Assert.False(HolooSchemaVersion.TryParse("H9-99", out var v2));
+        Assert.Null(v2);
+    }
 }
