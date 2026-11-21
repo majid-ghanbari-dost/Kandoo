@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Kandoo.App.ReviewQueuePage"
+             Title="صف بازبینی"
+             Style="{StaticResource PageStyle}">
+    <ScrollView>
+        <Border Style="{StaticResource CardStyle}">
+            <VerticalStackLayout Style="{StaticResource RootStackStyle}">
+                <Label Style="{StaticResource TitleStyle}" Text="صف بازبینی فاکتورها" />
+                <Label Style="{StaticResource BodyStyle}" Text="فاکتورهای در حالت بررسی که نیاز به اصلاح و صدور دارند." />
+
+                <Label Style="{StaticResource SectionTitleStyle}" Text="منبع داده" />
+                <HorizontalStackLayout Style="{StaticResource ButtonRowStyle}">
+                    <Button x:Name="FakeModeButton"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Text="داده نمایشی"
+                            Clicked="OnFakeModeClicked"
+                            SemanticProperties.Description="انتخاب داده نمایشی" />
+                    <Button x:Name="RealModeButton"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Text="داده واقعی Hub"
+                            Clicked="OnRealModeClicked"
+                            SemanticProperties.Description="انتخاب داده واقعی هاب" />
+                </HorizontalStackLayout>
+                <Label x:Name="ModeLabel" Style="{StaticResource CaptionStyle}" />
+
+                <VerticalStackLayout x:Name="RealSettings" Style="{StaticResource RowStackStyle}" IsVisible="False">
+                    <Label Style="{StaticResource SectionTitleStyle}" Text="تنظیمات اتصال Hub" />
+                    <Entry x:Name="HubBaseUrlEntry"
+                           Style="{StaticResource InputStyle}"
+                           Placeholder="نشانی Hub، مانند https://hub.lan"
+                           Keyboard="Url" />
+                    <Entry x:Name="StoreIdEntry"
+                           Style="{StaticResource InputStyle}"
+                           Placeholder="شناسه فروشگاه" />
+                    <Entry x:Name="SessionTokenEntry"
+                           Style="{StaticResource InputStyle}"
+                           Placeholder="نشست دستگاه"
+                           IsPassword="True" />
+                </VerticalStackLayout>
+
+                <Button x:Name="LoadButton"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Text="بارگذاری صف بازبینی"
+                        Clicked="OnLoadClicked"
+                        SemanticProperties.Description="بارگذاری فهرست بازبینی از هاب" />
+                <Label x:Name="StatusLabel" Style="{StaticResource BodyStyle}" Text="آماده" />
+
+                <!-- Review queue list -->
+                <Label Style="{StaticResource SectionTitleStyle}" Text="موردهای صف بازبینی" />
+                <VerticalStackLayout x:Name="QueueItems" Style="{StaticResource RowStackStyle}" />
+
+                <!-- Empty state -->
+                <VerticalStackLayout x:Name="EmptyState"
+                                     IsVisible="False"
+                                     HorizontalOptions="Center"
+                                     VerticalOptions="Center"
+                                     Spacing="{StaticResource Space3}">
+                    <Label Style="{StaticResource SectionTitleStyle}"
+                           Text="هیچ موردی در صف نیست"
+                           HorizontalTextAlignment="Center" />
+                    <Label Style="{StaticResource BodyStyle}"
+                           Text="صف بازبینی خالی است."
+                           HorizontalTextAlignment="Center" />
+                </VerticalStackLayout>
+
+                <!-- Selected review detail -->
+                <Border x:Name="ReviewDetailBorder"
+                        Style="{StaticResource CardStyle}"
+                        IsVisible="False">
+                    <VerticalStackLayout Style="{StaticResource RowStackStyle}">
+                        <Label Style="{StaticResource SectionTitleStyle}" Text="جزئیات مورد بازبینی" />
+                        <Label x:Name="ReviewIdLabel" Style="{StaticResource SectionTitleStyle}" />
+                        <Label x:Name="ReviewStatusLabel" Style="{StaticResource BodyStyle}" />
+                        <Label x:Name="ReviewAmountLabel" Style="{StaticResource AmountStyle}" />
+
+                        <Label Style="{StaticResource SectionTitleStyle}" Text="فیلدهای نیاز به اصلاح" />
+                        <VerticalStackLayout x:Name="AttentionCells" Style="{StaticResource RowStackStyle}" />
+
+                        <Label Style="{StaticResource SectionTitleStyle}" Text="اصلاح مقدار" />
+                        <Entry x:Name="CorrectionFieldEntry"
+                               Style="{StaticResource InputStyle}"
+                               Placeholder="مسیر فیلد (مثلاً customer.phone)" />
+                        <Entry x:Name="CorrectionValueEntry"
+                               Style="{StaticResource InputStyle}"
+                               Placeholder="مقدار جدید" />
+                        <Button x:Name="CorrectButton"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Text="ثبت اصلاح"
+                                Clicked="OnCorrectClicked"
+                                SemanticProperties.Description="ثبت اصلاح فیلد" />
+
+                        <Label Style="{StaticResource SectionTitleStyle}" Text="تلفن مشتری" />
+                        <Entry x:Name="CustomerPhoneEntry"
+                               Style="{StaticResource InputStyle}"
+                               Placeholder="شماره تماس مشتری"
+                               Keyboard="Telephone" />
+                        <Button x:Name="SetPhoneButton"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Text="ثبت تلفن مشتری"
+                                Clicked="OnSetPhoneClicked"
+                                SemanticProperties.Description="ثبت شماره تماس مشتری" />
+
+                        <Label Style="{StaticResource SectionTitleStyle}" Text=" صدور و چاپ" />
+                        <HorizontalStackLayout Style="{StaticResource ButtonRowStyle}">
+                            <CheckBox x:Name="PrintCheckBox"
+                                      Style="{StaticResource CheckBoxStyle}" />
+                            <Label Style="{StaticResource BodyStyle}"
+                                   Text="چاپ پس از صدور"
+                                   VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                        <Button x:Name="IssueButton"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Text="صدور فاکتور"
+                                Clicked="OnIssueClicked"
+                                SemanticProperties.Description="صدور فاکتور از حالت بازبینی" />
+
+                        <Label x:Name="IssueStatusLabel" Style="{StaticResource BodyStyle}" />
+                        <Button x:Name="CopyReportButton"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Text="کپی گزارش خطا"
+                                Clicked="OnCopyReportClicked"
+                                IsVisible="False"
+                                SemanticProperties.Description="کپی گزارش خطا در حافظه موقت" />
+                        <Label x:Name="CopyStatusLabel" Style="{StaticResource BodyStyle}" />
+                        <Button Style="{StaticResource SecondaryButtonStyle}"
+                                Text="بازگشت"
+                                Clicked="OnBackClicked"
+                                SemanticProperties.Description="بازگشت به صفحه قبلی" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Copy-report button for list-level errors -->
+                <Button x:Name="ListCopyReportButton"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Text="کپی گزارش خطا"
+                        Clicked="OnListCopyReportClicked"
+                        IsVisible="False"
+                        SemanticProperties.Description="کپی گزارش خطا در حافظه موقت" />
+                <Label x:Name="ListCopyStatusLabel" Style="{StaticResource BodyStyle}" />
+            </VerticalStackLayout>
+        </Border>
+    </ScrollView>
+</ContentPage>
