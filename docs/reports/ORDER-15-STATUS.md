@@ -21,19 +21,22 @@
 
 ## لاین PHP (ORDER 15 P-tasks)
 
-شاخه‌های مخزن `majid-ghanbari-dost/kandoo-cloud-php` در دسترس نیست (پاسخ 403 از API گیت‌هاب). کلیه فیلدهای لاین PHP مقدار BLOCKED-UNKNOWN دارند.
+داده‌های ufficiale از گروه PHP (جمع‌آوری از kandoo-cloud-php، 2026-11-21):
 
 | تسک | شاخه | کامیت کامل | لینک CI | نتیجه |
 |------|--------|-----------|----------|-------|
-| P-30 | BLOCKED-UNKNOWN | BLOCKED-UNKNOWN | BLOCKED-UNKNOWN | BLOCKED-UNKNOWN |
-| P-31 | BLOCKED-UNKNOWN | BLOCKED-UNKNOWN | BLOCKED-UNKNOWN | BLOCKED-UNKNOWN |
-| P-32 | BLOCKED-UNKNOWN | BLOCKED-UNKNOWN | BLOCKED-UNKNOWN | BLOCKED-UNKNOWN |
-| P-33 | BLOCKED-UNKNOWN | BLOCKED-UNKNOWN | BLOCKED-UNKNOWN | BLOCKED-UNKNOWN |
-| P-34 | BLOCKED-UNKNOWN | BLOCKED-UNKNOWN | BLOCKED-UNKNOWN | BLOCKED-UNKNOWN |
-| P-35 | BLOCKED-UNKNOWN | BLOCKED-UNKNOWN | BLOCKED-UNKNOWN | BLOCKED-UNKNOWN |
+| P-20 | arena/f729618f-kandoo-cloud-php | 91f305f8989a252624c3a663e9ed3cff722bd93d | https://github.com/majid-ghanbari-dost/kandoo-cloud-php/actions/runs/44026403257 | سبز؛ پذیرش در انتظار |
+| P-20b | arena/f729618f-kandoo-cloud-php | 6776349c9ea95baaa99b939df037a76e0a96957d | https://github.com/majid-ghanbari-dost/kandoo-cloud-php/actions/runs/44037765746 | سبز؛ پذیرش در انتظار |
+| P-21 | arena/f729618f-kandoo-cloud-php | 32bcda3fe01d3ae65b9f7b0709bc84674b8f37e3 | https://github.com/majid-ghanbari-dost/kandoo-cloud-php/actions/runs/44026757364 | سبز؛ پذیرش مشروط |
+| P-22 | arena/f729618f-kandoo-cloud-php | d0552e5656009724ea61611309f77abf6d22ee5d | https://github.com/majid-ghanbari-dost/kandoo-cloud-php/actions/runs/44027138658 | سبز؛ پذیرش در انتظار |
+| P-23 | arena/f729618f-kandoo-cloud-php | 124573f05514a2914a46976cbde672105f693ae4 | https://github.com/majid-ghanbari-dost/kandoo-cloud-php/actions/runs/44072197418 | سبز؛ پذیرش در انتظار |
+| P-24 | arena/f729618f-kandoo-cloud-php | bc66889a40bcd7e05749dc627d1852eaabec6f82 | https://github.com/majid-ghanbari-dost/kandoo-cloud-php/actions/runs/44027564145 | سبز؛ پذیرش در انتظار |
+| P-25 | arena/f729618f-kandoo-cloud-php | 2724969fd85475c777016d54d61abe3789a6773a | https://github.com/majid-ghanbari-dost/kandoo-cloud-php/actions/runs/44072854193 | سبز؛ پذیرش در انتظار |
+| P-26 | BLOCKED-UNKNOWN | BLOCKED-UNKNOWN | BLOCKED-UNKNOWN | اختیاری؛ اجرا نشده — هیچ شاخه/کامیت/سی‌آی نیست |
+| P-27 | arena/f729618f-kandoo-cloud-php | ac5bcc334d75563180abaad3356bd3d994bf3bb5 | https://github.com/majid-ghanbari-dost/kandoo-cloud-php/actions/runs/44052902608 | سبز؛ پذیرفته شده |
 
 ## Notes
 
 - لاین C#: تمام تسک‌های C-80 تا C-87 به غیر از C-86 (استرتچ) تکمیل شده و CI سبز است.
-- لاین PHP: مخزن قابل دسترسی نیست، تمام مقادیر BLOCKED-UNKNOWN.
+- لاین PHP: داده‌های ufficiale از گروه PHP؛ P-26 اختیاری و اجرا نشده (BLOCKED-UNKNOWN).
 - تسک C-86 (حالت مشتری اندروید) استرتچ است و انجام نشده است.
