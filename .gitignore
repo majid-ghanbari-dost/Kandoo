@@ -4,6 +4,8 @@ obj/
 artifacts/
 **/bin
 **/obj
+packaging/HubPilot/publish/
+packaging/HubPilot/Output/
 
 # Visual Studio / MSBuild
 *.user

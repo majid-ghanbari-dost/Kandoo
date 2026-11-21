@@ -169,7 +169,7 @@ Full details and executable test criteria are maintained in [`docs/DECISIONS.md`
 
 - **Window-11 (W11) C# implementation line** (`arena/ca78e14d-kandoo`):
   - **Branch tip:** `49160d6455037b33bfec4fb7860f027007d495aa` (CI run [42500381204](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/42500381204) — GREEN, ubuntu + windows).
-  - **C-59..C-65 all manager-ACCEPTED:** C-59 (`w11-C-59`, `c974a8ce…`, CI 42459975126), C-60 (`w11-C-60`, `e6bf39cf…`, CI 42461927836), C-61 (`w11-C-61`, `a0ab3f56…`, CI 42465848589), C-62 (`w11-C-62`, `ad51ab97…`, CI 42497849017), C-63 (`w11-C-63`, `7ce20672…`, CI 42470372406), C-65 (`w11-C-65`, `a5848e39…`, CI 42471577629). All prior `w11-C-*` tags unmoved.
+  - **C-59..C-65 all manager-ACCEPTED:** C-59 (`w11-C-59`, `c974a8ce…`, CI 42459975126), C-60 (`w11-C-60`, `e6bf39cf…`, CI 42461927836), C-61 (`w11-C-61`, `a0ab3f56…`, CI 42465848589), C-62 (`w11-C-62`, `ad51ab97…`, CI 42500381204), C-63 (`w11-C-63`, `7ce20672…`, CI 42470372406), C-65 (`w11-C-65`, `a5848e39…`, CI 42471577629). All prior `w11-C-*` tags unmoved.
   - **C-62 follow-ups (manager-ACCEPTED):** `aa580ac` — register `Kandoo.HolooConnector` + tests in `Kandoo.sln` (CI 42500128966 red → fixed); `49160d6` — fix `HolooMapper` `GetValueOrDefault`→`TryGetValue` for Windows build (CI 42500381204 GREEN).
   - **H-07 (stretch):** closed per ORDER 11 as "Handoff + tag ledger (always last)"; report at `docs/reports/H-07.md`, tag `w11-H-07`, both committed on `arena/ca78e14d-kandoo`.
   - **C-45b:** MUST per ORDER 11 (Hub side of v1.1 per D-C/P-09, activated only when Cloud advertises v1.1). Blocked on v1.1 addendum Draft 2 (2026-11-10, PM/PO review) and Cloud v1.1 advertisement. NOT a keep-or-close documentation decision.

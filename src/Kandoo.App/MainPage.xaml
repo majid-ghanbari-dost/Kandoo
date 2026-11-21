@@ -105,7 +105,7 @@
                     <VerticalStackLayout x:Name="DeviceItems" Style="{StaticResource RowStackStyle}">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate>
-                                <Border Style="{StaticResource RowStyle}">
+                                <Border Style="{StaticResource CardStyle}">
                                     <VerticalStackLayout Style="{StaticResource RowStackStyle}">
                                         <Label Style="{StaticResource SectionTitleStyle}"
                                                Text="{Binding Label}" />
@@ -151,6 +151,11 @@
                         Text="بارگذاری صف"
                         Clicked="OnLoadClicked"
                         SemanticProperties.Description="بارگذاری صف بررسی" />
+                <Button x:Name="ReviewQueueButton"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Text="صف بازبینی (کامل)"
+                        Clicked="OnReviewQueueClicked"
+                        SemanticProperties.Description="صفحهٔ کامل صف بازبینی با اصلاح و صدور" />
                 <Button x:Name="ProductsButton"
                         Style="{StaticResource PrimaryButtonStyle}"
                         Text="فهرست کالاها (واقعی)"
@@ -161,11 +166,52 @@
                        Text="آماده" />
 
                 <Label Style="{StaticResource SectionTitleStyle}"
+                       Text="عملیات سریع" />
+                <HorizontalStackLayout Style="{StaticResource ButtonRowStyle}">
+                    <Button x:Name="CreateInvoiceButton"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            Text="ساخت فاکتور"
+                            Clicked="OnCreateInvoiceClicked"
+                            IsEnabled="False"
+                            SemanticProperties.Description="ساخت فاکتور جدید" />
+                    <Button x:Name="ProductEditorButton"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Text="ویرایش محصول"
+                            Clicked="OnProductEditorClicked"
+                            IsEnabled="False"
+                            SemanticProperties.Description="ساخت یا ویرایش محصول" />
+                    <Button x:Name="CustomersButton"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Text="مشتریان"
+                            Clicked="OnCustomersClicked"
+                            IsEnabled="False"
+                            SemanticProperties.Description="فهرست مشتریان" />
+                <Button x:Name="SettingsButton"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Text="تنظیمات"
+                        Clicked="OnSettingsClicked"
+                        IsEnabled="False"
+                        SemanticProperties.Description="تنظیمات برنامه" />
+                <Button x:Name="ReturnsButton"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Text="برگشت‌ها"
+                        Clicked="OnReturnsClicked"
+                        IsEnabled="False"
+                        SemanticProperties.Description="صف برگشت کالاها" />
+                <Button x:Name="InvoicesButton"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Text="فاکتورها"
+                        Clicked="OnInvoicesClicked"
+                        IsEnabled="False"
+                        SemanticProperties.Description="فهرست فاکتورها" />
+                </HorizontalStackLayout>
+
+                <Label Style="{StaticResource SectionTitleStyle}"
                        Text="فاکتورها" />
                 <VerticalStackLayout x:Name="QueueItems" Style="{StaticResource RowStackStyle}">
                     <BindableLayout.ItemTemplate>
                         <DataTemplate>
-                            <Border Style="{StaticResource RowStyle}">
+                            <Border Style="{StaticResource CardStyle}">
                                 <VerticalStackLayout Style="{StaticResource RowStackStyle}">
                                     <Label Style="{StaticResource SectionTitleStyle}"
                                            Text="{Binding InvoiceNumber}" />
@@ -183,14 +229,33 @@
                 </VerticalStackLayout>
 
                 <Border x:Name="CustomerPanel"
-                        Style="{StaticResource RowStyle}"
+                        Style="{StaticResource CardStyle}"
                         IsVisible="False">
                     <VerticalStackLayout Style="{StaticResource RowStackStyle}">
-                        <Label Style="{StaticResource SectionTitleStyle}" Text="مشتری نمونه" />
-                        <Label Style="{StaticResource BodyStyle}"
-                               Text="نقش مشتری فعال است؛ فهرست فاکتورها در این مرحله اضافه نشده است." />
+                        <Label Style="{StaticResource SectionTitleStyle}" Text="حساب مشتری" />
+                        <Button x:Name="CustomerOtpButton"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Text="ورود به حساب مشتری"
+                                Clicked="OnCustomerOtpClicked"
+                                SemanticProperties.Description="ورود به حساب مشتری با کد تایید پیامک" />
+                        <Button x:Name="CustomerInvoicesButton"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Text="فاکتورهای من"
+                                Clicked="OnCustomerInvoicesClicked"
+                                SemanticProperties.Description="مشاهده فهرست فاکتورهای مشتری" />
                     </VerticalStackLayout>
                 </Border>
+
+                <!-- Copy-report button shown when an error occurs. -->
+                <Button x:Name="CopyReportButton"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Text="کپی گزارش خطا"
+                        Clicked="OnCopyReportClicked"
+                        IsVisible="False"
+                        SemanticProperties.Description="کپی گزارش خطا در حافظه موقت" />
+                <Label x:Name="CopyStatusLabel"
+                       Style="{StaticResource BodyStyle}"
+                       HorizontalTextAlignment="Center" />
             </VerticalStackLayout>
         </ScrollView>
     </Grid>

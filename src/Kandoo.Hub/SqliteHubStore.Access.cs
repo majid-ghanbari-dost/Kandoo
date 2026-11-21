@@ -772,6 +772,7 @@ public sealed partial class SqliteHubStore
         EnsureColumn("devices", "operator_level", "TEXT NULL");
         EnsureColumn("devices", "device_server_key_hash", "TEXT NULL");
         EnsureColumn("devices", "server_key_issued_at", "TEXT NULL");
+        EnsureColumn("devices", "device_secret", "TEXT NULL");
         EnsureColumn("pairing_grants", "operator_level", "TEXT NULL");
     }
 
@@ -877,6 +878,72 @@ public sealed partial class SqliteHubStore
         DateTimeOffset ExpiresAt,
         bool Consumed,
         string? OperatorLevel);
+
+    public void SaveDeviceSecret(Guid storeId, Guid deviceId, string secret)
+    {
+        if (storeId == Guid.Empty || deviceId == Guid.Empty)
+        {
+            throw new ArgumentException("Store and device are required.");
+        }
+
+        if (string.IsNullOrEmpty(secret))
+        {
+            throw new ArgumentException("A device secret is required.", nameof(secret));
+        }
+
+        lock (_gate)
+        {
+            ThrowIfDisposed();
+            using var transaction = _connection.BeginTransaction();
+            try
+            {
+                // Ensure the device row exists before saving its secret
+                using var ensureCmd = _connection.CreateCommand();
+                ensureCmd.Transaction = transaction;
+                ensureCmd.CommandText = "INSERT OR IGNORE INTO devices (store_id, device_id, device_role, pairing_status, label, platform, credential_hash, paired_at) VALUES ($store, $device, 0, 1, '', '', '', $now)";
+                ensureCmd.Parameters.AddWithValue("$store", storeId.ToString("D"));
+                ensureCmd.Parameters.AddWithValue("$device", deviceId.ToString("D"));
+                ensureCmd.Parameters.AddWithValue("$now", DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture));
+                ensureCmd.ExecuteNonQuery();
+
+                using var command = AccessCommand(transaction, "UPDATE devices SET device_secret = $secret WHERE store_id = $store AND device_id = $device;");
+                AddAccess(command, "$secret", secret);
+                AddAccess(command, "$store", storeId.ToString("D"));
+                AddAccess(command, "$device", deviceId.ToString("D"));
+                if (command.ExecuteNonQuery() == 0)
+                {
+                    throw new InvalidOperationException("DEVICE_NOT_FOUND");
+                }
+
+                InsertAudit(transaction, storeId, "DEVICE_SECRET_SAVED", null, deviceId, DateTimeOffset.UtcNow);
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+    }
+
+    public string? GetDeviceSecret(Guid storeId, Guid deviceId)
+    {
+        if (storeId == Guid.Empty || deviceId == Guid.Empty)
+        {
+            return null;
+        }
+
+        lock (_gate)
+        {
+            ThrowIfDisposed();
+            using var command = _connection.CreateCommand();
+            command.CommandText = "SELECT device_secret FROM devices WHERE store_id = $store AND device_id = $device;";
+            command.Parameters.AddWithValue("$store", storeId.ToString("D"));
+            command.Parameters.AddWithValue("$device", deviceId.ToString("D"));
+            var result = command.ExecuteScalar()?.ToString();
+            return string.IsNullOrEmpty(result) ? null : result;
+        }
+    }
 
     private sealed record SessionRow(
         string SessionId,

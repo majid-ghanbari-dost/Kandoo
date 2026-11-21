@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Kandoo.App.CreateInvoicePage"
+             Title="ساخت فاکتور"
+             Style="{StaticResource PageStyle}">
+    <ScrollView>
+        <Border Style="{StaticResource CardStyle}">
+            <VerticalStackLayout Style="{StaticResource RootStackStyle}">
+                <Label Style="{StaticResource TitleStyle}" Text="ساخت فاکتور جدید" />
+                <Label Style="{StaticResource BodyStyle}"
+                       Text="فاکتور همیشه به‌صورت دیجیتال ساخته می‌شود؛ چاپ اختیاری است." />
+
+                <Entry x:Name="OperationIdEntry"
+                       Style="{StaticResource InputStyle}"
+                       Placeholder="شناسه عملیات (اختیاری)"
+                       SemanticProperties.Description="شناسه عملیات idempotency" />
+                <Entry x:Name="CustomerPhoneEntry"
+                       Style="{StaticResource InputStyle}"
+                       Placeholder="شماره مشتری (اختیاری)"
+                       Keyboard="Telephone"
+                       SemanticProperties.Description="شماره تماس مشتری" />
+
+                <Label Style="{StaticResource SectionTitleStyle}" Text="محصولات" />
+                <Entry x:Name="ProductIdEntry"
+                       Style="{StaticResource InputStyle}"
+                       Placeholder="شناسه کالا"
+                       SemanticProperties.Description="شناسه کالا برای افزودن به فاکتور" />
+                <Entry x:Name="QuantityEntry"
+                       Style="{StaticResource InputStyle}"
+                       Placeholder="تعداد"
+                       Keyboard="Numeric"
+                       SemanticProperties.Description="تعداد کالا" />
+                <Entry x:Name="UnitPriceEntry"
+                       Style="{StaticResource InputStyle}"
+                       Placeholder="قیمت واحد (ریال)"
+                       Keyboard="Numeric"
+                       SemanticProperties.Description="قیمت واحد کالا" />
+                <Button x:Name="AddItemButton"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Text="افزودن کالا به فاکتور"
+                        Clicked="OnAddItemClicked" />
+
+                <VerticalStackLayout x:Name="ItemsList" Style="{StaticResource RowStackStyle}" />
+
+                <HorizontalStackLayout Style="{StaticResource ButtonRowStyle}">
+                    <CheckBox x:Name="PrintCheckbox" />
+                    <Label Style="{StaticResource BodyStyle}" Text="چاپ فاکتور (اختیاری)" />
+                </HorizontalStackLayout>
+
+                <Button x:Name="CreateButton"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Text="ساخت فاکتور دیجیتال"
+                        Clicked="OnCreateClicked"
+                        SemanticProperties.Description="ساخت فاکتور دیجیتال و ذخیره در هاب" />
+
+                <Label x:Name="StatusLabel" Style="{StaticResource BodyStyle}" />
+                <Button x:Name="CopyReportButton"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Text="کپی گزارش خطا"
+                        Clicked="OnCopyReportClicked"
+                        IsVisible="False"
+                        SemanticProperties.Description="کپی گزارش خطا در حافظه موقت" />
+                <Label x:Name="CopyStatusLabel" Style="{StaticResource BodyStyle}" />
+            </VerticalStackLayout>
+        </Border>
+    </ScrollView>
+</ContentPage>

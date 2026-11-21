@@ -22,6 +22,15 @@ public sealed class HttpCloudReplicationTransport : ICloudReplicationTransport
             Content = new StringContent(json, Encoding.UTF8, "application/json")
         };
         request.Headers.Add("Idempotency-Key", batch.BatchId);
+
+        // C-80b: Device key header per Cloud contract (DeviceBearer = Authorization: Bearer).
+        // Cloud returns 401 without it; header value is the per-device secret already
+        // resolved by HubCloudReplicationClient.AttemptAsync. Cloud-side auth is untouched.
+        if (!string.IsNullOrEmpty(batch.DeviceSecret))
+        {
+            request.Headers.Add("Authorization", $"Bearer {batch.DeviceSecret}");
+        }
+
         using var response = await _client.SendAsync(request, cancellationToken);
         JsonElement? body = null;
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -125,6 +134,16 @@ public sealed class HubCloudReplicationClient
             return new HubReplicationResult("IDLE", 0, depth, 0);
         }
 
+        // C-60: per-device secret — fail closed when missing
+        var deviceSecret = _source.GetDeviceSecret(storeId, batch.WriterDeviceId);
+        if (string.IsNullOrEmpty(deviceSecret))
+        {
+            return new HubReplicationResult(
+                "DEVICE_SECRET_MISSING", 0, depth, 0, "DEVICE_SECRET_MISSING",
+                Mode: "FENCED_READ_ONLY");
+        }
+
+        batch.DeviceSecret = deviceSecret;
         var outbound = HubReplicationPayloadV11.Apply(batch, _options);
         CloudTransportResponse response;
         try
