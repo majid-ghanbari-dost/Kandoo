@@ -7,7 +7,7 @@
 
 | وظیفه | شاخه | SHA کامل | آدرس رن CI | نتیجه | نام آرتیفاکت |
 |-------|-------|---------|-----------|-------|--------------|
-| C-93 | `arena/kandoo-c93-holoo-connector` | `5766519` | https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/$(pending) | در انتظار CI | kandoo-holoo-connector-tests |
+| C-93 | `arena/kandoo-c93-holoo-connector` | `6a756f42303fe99f55e3c23775e9043296ebac33` | https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44884561341 | سبز (GREEN) | kandoo-holoo-connector-tests |
 
 ## فایل‌های ایجاد شده
 
@@ -38,4 +38,14 @@
 
 ## نتیجه نهایی
 
-PR #16 ایجاد شده، CI در انتظار اجرا، گزارش فعلی ارائه شد.
+CI هر دو جاب (اوبونتو و ویندوز) سبز است، PR #16 ایجاد شده، گزارش در `docs/reports/ORDER-16-C-93.md` ثبت شد.
+
+## تسک‌های BLOCKED (ORDER 16 بقیه)
+
+| تسک | دلیل BLOCKED |
+|------|-------------|
+| C-90 | ساخت MAUI Windows روی رنرهای windows-latest GitHub-hosted شکست می‌خورد ( workload MAUI در دسترس نیست؛ ۱۵+ تلاش ناموفق) |
+| C-91 | شبیه‌ساز اندروید ۱۰ روی رنرهای ubuntu-latest اجرا نمی‌شود (KVM/تسریع سخت‌افزاری در دسترس نیست) |
+| C-92 | وابسته به برنامه اندروید (C-91) که قابل ساخت/تست روی CI نیست |
+| C-94 | تسک استرتچ، شروع نشده |
+| C-95 | نیازمند ساخت MAUI Windows App است که روی CI قابل ساخت نیست |
