@@ -198,6 +198,12 @@
                         Clicked="OnReturnsClicked"
                         IsEnabled="False"
                         SemanticProperties.Description="صف برگشت کالاها" />
+                <Button x:Name="InvoicesButton"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Text="فاکتورها"
+                        Clicked="OnInvoicesClicked"
+                        IsEnabled="False"
+                        SemanticProperties.Description="فهرست فاکتورها" />
                 </HorizontalStackLayout>
 
                 <Label Style="{StaticResource SectionTitleStyle}"

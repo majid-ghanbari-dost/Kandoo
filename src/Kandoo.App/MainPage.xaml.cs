@@ -367,6 +367,19 @@ public partial class MainPage : ContentPage
         }
     }
 
+    private async void OnInvoicesClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            var settings = ReadHubSettings();
+            await Navigation.PushAsync(new InvoicesListPage(settings));
+        }
+        catch (Exception exception) when (IsExpected(exception))
+        {
+            StatusLabel.Text = exception.Message;
+        }
+    }
+
     private async Task LoadDevicesAsync()
     {
         LoadDevicesButton.IsEnabled = false;
@@ -433,6 +446,7 @@ public partial class MainPage : ContentPage
         ProductEditorButton.IsEnabled = hasSettings;
         CustomersButton.IsEnabled = hasSettings;
         ReturnsButton.IsEnabled = hasSettings;
+        InvoicesButton.IsEnabled = hasSettings;
         SettingsButton.IsEnabled = true; // Settings page works without Hub settings for local backup
     }
 
