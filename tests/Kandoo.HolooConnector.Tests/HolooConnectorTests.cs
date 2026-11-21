@@ -57,4 +57,136 @@ public class HolooConnectorTests
         Assert.Equal(11, objects.Length);
         Assert.All(objects, o => Assert.NotEmpty(HolooColumnMap.For(o)));
     }
+
+    [Fact]
+    public void SchemaVersion_known_trusted_versions_return_instance()
+    {
+        var v1 = HolooSchemaVersion.Known("H1-6");
+        var v2 = HolooSchemaVersion.Known("H1-7");
+        var v3 = HolooSchemaVersion.Known("H1-8");
+
+        Assert.NotNull(v1);
+        Assert.NotNull(v2);
+        Assert.NotNull(v3);
+        Assert.Equal("H1-6", v1!.Value);
+        Assert.Equal("H1-7", v2!.Value);
+        Assert.Equal("H1-8", v3!.Value);
+    }
+
+    [Fact]
+    public void SchemaVersion_unknown_or_empty_returns_null()
+    {
+        Assert.Null(HolooSchemaVersion.Known(null));
+        Assert.Null(HolooSchemaVersion.Known(""));
+        Assert.Null(HolooSchemaVersion.Known("   "));
+        Assert.Null(HolooSchemaVersion.Known("H9-99"));
+        Assert.Null(HolooSchemaVersion.Known("unknown"));
+    }
+
+    [Fact]
+    public void SchemaVersion_tryparse_matches_known()
+    {
+        var v = HolooSchemaVersion.Known("H1-6");
+        Assert.NotNull(v);
+        Assert.True(HolooSchemaVersion.TryParse("H1-6", out var v2));
+        Assert.NotNull(v2);
+        Assert.Equal("H1-6", v2!.Value);
+
+        Assert.False(HolooSchemaVersion.TryParse("H9-99", out var v3));
+        Assert.Null(v3);
+    }
+
+    [Fact]
+    public void IncrementalSync_create_if_changed_returns_new_when_version_differs()
+    {
+        var prev = HolooSchemaVersion.Known("H1-6");
+        var curr = HolooSchemaVersion.Known("H1-7");
+        Assert.NotNull(prev);
+        Assert.NotNull(curr);
+
+        var sync = HolooIncrementalSync.CreateIfChanged(prev!, curr!, 100);
+
+        Assert.NotNull(sync);
+        Assert.Equal("H1-7", sync!.Version.Value);
+        Assert.Equal(100, sync.LastRowVersion);
+        Assert.True(sync.NeedsSync);
+    }
+
+    [Fact]
+    public void IncrementalSync_create_if_changed_returns_null_when_version_same()
+    {
+        var prev = HolooSchemaVersion.Known("H1-6");
+        var curr = HolooSchemaVersion.Known("H1-6");
+        Assert.NotNull(prev);
+        Assert.NotNull(curr);
+
+        var sync = HolooIncrementalSync.CreateIfChanged(prev!, curr!, 100);
+
+        Assert.Null(sync);
+    }
+
+    [Fact]
+    public void IncrementalSync_create_if_changed_returns_new_when_previous_null()
+    {
+        var curr = HolooSchemaVersion.Known("H1-6");
+        Assert.NotNull(curr);
+
+        var sync = HolooIncrementalSync.CreateIfChanged(null, curr!, 0);
+
+        Assert.NotNull(sync);
+        Assert.Equal("H1-6", sync!.Version.Value);
+        Assert.Equal(0, sync.LastRowVersion);
+        Assert.False(sync.NeedsSync);
+    }
+
+    [Fact]
+    public void ShadowStore_upsert_and_get_customer()
+    {
+        var store = new HolooShadowStore();
+        var record = new CustomerShadowRecord("C100", "Reza", "0912", false);
+        store.UpsertCustomer(record);
+
+        Assert.True(store.TryGetCustomer("C100", out var got));
+        Assert.Equal("C100", got!.CustomerCode);
+        Assert.Equal("Reza", got.CustomerName);
+        Assert.False(got.IsUnverified);
+    }
+
+    [Fact]
+    public void ShadowStore_upsert_and_get_product()
+    {
+        var store = new HolooShadowStore();
+        var record = new ProductShadowRecord("P100", "محصول الف", 10000m, 12000m, false);
+        store.UpsertProduct(record);
+
+        Assert.True(store.TryGetProduct("P100", out var got));
+        Assert.Equal("P100", got!.ProductCode);
+        Assert.Equal("محصول الف", got.ProductName);
+        Assert.False(got.IsUnverified);
+    }
+
+    [Fact]
+    public void ShadowStore_append_history()
+    {
+        var store = new HolooShadowStore();
+        store.AppendHistory(new HistoryShadowRecord("INV-1", "C100", "P100", 2, 5000m));
+
+        Assert.Equal(1, store.History.Count);
+        Assert.Equal("INV-1", store.History[0].InvoiceCode);
+        Assert.Equal("C100", store.History[0].CustomerCode);
+    }
+
+    [Fact]
+    public void ShadowStore_customer_not_found_returns_false()
+    {
+        var store = new HolooShadowStore();
+        Assert.False(store.TryGetCustomer("C999", out var _));
+    }
+
+    [Fact]
+    public void ShadowStore_product_not_found_returns_false()
+    {
+        var store = new HolooShadowStore();
+        Assert.False(store.TryGetProduct("P999", out var _));
+    }
 }
