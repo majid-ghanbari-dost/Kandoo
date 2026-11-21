@@ -11,7 +11,7 @@ namespace Kandoo.HolooConnector;
 /// an import timestamp. Imported stock is always marked "unverified"
 /// until the owner confirms it through a separate flow.
 /// </summary>
-public sealed class ShadowProduct
+public sealed record ShadowProduct
 {
     public string ProductCode { get; init; } = string.Empty;
     public string? ProductName { get; init; }
