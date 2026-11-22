@@ -109,6 +109,14 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Diagnose KVM availability (Push 1 - diagnostic)
+        shell: bash
+        run: |
+          echo "=== KVM DIAGNOSTIC ==="
+          ls -l /dev/kvm || true
+          sudo apt-get install -y cpu-checker >/dev/null 2>&1 && kvm-ok || true
+          echo "=== END KVM DIAGNOSTIC ==="
+
       - name: Download Android test APK
         uses: actions/download-artifact@v4
         with:
