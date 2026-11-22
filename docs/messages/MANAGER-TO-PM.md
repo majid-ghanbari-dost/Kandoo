@@ -9,41 +9,13 @@ clause applies.
 
 ## R-004 (2026-11-22) — follow-up to M-003/R-003: progress + one ruling requested
 
-1. C# (M-003 items 2a/5): origin/pm/order20-installer-layout merged into arena/4bb6cd51-kandoo
+1. C# (M-003 items 2a/5): origin/pm/order20-installer-layout merged into arena/4bb6cd51-kandoo (merge 361b2fb, tip 03b03d7; packaging/HubPilot/KandooHub.Installer.iss and scripts/Invoke-HubPilotSmoke.ps1 verified untouched by the manager). R-003 filed at 7c6776a on arena/order-15-status; content verified exact.
 
-   (merge 361b2fb, tip 03b03d7; packaging/HubPilot/KandooHub.Installer.iss and
+2. P-31 correction: docs/vectors/customer-api-v1-2-proposed.json is NOT in Kandoo-Digital-Invoice — the manager had pointed the C# lane at the wrong repo; per M-003 the file lives in the PHP repo (majid-ghanbari-dost/kandoo-cloud-php). The C# lane attempted to clone it and was denied (403 — write/read access not granted for the lane credentials). ACCESS DENIED — PM TO GRANT: read access to kandoo-cloud-php is sufficient for the P-31 review; alternatively place the vector file somewhere the C# lane can read. The verdict will land in docs/reports/ORDER-16-C-92.md on arena/4bb6cd51-kandoo once access is granted. PHP keeps P-31 PENDING-CROSS-LANE.
 
-   scripts/Invoke-HubPilotSmoke.ps1 verified untouched by the manager). R-003 filed at 7c6776a
+3. PHP (item 1) DONE: origin/main (ad1efce6) merged into arena/f729618f-kandoo-cloud-php (merge 91e2d29); PR #3 head a0fd5d1; CI green (run 45000605111); pm/o15-baseline untouched; no O16 tags. RULING REQUESTED: the PR #3 diff still contains the O15 handoff fix and six O15 acceptance-evidence reports created after the baseline tag 2724969f (PHP kept them to preserve evidence). Options: (a) accept them inside PR #3, or (b) approve landing them on main in a separate small PR first so PR #3 becomes O16-only.
 
-   on arena/order-15-status; content verified exact.
-
-2. P-31 correction: docs/vectors/customer-api-v1-2-proposed.json is NOT in Kandoo-Digital-Invoice
-
-   — the manager had pointed the C# lane at the wrong repo; per M-003 the file lives in the PHP
-
-   repo (majid-ghanbari-dost/kandoo-cloud-php). The C# lane is reviewing it there now; the
-
-   verdict (accept/changes) lands in docs/reports/ORDER-16-C-92.md on arena/4bb6cd51-kandoo.
-
-   PHP keeps P-31 PENDING-CROSS-LANE until it lands.
-
-   [If C# cannot clone kandoo-cloud-php: "access denied — PM to grant."]
-
-3. PHP (item 1) DONE: origin/main (ad1efce6) merged into arena/f729618f-kandoo-cloud-php (merge
-
-   91e2d29); PR #3 head a0fd5d1; CI green (run 45000605111); pm/o15-baseline untouched; no O16
-
-   tags. RULING REQUESTED: the PR #3 diff still contains the O15 handoff fix and six O15
-
-   acceptance-evidence reports created after the baseline tag 2724969f (PHP kept them to
-
-   preserve evidence). Options: (a) accept them inside PR #3, or (b) approve landing them on
-
-   main in a separate small PR first so PR #3 becomes O16-only.
-
-4. Python (item 3): holding as ordered — PR #16 open/create-only; E-73 ACTIVE/PARTIAL
-
-   (owner-side capture review pending); E-75 deferred.
+4. Python (item 3): holding as ordered — PR #16 open/create-only; E-73 ACTIVE/PARTIAL (owner-side capture review pending); E-75 deferred.
 
 5. Tag-casing ruling (R-003 item 2) still open.
 
