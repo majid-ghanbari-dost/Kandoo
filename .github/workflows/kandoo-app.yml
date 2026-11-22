@@ -1,0 +1,179 @@
+name: Kandoo App
+
+on:
+  push:
+    paths:
+      - 'src/Kandoo.App/**'
+      - 'src/Kandoo.Core/JalaliDateConverter.cs'
+      - 'tests/Kandoo.App.Tests/**'
+      - 'docs/DECISIONS.md'
+      - 'docs/reports/C-40.md'
+      - 'docs/reports/C-41.md'
+      - 'docs/reports/C-50.md'
+      - 'docs/reports/C-58.md'
+      - 'scripts/Invoke-KandooApp.ps1'
+      - 'scripts/Inspect-KandooApk.py'
+      - 'scripts/Invoke-C50AndroidSmoke.sh'
+      - 'scripts/Inspect-C58Evidence.py'
+      - '.github/workflows/kandoo-app.yml'
+  pull_request:
+    paths:
+      - 'src/Kandoo.App/**'
+      - 'src/Kandoo.Core/JalaliDateConverter.cs'
+      - 'tests/Kandoo.App.Tests/**'
+      - 'docs/DECISIONS.md'
+      - 'docs/reports/C-40.md'
+      - 'docs/reports/C-41.md'
+      - 'docs/reports/C-50.md'
+      - 'docs/reports/C-58.md'
+      - 'scripts/Invoke-KandooApp.ps1'
+      - 'scripts/Inspect-KandooApk.py'
+      - 'scripts/Invoke-C50AndroidSmoke.sh'
+      - 'scripts/Inspect-C58Evidence.py'
+      - '.github/workflows/kandoo-app.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: 'true'
+
+jobs:
+  test-and-build:
+    name: App tests + Windows + Android
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Install MAUI workloads
+        shell: pwsh
+        run: scripts/Invoke-CiStep.ps1 -StepName 'Install MAUI workloads' -ScriptPath scripts/Invoke-KandooApp.ps1 -ScriptArguments @('-Mode', 'Workload', '-ArtifactDirectory', 'artifacts')
+
+      - name: Test app logic
+        shell: pwsh
+        run: scripts/Invoke-CiStep.ps1 -StepName 'Test app logic' -ScriptPath scripts/Invoke-KandooApp.ps1 -ScriptArguments @('-Mode', 'Test', '-ArtifactDirectory', 'artifacts')
+
+      - name: Publish self-contained Windows app and zip
+        shell: pwsh
+        run: scripts/Invoke-CiStep.ps1 -StepName 'Publish self-contained Windows app and zip' -ScriptPath scripts/Invoke-KandooApp.ps1 -ScriptArguments @('-Mode', 'Windows', '-ArtifactDirectory', 'artifacts')
+
+      - name: Upload Windows app
+        uses: actions/upload-artifact@v4
+        with:
+          name: kandoo-app-c50-win-x64
+          path: artifacts/kandoo-app-c50-win-x64.zip
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Build Android Debug APK
+        shell: pwsh
+        run: scripts/Invoke-CiStep.ps1 -StepName 'Build Android Debug APK' -ScriptPath scripts/Invoke-KandooApp.ps1 -ScriptArguments @('-Mode', 'Android', '-ArtifactDirectory', 'artifacts')
+
+      - name: Upload Android Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: kandoo-app-c50-android-debug-apk
+          path: artifacts/kandoo-app-c50-android-debug.apk
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Build Android Release APK (C-59)
+        shell: pwsh
+        run: scripts/Invoke-CiStep.ps1 -StepName 'Build Android Release APK' -ScriptPath scripts/Invoke-KandooApp.ps1 -ScriptArguments @('-Mode', 'AndroidRelease', '-ArtifactDirectory', 'artifacts')
+
+      - name: Upload Android Release APK and certificate (C-59)
+        uses: actions/upload-artifact@v4
+        with:
+          name: kandoo-app-c59-android-release-apk
+          path: |
+            artifacts/kandoo-app-c59-android-release.apk
+            artifacts/kandoo-app-c59-release-keystore-cert.txt
+          if-no-files-found: error
+          retention-days: 7
+
+  android-emulator-smoke:
+    name: Android 10 emulator launch + 15s liveness
+    runs-on: ubuntu-latest
+    needs: test-and-build
+    continue-on-error: true
+    timeout-minutes: 35
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Diagnose KVM availability (Push 1 - diagnostic)
+        shell: bash
+        run: |
+          echo "=== KVM DIAGNOSTIC ==="
+          ls -l /dev/kvm || true
+          sudo apt-get install -y cpu-checker >/dev/null 2>&1 && kvm-ok || true
+          echo "=== END KVM DIAGNOSTIC ==="
+
+      - name: Enable KVM access (Push 2 - fix)
+        shell: bash
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm || true
+          echo "=== KVM AFTER FIX ==="
+          ls -l /dev/kvm || true
+
+      - name: Download Android test APK
+        uses: actions/download-artifact@v4
+        with:
+          name: kandoo-app-c50-android-debug-apk
+          path: artifacts
+
+      - name: Inspect APK managed payload
+        run: python3 scripts/Inspect-KandooApk.py artifacts/kandoo-app-c50-android-debug.apk artifacts/apk-inspection.json
+
+      - name: Upload APK inspection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kandoo-app-c50-apk-inspection
+          path: artifacts/apk-inspection.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Launch on Android 10 emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          target: default
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-boot-timeout: 900
+          emulator-parameters: -no-window -no-audio -gpu swiftshader_indirect -no-accel
+          script: bash scripts/Invoke-C50AndroidSmoke.sh artifacts/kandoo-app-c50-android-debug.apk artifacts/emulator
+
+      - name: Annotate emulator UI and crash evidence
+        if: always()
+        run: python3 scripts/Inspect-C58Evidence.py current=artifacts/emulator apk=artifacts/kandoo-app-c50-android-debug.apk
+
+      - name: Upload emulator logcat and launch evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kandoo-app-c50-emulator-evidence
+          path: artifacts/emulator
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload cold start measurement
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kandoo-app-c82-cold-start
+          path: artifacts/emulator/cold-start-time.txt
+          if-no-files-found: warn
+          retention-days: 7
