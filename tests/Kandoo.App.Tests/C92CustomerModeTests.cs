@@ -39,15 +39,25 @@ public sealed class C92CustomerModeTests
     }
 
     [Fact]
-    public void C92_DeviceTokenRecord_RequiresTokenAndStoreId()
+    public void C92_SharedTokenFile_Save_RequiresTokenAndStoreId()
     {
-        var storeId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var tempDir = Path.Combine(Path.GetTempPath(), $"kandoo-c92-validate-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var storeId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+            var file = new SharedTokenFile(tempDir);
 
-        // Empty token should throw
-        Assert.Throws<ArgumentException>(() => new DeviceTokenRecord("", storeId));
+            // Empty token should throw from Save()
+            Assert.Throws<ArgumentException>(() => file.Save(new DeviceTokenRecord("", storeId)));
 
-        // Empty store ID should throw
-        Assert.Throws<ArgumentException>(() => new DeviceTokenRecord("token", Guid.Empty));
+            // Empty store ID should throw from Save()
+            Assert.Throws<ArgumentException>(() => file.Save(new DeviceTokenRecord("token", Guid.Empty)));
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, true); } catch { }
+        }
     }
 
     [Fact]
