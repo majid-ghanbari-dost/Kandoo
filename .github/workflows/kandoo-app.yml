@@ -153,7 +153,7 @@ jobs:
           profile: pixel_2
           disable-animations: true
           emulator-boot-timeout: 900
-          emulator-parameters: -no-window -no-audio -gpu swiftshader_indirect
+          emulator-parameters: -no-window -no-audio -gpu swiftshader_indirect -no-accel
           script: bash scripts/Invoke-C50AndroidSmoke.sh artifacts/kandoo-app-c50-android-debug.apk artifacts/emulator
 
       - name: Annotate emulator UI and crash evidence
