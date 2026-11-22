@@ -4,11 +4,13 @@
 
 تسک C-92: حالت مشتری در همان برنامه اندروید: ورود با کد یکبارمصرف (OTP) در برابر API مشتری PHP (P-31); فاکتورها گروه‌بندی شده بر اساس فروشگاه; تعویض نقش فروشگاه/مشتری/هماً; دستگاه تایید شده ذخیره می‌شود. شماره موبایل اینتنتی است; نقش‌ها زیر آن واقع می‌شوند.
 
+**وضعیت: PARTIAL** — ورود با OTP در برابر API مشتری PHP thực sự (P-31) نمی‌تواند تست شود تا زمانی که Lane PHP P-31 ارسال شود. این وابستگی صریحاً اعلام می‌شود.
+
 ## جدول نتایج
 
 | وظیفه | شاخه | SHA کامل | آدرس رن CI | نتیجه |
 |-------|-------|---------|-----------|-------|
-| C-92 | `arena/kandoo-c92-customer-mode` | `17eba20d2f2b908672359e92d6845daa60de9fa9` | https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44923712727 | سبز (ubuntu + windows) |
+| C-92 | `arena/kandoo-c92-customer-mode` | `2af2040f04d84358ffe2c7f567502c95b8e6f4ad` | https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44991041523 | سبز (تست اپلیکیشن) |
 
 ## ویژگی‌های حالت مشتری (موجود در کد)
 
@@ -23,13 +25,17 @@
 
 | تست | فایل | توضیح |
 |------|-------|-------|
-| تستSharedTokenFile | `tests/Kandoo.App.Tests/C92CustomerModeTests.cs` | ذخیره و بارگذاری توکن+شناسه فروشگاه، پاک‌سازی (لاگ‌اوت)، فرمت JSON snake_case |
-| تستDeviceTokenRecord | همان فایل | اعتبارسنجی توکن و شناسه فروشگاه؛ توCN خالی و شناسه خالی باعث خطا می‌شود |
+| SharedTokenFile ذخیره/بارگذاری | `tests/Kandoo.App.Tests/C92CustomerModeTests.cs` | ذخیره و بارگذاری توکن+شناسه فروشگاه، پاک‌سازی (لاگ‌اوت)، فرمت JSON snake_case |
+| SharedTokenFile اعتبارسنجی | همان فایل | Save() خطا می‌دهد برای توCN خالی و شناسه خالی |
+
+## وابستگی P-31 (PHP lane)
+
+تست OTP در برابر API مشتری PHP (P-31) ممکن است تا زمانی که Lane PHP P-31 اجرا شود. این یک وابستگی між-lane است که باید توسط تیم PHP حل شود.
 
 ## محدودیت simulate اندروید بر روی CI
 
-شبیه‌ساز اندروید ۱۰ در رanner ubuntu-latest به دلیل عدم دسترسی به KVM/纳ستید مجازی‌سازی نمی‌تواند اجرا شود (خطای verbatim: "Timeout waiting for emulator to boot."). جاب simulate اندروید با `continue-on-error: true` در فایل `.github/workflows/kandoo-app.yml` تنظیم شده است تا Run CI کل� شود. همه مراحل کد (تست lógica، انتشار ویندوز، ساخت APK‌های اندروید) موفقیت‌آمیز هستند.
+شبیه‌ساز اندروید ۱۰ در رanner ubuntu-latest به دلیل عدم دسترسی به KVM/纳ستید مجازی‌سازی نمی‌تواند اجرا شود (خطای verbatim: "Timeout waiting for emulator to boot."). جاب simulate اندروید با `continue-on-error: true` در فایل `.github/workflows/kandoo-app.yml` تنظیم شده است. همه مراحل کد (تست lógica، انتشار ویندوز، ساخت APK‌های اندروید) موفقیت‌آمیز هستند.
 
 ## نتیجه نهایی
 
-CI هر دو جاب سبز است. تگ `o16-c92` روی کامیت سبز ایجاد شده است. PR #15 ایجاد شده و در انتظار بررسی مدیر است.
+CI تست اپلیکیشن سبز است. تگ `o16-c92` روی کامیت سبز ایجاد شده است. PR #15 ایجاد شده و در انتظار بررسی مدیر است. تسک PARTIAL است تا زمانی که P-31 توسط PHP lane ارسال شود و تست OTP در برابر API واقعی اجرا شود.
