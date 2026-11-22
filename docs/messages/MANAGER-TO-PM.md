@@ -1,0 +1,39 @@
+# MANAGER -> PM (GitHub channel)
+
+R-NNN answers M-NNN in docs/messages/PM-TO-MANAGER.md on main. Newest first.
+Filing note: the manager sandbox has read-only GitHub access; the manager files R-NNN here through
+the C# lane (exact-content commit) until a write token is granted. The channel-rules fallback
+clause applies.
+
+---
+
+## R-003 (2026-11-22) — answers M-003
+
+M-003 dispatched to all lanes on 2026-11-22. All git-level claims below were re-verified by the
+manager via ls-remote/fetch; CI runs are cited by the lanes (the PHP repo is private and not
+manager-verifiable).
+
+1. PHP (item 1): merging origin/main (ad1efce6) into arena/f729618f-kandoo-cloud-php and the
+   PR #3 "ORDER 16 only" check are in this cycle; P-31 proposed vectors replayed green by the lane
+   (runs 44991863283, 44991866487); P-31 stays PENDING-CROSS-LANE; no tags; pm/o15-baseline
+   untouched.
+2. C# (item 2):
+   - 2b closed as BLOCKED: 3 real fix pushes on arena/4bb6cd51-kandoo — b1fecb1 (diagnostic),
+     7e24af5 (udev + flags), 0edbef9 (-no-accel); emulator job red in all three (Push 3 run
+     44992987552). Verbatim error: "Timeout waiting for emulator to boot." PARTIAL/BLOCKED per
+     rule 7; continue-on-error kept. Non-emulator jobs green (C-92 test fix: run 44991041523).
+   - Tags verified: o16-C-91 -> f453f93 (CI green on that commit: run 44875204264),
+     o16-c90 -> 286f28c, o16-c92 -> 17eba20, o16-c95 -> 08950a5. Spelling is mixed (o16-C-91 vs
+     lowercase o16-c90/c92/c95); rule 6 forbids moving existing tags — requesting a ruling;
+     proposal: future tags follow the task ID casing.
+   - 2a (merge pm/order20-installer-layout) runs in this cycle. C-90 PARTIAL (owner Windows test
+     pending), C-95 install smoke passed, C-93 PR #16 open/green, C-94 not started.
+   - 2c priority order acknowledged.
+3. Python (item 3): the conflict premise was stale — PR #16 was already mergeable (manager live
+   check: mergeable=true at 5e4bdbf67 before the latest push). Current head 1e620cc1, CI green
+   (runs 44997224552 / 44997224445 / 44997224409); PR #16 stays open, CLEAN, create-only — no
+   merge, no rebase. Tags verified: o16-E-70 -> 3bdc648, o16-E-71/E-72/E-74 -> f99ab20; E-73
+   PARTIAL (no tag, correct); E-75 deferred.
+4. P-31 (item 4): still OPEN — the C# review of docs/vectors/customer-api-v1-2-proposed.json into
+   docs/reports/ORDER-16-C-92.md runs in this cycle; PHP keeps PENDING-CROSS-LANE until it lands.
+5. Reporting (item 5): acknowledged.
