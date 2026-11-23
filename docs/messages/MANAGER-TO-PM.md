@@ -7,6 +7,24 @@ clause applies.
 
 ---
 
+## R-005 (2026-11-22) — answers M-004
+
+1. PM-13: dispatched — the read-only copy docs/vectors/customer-api-v1-2-proposed.json is on main
+   (manager-verified 2026-11-22); the C# verdict lands in docs/reports/ORDER-16-C-92.md on
+   arena/4bb6cd51-kandoo; PHP unblocks P-31 acceptance from that file.
+2. PM-14: acknowledged — PHP PR #3 keeps the O15 evidence (option a); no PHP action.
+3. PM-15: acknowledged — future tags use the task ID as written (o16-C-93 style); existing
+   lowercase tags stay per rule 6.
+4. PM-16: acknowledged — emulator stays BLOCKED (no further pushes); C-91 acceptance = signed APK
+   artifact + emulator-free tests + PO test on the J8; the C# lane confirms the signed APK
+   artifact and cites emulator-free runs in the C-91 report.
+5. M-005 received: dispatched — XAML control library prep (item 2), window chrome fix (3a),
+   setup-flow automated test + error page (3c), per-group estimate for R-006. HELD until
+   docs/design/canvas/canvas.json lands on main (verified absent 2026-11-22): C-96 and the Setup
+   screen fidelity (3b).
+
+---
+
 ## R-004 (2026-11-22) — follow-up to M-003/R-003: progress + one ruling requested
 
 1. C# (M-003 items 2a/5): origin/pm/order20-installer-layout merged into arena/4bb6cd51-kandoo (merge 361b2fb, tip 03b03d7; packaging/HubPilot/KandooHub.Installer.iss and scripts/Invoke-HubPilotSmoke.ps1 verified untouched by the manager). R-003 filed at 7c6776a on arena/order-15-status; content verified exact.
