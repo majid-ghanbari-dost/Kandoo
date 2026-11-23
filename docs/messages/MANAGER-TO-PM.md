@@ -9,32 +9,13 @@ clause applies.
 
 ## R-006 (2026-11-23) — answers M-005
 
-Filed directly by the manager (direct GitHub write access active 2026-11-23; the C#-lane relay is retired).
-
-1. Item 1 (no real invoices): holding — synthetic fixtures only. Python: E-70 closed, tag
-   o16-E-70 -> 3bdc648; CI green on PR #16 head 1e620cc1 (run 44997227400; also 44997224552 /
-   44997224409 green — 22 checks success, 2026-11-22). E-73 stays ACTIVE/PARTIAL (owner capture
-   review pending; no tag — correct). E-75 deferred.
-2. Item 2 (XAML control library prep) + 3b (Setup first-screen fidelity) + item 4 (C-96): HELD —
-   docs/design/canvas/canvas.json still absent from main (re-verified 2026-11-23);
-   DesignTokens.xaml staged as source material.
-3. Branches / tags / CI (C# lane — agent work complete; all PRs open, none merged, owner review next):
-   - C-90: arena/kandoo-c90-windows-store -> PR #13; tag o16-c90 -> 286f28c.
-   - C-91: arena/kandoo-c91-android-store -> PR #14; tag o16-C-91 -> f453f93; CI green
-     (run 44875204264); signed-APK acceptance per PM-16.
-   - C-92: arena/kandoo-c92-customer-mode -> PR #15; tag o16-c92 -> 17eba20; non-emulator CI
-     green (run 44991041523); emulator job BLOCKED per R-003 2b.
-   - C-93: arena/kandoo-c93-holoo-connector -> PR #16 + fix chain #17/#18/#19
-     (base arena/4bb6cd51-kandoo).
-   - C-95: arena/kandoo-c95-maui-launcher -> PR #12; tag o16-c95 -> 08950a5.
-   - C-94: not started.
-4. Item 5 (per-screen report line): in place — docs/reports/ORDER-16-C-92.md at 1127edb on
-   arena/4bb6cd51-kandoo; PHP may move P-31 out of PENDING-CROSS-LANE.
-5. PHP (O15 evidence per PM-14 option a): PR #3 open, head 562c91c; the manager token cannot read
-   its CI (403) — lane must cite run URLs; PR #4 (baseline) merged to main; no new O15/O16 tags
-   (w11-P-* only).
-6. Item 4 / C-96 time estimate: checklist + report wiring ~3 working days, CI/tag pass ~2 working
-   days — about 1 working week wall-clock; START GATE = canvas.json on main (item 2).
+1. Item 3a (window chrome): commit c8e1415 on arena/4bb6cd51-kandoo — Window.FlowDirection=LeftToRight in App.xaml.cs CreateWindow (buttons on the RIGHT), page content stays RTL; regression note in RUN-LOCAL.md. CI: https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/45125498151 green.
+2. Item 3c (setup flow): same commit — verbatim cause: SetupWizardPage sent an empty "{}" body (proof only in the Authorization header); the endpoint reads the body → 403 OWNER_BOOTSTRAP_INVALID. Fix: full OwnerSessionRequest body. Tests: SetupFlowStoreCreationTests (in-process Hub, asserts success; regression asserts empty body → 403). CI: https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/45125498151.
+3. Item 2 (control library prep): branch arena/kandoo-c96-control-library-prep rebased on the fixed stack (src/Kandoo.Controls from DesignTokens.xaml), no tag. CI: https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/45126883836 green.
+4. Item 5 (estimates, hours per C-96 group): Setup 6, Review queue 5, Invoice issue 8, Invoices list+detail 5, Product CRUD 6, Customers 4, Return 5, Settings 4, Devices 4, Empty+Error 3 — total ~50 (docs/reports/R-006-C-96-time-estimates.md, commit c8e1415).
+5. Item 4 + 3b (C-96 and Setup screen fidelity): HELD — docs/design/canvas/canvas.json absent on main (manager re-verified 2026-11-23).
+6. PM-16: manager ruling — CI artifacts kandoo-app-c59-android-release-apk (signed release) and kandoo-app-c50-android-debug-apk satisfy the signed-APK requirement; the PO J8 test uses the release APK; C-91 report cites both (be3c20a).
+7. PM-13 / P-31: manager cross-lane review verdict ACCEPT (docs/vectors/customer-api-v1-2-proposed.json on main); verdict recorded in docs/reports/ORDER-16-C-92.md; PHP unblocks P-31.
 
 ---
 
