@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>ثبت کالا</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.row{display:flex;align-items:center;gap:8px}
+.row label{width:130px;font-weight:600}
+.row input{flex:1;height:44px;border:1px solid #C9B88E;border-radius:8px;padding:0 12px;font-family:inherit;font-size:16px;background:#FFFFFF;color:#2B1D0E}
+.pm{width:44px;height:44px;border:0;border-radius:8px;background:#F5E9C8;color:#2B1D0E;font-size:22px;font-family:inherit;cursor:pointer}
+.tag{font-size:13px;color:#5A4630;width:150px}
+</style>
+</helmet>
+<div style="width:100%;min-height:760px;box-sizing:border-box;display:flex;background:#FFF8E7;color:#2B1D0E;font-family:'Vazirmatn',Tahoma,sans-serif">
+<nav style="width:220px;background:#2B1D0E;color:#FFF8E7;padding:24px 16px;box-sizing:border-box;display:flex;flex-direction:column;gap:8px">
+<div style="font-size:24px;font-weight:800;margin-bottom:16px">کندو</div>
+<a href="#" style="color:#FFF8E7;padding:12px;text-decoration:none">صف بازبینی</a>
+<a href="#" style="color:#FFF8E7;padding:12px;text-decoration:none">فاکتورها</a>
+<a href="#" style="color:#2B1D0E;background:#F2A900;border-radius:8px;padding:12px;text-decoration:none;font-weight:600">کالاها</a>
+<a href="#" style="color:#FFF8E7;padding:12px;text-decoration:none">تنظیمات</a>
+</nav>
+<main style="flex:1;padding:32px;display:flex;flex-direction:column;gap:20px;max-width:880px">
+<h1 style="margin:0;font-size:28px">ثبت کالای جدید</h1>
+<div style="background:#F5E9C8;border-radius:12px;padding:16px 20px;line-height:1.9">
+<b>کالا را ریز کنید.</b> مثال: «بادکنک کرومی سبز» را این‌طور بنویسید: نام: بادکنک، نوع: کرومی، رنگ: سبز. هر چه ریزتر، پیدا کردن کالا هنگام صدور فاکتور آسان‌تر است.
+</div>
+<div style="background:#FFFFFF;border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:12px">
+<div class="row"><label for="n">نام کالا</label><input id="n" placeholder="[مثلاً بادکنک]"><button class="pm" aria-label="افزودن فیلد بعد از نام کالا">+</button><button class="pm" aria-label="بستن فیلد نام کالا">−</button><span class="tag">الزامی</span></div>
+<div class="row"><label for="x">[نام فیلد شما]</label><input id="x" placeholder="[مقدار]"><button class="pm" aria-label="افزودن فیلد">+</button><button class="pm" aria-label="بستن این فیلد">−</button><span class="tag">فیلد اضافه‌شده توسط شما</span></div>
+<div class="row"><label for="t">نوع کالا</label><input id="t" placeholder="[مثلاً کرومی]"><button class="pm" aria-label="افزودن فیلد بعد از نوع">+</button><button class="pm" aria-label="بستن فیلد نوع">−</button><span class="tag">اختیاری</span></div>
+<div class="row"><label for="c">رنگ</label><input id="c" placeholder="[مثلاً سبز]"><button class="pm" aria-label="افزودن فیلد بعد از رنگ">+</button><button class="pm" aria-label="بستن فیلد رنگ">−</button><span class="tag">اختیاری</span></div>
+<div class="row"><label for="p">قیمت</label><input id="p" placeholder="[قیمت]" inputmode="numeric"><button class="pm" aria-label="افزودن فیلد بعد از قیمت">+</button><button class="pm" aria-label="بستن فیلد قیمت">−</button><span class="tag">الزامی</span></div>
+<div class="row"><label for="bp">قیمت خرید</label><input id="bp" placeholder="[برای محاسبه‌ی سود]" inputmode="numeric"><button class="pm" aria-label="افزودن فیلد بعد از قیمت خرید">+</button><button class="pm" aria-label="بستن فیلد قیمت خرید">−</button><span class="tag">اختیاری، برای سود</span></div>
+<div class="row"><label for="g">تگ رقمی</label><input id="g" placeholder="[خالی بماند، کندو شماره می‌دهد]" inputmode="numeric"><button class="pm" aria-label="افزودن فیلد بعد از تگ رقمی">+</button><button class="pm" aria-label="بستن فیلد تگ رقمی">−</button><span class="tag">اختیاری، خودکار</span></div>
+<div class="row"><label for="s">تعداد در انبار</label><input id="s" placeholder="[تعداد]" inputmode="numeric"><button class="pm" aria-label="افزودن فیلد بعد از تعداد">+</button><button class="pm" aria-label="بستن فیلد تعداد">−</button><span class="tag">الزامی</span></div>
+</div>
+<div style="display:flex;gap:16px;align-items:center">
+<button style="background:#256B43;color:#FFFFFF;border:0;border-radius:8px;padding:12px 32px;min-height:48px;font-family:inherit;font-size:18px;font-weight:600">ثبت کالا</button>
+<span style="color:#9A3B0A;font-size:14px">اگر نام، قیمت یا تعداد خالی باشد، کالا ساخته نمی‌شود و خطا نشان داده می‌شود.</span>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":760}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

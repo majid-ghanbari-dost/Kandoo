@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head><meta charset="utf-8"><title>فاکتور مشتری v2</title><script src="./support.js"></script></head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.pg{width:390px;min-height:860px;box-sizing:border-box;background:#F5E9C8;padding:20px 16px 24px;font-family:'Vazirmatn',Tahoma,sans-serif;color:#2B1D0E;display:flex;flex-direction:column;gap:14px}
+.rc{position:relative;background:#fff;border-radius:14px;padding:20px 18px;display:flex;flex-direction:column;gap:14px;box-shadow:0 1px 0 rgba(43,29,14,.08)}
+.hd{display:flex;align-items:center;gap:12px}
+.sn{font-size:20px;font-weight:800;line-height:1.3}
+.sub{font-size:13px;color:#5A4630}
+.chip{border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600;color:#fff;display:inline-block}
+.row{display:flex;justify-content:space-between;gap:12px;font-size:15px}
+.row span:first-child{color:#5A4630}
+.tear{position:relative;border-top:2px dashed #D9C9A0;margin:2px -18px}
+.tear:before,.tear:after{content:"";position:absolute;top:-11px;width:20px;height:20px;border-radius:50%;background:#F5E9C8}
+.tear:before{right:-10px}.tear:after{left:-10px}
+.it{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:16px}
+.it .q{color:#5A4630;font-size:14px}
+.dots{flex:1;border-bottom:1px dotted #C9B88E;transform:translateY(-4px)}
+.tot{background:#F2A900;border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center}
+.tot b{font-size:30px;font-weight:800;line-height:1.1}
+.pay{display:flex;justify-content:space-between;font-size:15px}
+.bt{border:0;border-radius:10px;font-family:inherit;font-size:16px;font-weight:600;min-height:50px;width:100%}
+.mk{position:absolute;top:10px;left:12px;font-size:11px;color:#8C7B5E;border:1px solid #D9C9A0;border-radius:6px;padding:1px 6px}
+</style>
+</helmet>
+<div class="pg">
+<div class="rc"><span class="mk">نمونه</span>
+<div class="hd"><svg width="56" height="56" viewBox="0 0 72 72" role="img" aria-label="کندو"><polygon points="36,4 63,20 63,52 36,68 9,52 9,20" fill="#F2A900"/><path d="M24 38l8 8 16-18" fill="none" stroke="#2B1D0E" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg><div style="flex:1"><div class="sn">فروشگاه لوازم جشن نمونه</div><div class="sub">فاکتور دیجیتال کندو</div></div></div>
+<div><span class="chip" style="background:#9A3B0A">مانده دارد</span></div>
+<div class="tear"></div>
+<div class="row"><span>شماره‌ی فاکتور</span><b>۱۴۰۲۵</b></div>
+<div class="row"><span>تاریخ و ساعت</span><b>۱۴۰۵/۰۸/۲۰ — ۱۴:۳۵</b></div>
+<div class="row"><span>خریدار</span><b>خانم مرادی</b></div>
+<div class="tear"></div>
+<div class="it"><span><b>بادکنک فویلی</b> <span class="q">× ۲</span></span><span class="dots"></span><b>۹۰٬۰۰۰</b></div><div class="it"><span><b>بسته‌ی دکور تولد</b> <span class="q">× ۱</span></span><span class="dots"></span><b>۱۵۰٬۰۰۰</b></div><div class="it"><span><b>شمع عددی</b> <span class="q">× ۳</span></span><span class="dots"></span><b>۴۵٬۰۰۰</b></div>
+<div class="tot"><span style="font-size:15px;font-weight:600">قابل پرداخت</span><b>۲۸۵٬۰۰۰ <span style="font-size:14px;font-weight:600">تومان</span></b></div>
+<div class="pay"><span style="color:#5A4630">کارت‌خوان</span><b>۲۰۰٬۰۰۰</b></div>
+<div class="pay"><span style="color:#5A4630">نقدی</span><b>۵۰٬۰۰۰</b></div>
+<div class="pay" style="color:#9A3B0A"><span>مانده (نسیه)</span><b>۳۵٬۰۰۰</b></div>
+</div>
+<button class="bt" style="background:#F2A900;color:#2B1D0E">ذخیره‌ی فاکتور</button>
+<button class="bt" style="background:#fff;color:#2B1D0E;border:1px solid #C9B88E">تماس با فروشگاه</button>
+<div style="font-size:12px;color:#6B5A3E;text-align:center;line-height:1.8">این فاکتور دیجیتال را نگه دارید.<br>ساخته‌شده با کندو</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":860}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

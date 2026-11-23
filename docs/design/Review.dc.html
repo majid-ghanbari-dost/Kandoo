@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>صف بازبینی</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width:100%;min-height:720px;box-sizing:border-box;display:flex;background:#FFF8E7;color:#2B1D0E;font-family:'Vazirmatn',Tahoma,sans-serif">
+<nav style="width:220px;background:#2B1D0E;color:#FFF8E7;padding:24px 16px;box-sizing:border-box;display:flex;flex-direction:column;gap:8px">
+<div style="font-size:24px;font-weight:800;margin-bottom:16px">کندو</div>
+<a href="#" style="color:#2B1D0E;background:#F2A900;border-radius:8px;padding:12px;text-decoration:none;font-weight:600">صف بازبینی</a>
+<a href="#" style="color:#FFF8E7;padding:12px;text-decoration:none">فاکتورهای صادرشده</a>
+<a href="#" style="color:#FFF8E7;padding:12px;text-decoration:none">کالاها</a>
+<a href="#" style="color:#FFF8E7;padding:12px;text-decoration:none">تنظیمات</a>
+</nav>
+<main style="flex:1;padding:32px;display:flex;flex-direction:column;gap:20px">
+<h1 style="margin:0;font-size:28px">فاکتورهای منتظر تأیید</h1>
+<p style="margin:0;color:#5A4630">کندو در این فاکتورها مطمئن نبود. بررسی کنید و بفرستید.</p>
+<div style="background:#FFFFFF;border-radius:12px;padding:20px;display:flex;gap:24px;align-items:center;flex-wrap:wrap">
+<div style="flex:1;min-width:200px"><div style="font-weight:600">فاکتور [شماره]</div><div style="color:#5A4630;font-size:14px">مشتری: [شماره‌ی موبایل مشتری]</div></div>
+<div style="flex:1;min-width:200px"><span style="background:#9A3B0A;color:#FFFFFF;border-radius:6px;padding:4px 10px;font-size:14px">نیازمند بازبینی</span><div style="font-size:14px;margin-top:6px">دلیل: [علت اطمینان پایین]</div></div>
+<div style="display:flex;gap:12px"><button style="background:#F2A900;color:#2B1D0E;border:0;border-radius:8px;padding:12px 20px;font-family:inherit;font-weight:600;min-height:44px">تأیید و ارسال پیامک</button><button style="background:#F5E9C8;color:#2B1D0E;border:0;border-radius:8px;padding:12px 20px;font-family:inherit;min-height:44px">ویرایش</button></div>
+</div>
+<div style="background:#FFFFFF;border-radius:12px;padding:20px;display:flex;gap:24px;align-items:center;flex-wrap:wrap">
+<div style="flex:1;min-width:200px"><div style="font-weight:600">فاکتور [شماره]</div><div style="color:#5A4630;font-size:14px">مشتری: [شماره‌ی موبایل مشتری]</div></div>
+<div style="flex:1;min-width:200px"><span style="background:#256B43;color:#FFFFFF;border-radius:6px;padding:4px 10px;font-size:14px">پیامک ارسال شد</span></div>
+<div><button style="background:#F5E9C8;color:#2B1D0E;border:0;border-radius:8px;padding:12px 20px;font-family:inherit;min-height:44px">ارسال دوباره</button></div>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":720}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

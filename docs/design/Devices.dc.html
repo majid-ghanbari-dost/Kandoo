@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head><meta charset="utf-8"><title>دستگاه‌ها</title><script src="./support.js"></script></head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.i{height:44px;border:1px solid #C9B88E;border-radius:8px;padding:0 12px;font-family:inherit;font-size:16px;background:#fff;color:#2B1D0E;box-sizing:border-box;width:100%}
+.b{border:0;border-radius:8px;font-family:inherit;font-size:16px;font-weight:600;min-height:48px;padding:0 20px;width:100%}
+.pm{width:44px;height:44px;border:0;border-radius:8px;background:#F5E9C8;color:#2B1D0E;font-size:22px;font-family:inherit;flex:none}
+.c{background:#fff;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.l{font-weight:600;font-size:14px}
+</style>
+</helmet>
+<div style="width:100%;min-height:720px;box-sizing:border-box;display:flex;background:#FFF8E7;color:#2B1D0E;font-family:'Vazirmatn',Tahoma,sans-serif"><nav style="width:220px;background:#2B1D0E;color:#FFF8E7;padding:24px 16px;box-sizing:border-box;display:flex;flex-direction:column;gap:8px"><div style="font-size:24px;font-weight:800;margin-bottom:16px">کندو</div><a href="#" style="color:#FFF8E7;padding:12px;text-decoration:none">صف بازبینی</a><a href="#" style="color:#FFF8E7;padding:12px;text-decoration:none">فاکتورها</a><a href="#" style="color:#FFF8E7;padding:12px;text-decoration:none">کالاها</a><a href="#" style="color:#2B1D0E;background:#F2A900;border-radius:8px;padding:12px;text-decoration:none;font-weight:600">دستگاه‌ها و دسترسی</a></nav><main style="flex:1;padding:32px;display:flex;flex-direction:column;gap:20px;max-width:880px"><h1 style="margin:0;font-size:28px">دستگاه‌ها و دسترسی</h1><div class="c" style="padding:20px"><b>افزودن گوشی</b><div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end"><div style="flex:1;min-width:220px;display:flex;flex-direction:column;gap:4px"><label class="l" for="r">سطح دسترسی</label><select id="r" class="i"><option>فروشنده: فقط فاکتور</option><option>اپراتور: فاکتور و تعریف کالا</option><option>مدیر: همه‌چیز</option></select></div><button class="b" style="background:#F2A900;color:#2B1D0E;width:auto">ساخت کد جفت‌سازی</button></div><div style="background:#F5E9C8;border-radius:8px;padding:16px;font-size:14px">کد: <b style="font-size:24px;letter-spacing:4px">[کد]</b> &nbsp; فقط برای مدت کوتاه معتبر است.</div></div><div class="c" style="padding:20px"><b>دستگاه‌های متصل</b><div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap"><div style="flex:1">[نام دستگاه]<div style="font-size:14px;color:#5A4630">سطح: [سطح دسترسی]</div></div><button class="b" style="background:#F5E9C8;color:#2B1D0E;width:auto">تغییر سطح</button><button class="b" style="background:#9A3B0A;color:#fff;width:auto">قطع دسترسی</button></div></div></main></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":720}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

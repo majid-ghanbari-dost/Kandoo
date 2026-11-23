@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head><meta charset="utf-8"><title>Product-Edit</title><script src="./support.js"></script></head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.c{background:#fff;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.b{border:0;border-radius:8px;font-family:inherit;font-size:16px;font-weight:600;min-height:48px;padding:0 20px}
+.ch{border:0;border-radius:20px;padding:8px 16px;font-family:inherit;font-size:14px;min-height:40px;background:#F5E9C8;color:#2B1D0E}
+.st{border-radius:6px;padding:4px 10px;font-size:13px;color:#fff;display:inline-block}
+.i{height:44px;border:1px solid #C9B88E;border-radius:8px;padding:0 12px;font-family:inherit;font-size:16px;background:#fff;box-sizing:border-box;width:100%;color:#2B1D0E}
+.k{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #F0E4C2}
+th{padding:12px;color:#5A4630;font-size:14px}td{padding:12px;border-top:1px solid #F0E4C2}
+</style>
+</helmet>
+<div style="width:100%;min-height:820px;box-sizing:border-box;display:flex;background:#FFF8E7;font-family:'Vazirmatn',Tahoma,sans-serif;color:#2B1D0E;"><nav style="width:220px;background:#2B1D0E;color:#FFF8E7;padding:24px 16px;box-sizing:border-box;display:flex;flex-direction:column;gap:8px"><div style="font-size:24px;font-weight:800;margin-bottom:16px">کندو</div><a href="#" style="color:#FFF8E7;padding:12px;text-decoration:none;border-radius:8px">صف بازبینی</a><a href="#" style="color:#FFF8E7;padding:12px;text-decoration:none;border-radius:8px">فاکتورها</a><a href="#" style="color:#2B1D0E;background:#F2A900;font-weight:600;padding:12px;text-decoration:none;border-radius:8px">کالاها</a><a href="#" style="color:#FFF8E7;padding:12px;text-decoration:none;border-radius:8px">مشتری‌ها</a><a href="#" style="color:#FFF8E7;padding:12px;text-decoration:none;border-radius:8px">حسابداری</a><a href="#" style="color:#FFF8E7;padding:12px;text-decoration:none;border-radius:8px">تنظیمات</a></nav><main style="flex:1;padding:32px;display:flex;flex-direction:column;gap:16px;max-width:980px"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><h1 style="margin:0;font-size:28px">ویرایش کالا</h1></div><div class="c"><div style="display:flex;flex-direction:column;gap:4px"><label style="font-weight:600;font-size:14px">نام کالا</label><input class="i" placeholder="[نام]"></div><div style="display:flex;flex-direction:column;gap:4px"><label style="font-weight:600;font-size:14px">قیمت فروش</label><input class="i" placeholder="[قیمت]"></div><div style="display:flex;flex-direction:column;gap:4px"><label style="font-weight:600;font-size:14px">قیمت خرید (اختیاری، برای سود)</label><input class="i" placeholder="[قیمت خرید]"></div><div style="display:flex;flex-direction:column;gap:4px"><label style="font-weight:600;font-size:14px">تگ رقمی</label><input class="i" placeholder="[تگ]"></div></div><div class="c"><b>تغییر موجودی</b><div style="display:flex;flex-direction:column;gap:4px"><label style="font-weight:600;font-size:14px">تعداد (مثبت یا منفی)</label><input class="i" placeholder="[مثلاً ۵ یا ‎−۲]"></div><div style="display:flex;flex-direction:column;gap:4px"><label style="font-weight:600;font-size:14px">دلیل (الزامی)</label><input class="i" placeholder="[شمارش انبار، ضایعات، …]"></div><button class="b" style="background:#F2A900;color:#2B1D0E;">ثبت تغییر</button><div style="font-size:13px;color:#5A4630">تغییر موجودی یک رویداد جدید ثبت می‌کند و گذشته را پاک نمی‌کند.</div></div><button class="b" style="background:#256B43;color:#fff;">ذخیره</button></main></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":820}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

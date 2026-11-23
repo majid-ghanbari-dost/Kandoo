@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head><meta charset="utf-8"><title>فاکتورها</title><script src="./support.js"></script></head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.c{background:#fff;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.b{border:0;border-radius:8px;font-family:inherit;font-size:16px;font-weight:600;min-height:48px;padding:0 20px}
+.ch{border:0;border-radius:20px;padding:8px 16px;font-family:inherit;font-size:14px;min-height:40px;background:#F5E9C8;color:#2B1D0E}
+.st{border-radius:6px;padding:4px 10px;font-size:13px;color:#fff;display:inline-block}
+.r{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #F0E4C2}
+.i{height:44px;border:1px solid #C9B88E;border-radius:8px;padding:0 12px;font-family:inherit;font-size:16px;background:#fff;box-sizing:border-box;flex:1}
+</style>
+</helmet>
+<div style="width:100%;min-height:760px;box-sizing:border-box;display:flex;background:#FFF8E7;font-family:'Vazirmatn',Tahoma,sans-serif;color:#2B1D0E"><nav style="width:220px;background:#2B1D0E;color:#FFF8E7;padding:24px 16px;box-sizing:border-box;display:flex;flex-direction:column;gap:8px"><div style="font-size:24px;font-weight:800;margin-bottom:16px">کندو</div><a href="#" style="color:#FFF8E7;padding:12px;text-decoration:none;border-radius:8px">صف بازبینی</a><a href="#" style="color:#2B1D0E;background:#F2A900;font-weight:600;padding:12px;text-decoration:none;border-radius:8px">فاکتورها</a><a href="#" style="color:#FFF8E7;padding:12px;text-decoration:none;border-radius:8px">کالاها</a><a href="#" style="color:#FFF8E7;padding:12px;text-decoration:none;border-radius:8px">حسابداری</a></nav><main style="flex:1;padding:32px;display:flex;gap:20px;flex-wrap:wrap"><section style="flex:2;min-width:420px;display:flex;flex-direction:column;gap:12px"><h1 style="margin:0;font-size:28px">فاکتورها</h1><div style="display:flex;gap:8px"><input class="i" placeholder="جست‌وجو: شماره‌ی فاکتور یا مشتری"></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="ch" style="background:#F2A900">همه</button><button class="ch">پیامک ارسال شد</button><button class="ch">نیازمند بازبینی</button><button class="ch">لغوشده</button></div><div class="c" style="padding:0;overflow-x:auto"><table style="width:100%;border-collapse:collapse;text-align:right"><thead><tr style="color:#5A4630;font-size:14px"><th style="padding:12px">شماره</th><th>مشتری</th><th>تاریخ</th><th>مبلغ</th><th>وضعیت</th></tr></thead><tbody><tr style="border-bottom:1px solid #F0E4C2"><td style="padding:12px">[شماره]</td><td>[نام مشتری]</td><td>[تاریخ]</td><td>[مبلغ]</td><td><span class="st" style="background:#256B43">پیامک ارسال شد</span></td></tr><tr style="border-bottom:1px solid #F0E4C2"><td style="padding:12px">[شماره]</td><td>[نام مشتری]</td><td>[تاریخ]</td><td>[مبلغ]</td><td><span class="st" style="background:#9A3B0A">نیازمند بازبینی</span></td></tr><tr style="border-bottom:1px solid #F0E4C2"><td style="padding:12px">[شماره]</td><td>[نام مشتری]</td><td>[تاریخ]</td><td>[مبلغ]</td><td><span class="st" style="background:#6B5A3E">لغوشده</span></td></tr></tbody></table></div></section><aside class="c" style="flex:1;min-width:300px;align-self:flex-start"><b style="font-size:20px">فاکتور [شماره]</b><div><span class="st" style="background:#256B43">پیامک ارسال شد</span></div><div style="font-size:14px;color:#5A4630">مشتری: [نام] — [شماره‌ی موبایل]</div><div class="r"><span>[نام کالا] × [تعداد]</span><b>[مبلغ ردیف]</b></div><div class="r"><span>[نام کالا] × [تعداد]</span><b>[مبلغ ردیف]</b></div><div class="r" style="border:0"><b>قابل پرداخت</b><b>[مبلغ کل]</b></div><button class="b" style="background:#F2A900;color:#2B1D0E">ارسال دوباره‌ی پیامک</button><button class="b" style="background:#F5E9C8;color:#2B1D0E">دیدن صفحه‌ی مشتری</button><button class="b" style="background:#fff;color:#9A3B0A;border:2px solid #9A3B0A">لغو فاکتور</button><div style="font-size:13px;color:#5A4630">لغو، فاکتور را پاک نمی‌کند. یک رویداد «لغو» ثبت می‌شود و سابقه می‌ماند.</div></aside></main></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":760}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

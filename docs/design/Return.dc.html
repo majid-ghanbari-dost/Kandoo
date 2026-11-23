@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head><meta charset="utf-8"><title>Return</title><script src="./support.js"></script></head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.c{background:#fff;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.b{border:0;border-radius:8px;font-family:inherit;font-size:16px;font-weight:600;min-height:48px;padding:0 20px}
+.ch{border:0;border-radius:20px;padding:8px 16px;font-family:inherit;font-size:14px;min-height:40px;background:#F5E9C8;color:#2B1D0E}
+.st{border-radius:6px;padding:4px 10px;font-size:13px;color:#fff;display:inline-block}
+.i{height:44px;border:1px solid #C9B88E;border-radius:8px;padding:0 12px;font-family:inherit;font-size:16px;background:#fff;box-sizing:border-box;width:100%;color:#2B1D0E}
+.k{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #F0E4C2}
+th{padding:12px;color:#5A4630;font-size:14px}td{padding:12px;border-top:1px solid #F0E4C2}
+</style>
+</helmet>
+<div style="width:100%;min-height:760px;box-sizing:border-box;display:flex;background:#FFF8E7;font-family:'Vazirmatn',Tahoma,sans-serif;color:#2B1D0E;"><nav style="width:220px;background:#2B1D0E;color:#FFF8E7;padding:24px 16px;box-sizing:border-box;display:flex;flex-direction:column;gap:8px"><div style="font-size:24px;font-weight:800;margin-bottom:16px">کندو</div><a href="#" style="color:#FFF8E7;padding:12px;text-decoration:none;border-radius:8px">صف بازبینی</a><a href="#" style="color:#2B1D0E;background:#F2A900;font-weight:600;padding:12px;text-decoration:none;border-radius:8px">فاکتورها</a><a href="#" style="color:#FFF8E7;padding:12px;text-decoration:none;border-radius:8px">کالاها</a><a href="#" style="color:#FFF8E7;padding:12px;text-decoration:none;border-radius:8px">مشتری‌ها</a><a href="#" style="color:#FFF8E7;padding:12px;text-decoration:none;border-radius:8px">حسابداری</a><a href="#" style="color:#FFF8E7;padding:12px;text-decoration:none;border-radius:8px">تنظیمات</a></nav><main style="flex:1;padding:32px;display:flex;flex-direction:column;gap:16px;max-width:980px"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><h1 style="margin:0;font-size:28px">برگشت یا لغو فاکتور</h1></div><div class="c"><div style="display:flex;flex-direction:column;gap:4px"><label style="font-weight:600;font-size:14px">شماره‌ی فاکتور</label><input class="i" placeholder="[شماره]"></div><b>کالاهای برگشتی</b><label><input type="checkbox"> [نام کالا] × [تعداد فروخته‌شده]</label><div style="display:flex;flex-direction:column;gap:4px"><label style="font-weight:600;font-size:14px">تعداد برگشتی</label><input class="i" placeholder="[تعداد]"></div><div style="display:flex;flex-direction:column;gap:4px"><label style="font-weight:600;font-size:14px">دلیل (الزامی)</label><input class="i" placeholder="[دلیل]"></div><fieldset style="border:0;padding:0;display:flex;gap:20px"><legend style="font-weight:600">بازپرداخت</legend><label><input type="radio" name="r" checked> نقدی</label><label><input type="radio" name="r"> کارت</label><label><input type="radio" name="r"> کسر از طلب</label></fieldset></div><button class="b" style="background:#9A3B0A;color:#fff;">ثبت برگشت</button><div style="font-size:13px;color:#5A4630">فاکتور اصلی پاک نمی‌شود. یک رویداد «برگشت» ثبت می‌شود و موجودی و حساب‌ها خودکار اصلاح می‌شوند.</div></main></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":760}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
