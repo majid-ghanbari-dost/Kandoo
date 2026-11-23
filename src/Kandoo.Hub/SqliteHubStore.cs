@@ -158,8 +158,19 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore, IHubRep
             var entries = new List<ReplicationLogEntry>();
             while (reader.Read())
             {
-                entries.Add(JsonSerializer.Deserialize<ReplicationLogEntry>(reader.GetString(0), HubJson.Options)
-                    ?? throw new InvalidOperationException("Invalid durable replication entry."));
+                var entry = JsonSerializer.Deserialize<ReplicationLogEntry>(reader.GetString(0), HubJson.Options)
+                    ?? throw new InvalidOperationException("Invalid durable replication entry.");
+
+                // Clone JsonElement properties so they hold an independent reference to their backing
+                // JsonDocument. Without this, the deserialization's internal JsonDocument can be GC'd
+                // after Deserialize returns, leaving Payload/Outcome/ResponseSnapshot as dangling
+                // references. Downstream consumers (e.g. ManagementAccountingService) then read
+                // ValueKind=Undefined, causing counters to read as 0.
+                entry.Payload = entry.Payload.Clone();
+                entry.Outcome = entry.Outcome.Clone();
+                entry.ResponseSnapshot = entry.ResponseSnapshot.Clone();
+
+                entries.Add(entry);
             }
 
             return entries;
