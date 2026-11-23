@@ -39,7 +39,7 @@ public sealed class SetupFlowStoreCreationTests : IClassFixture<HubApiFactory>
             bootstrap_proof = bootstrapProof
         };
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, $\"/v1/stores/{storeId}/owner-sessions\");
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"/v1/stores/{storeId}/owner-sessions");
         request.Content = new StringContent(
             JsonSerializer.Serialize(ownerSessionBody),
             Encoding.UTF8,
@@ -69,7 +69,7 @@ public sealed class SetupFlowStoreCreationTests : IClassFixture<HubApiFactory>
         var client = _factory.CreateClient();
         var storeId = Guid.NewGuid();
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, $\"/v1/stores/{storeId}/owner-sessions\");
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"/v1/stores/{storeId}/owner-sessions");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "test-only-owner-bootstrap");
         request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
 
