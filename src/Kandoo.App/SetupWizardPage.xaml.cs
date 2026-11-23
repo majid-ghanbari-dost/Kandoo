@@ -148,12 +148,26 @@ public partial class SetupWizardPage : ContentPage
         await WaitForHubAsync(TimeSpan.FromSeconds(30));
 
         // C-87: Create a store ID for this shop and issue an owner session.
+        // M-005 item 3c: the endpoint reads HubDeviceId/OwnerUserId/BootstrapProof
+        // from the request body (NOT from the Authorization header). Send the
+        // full OwnerSessionRequest shape, matching the HubApiClient.Owner test
+        // helper and the OwnerSessionRequest contract.
         var storeId = Guid.NewGuid();
+        var hubDeviceId = Guid.NewGuid();
+        var ownerUserId = Guid.NewGuid();
         StatusLabel.Text = "در حال ایجاد نشست مالک فروشگاه…";
 
+        var ownerSessionBody = new
+        {
+            hub_device_id = hubDeviceId,
+            owner_user_id = ownerUserId,
+            bootstrap_proof = bootstrapProof
+        };
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/v1/stores/{storeId}/owner-sessions");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bootstrapProof);
-        request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
+        request.Content = new StringContent(
+            JsonSerializer.Serialize(ownerSessionBody),
+            Encoding.UTF8,
+            "application/json");
 
         using var response = await _http.SendAsync(request);
         if (!response.IsSuccessStatusCode)
