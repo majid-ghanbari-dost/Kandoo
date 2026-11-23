@@ -116,8 +116,18 @@ public sealed class ManagementAccountingService
             }
         }
 
-        foreach (var entry in _store.ReadReplicationEntries(storeId))
+        // C-94: snapshot raw JSON strings immediately after deserialization so they remain
+        // valid even if the deserialization JsonDocument is GC'd by subsequent SQLite reads.
+        var entryData = _store.ReadReplicationEntries(storeId).Select(entry => new
         {
+            Entry = entry,
+            PayloadJson = entry.Payload.ValueKind != JsonValueKind.Undefined ? entry.Payload.GetRawText() : null,
+            SnapshotJson = entry.ResponseSnapshot.ValueKind != JsonValueKind.Undefined ? entry.ResponseSnapshot.GetRawText() : null
+        }).ToList();
+
+        foreach (var data in entryData)
+        {
+            var entry = data.Entry;
             if (entry.StoreId != storeId)
             {
                 throw new InvalidOperationException("ACCOUNTING_STORE_BOUNDARY_INVALID");
@@ -128,7 +138,12 @@ public sealed class ManagementAccountingService
                 continue;
             }
 
-            var snapshot = entry.ResponseSnapshot;
+            JsonElement snapshot = default;
+            if (!string.IsNullOrEmpty(data.SnapshotJson))
+            {
+                snapshot = JsonSerializer.Deserialize<JsonElement>(data.SnapshotJson, HubJson.Options);
+            }
+
             if (snapshot.ValueKind != JsonValueKind.Object ||
                 !snapshot.TryGetProperty("status", out var statusElement) ||
                 statusElement.ValueKind != JsonValueKind.String ||
@@ -137,7 +152,8 @@ public sealed class ManagementAccountingService
                 continue;
             }
 
-            if (!snapshot.TryGetProperty("response", out var response) || response.ValueKind != JsonValueKind.Object ||
+            JsonElement response = default;
+            if (!snapshot.TryGetProperty("response", out response) || response.ValueKind != JsonValueKind.Object ||
                 !TryReadInvoiceId(response, out var invoiceId))
             {
                 throw new InvalidOperationException("ACCOUNTING_ISSUE_EVENT_INVALID");
@@ -152,7 +168,13 @@ public sealed class ManagementAccountingService
             totalSalesRials = checked(totalSalesRials +
                 invoice.Items.Aggregate(0L, (sum, item) => checked(sum + item.LineTotalRials)));
 
-            var payments = ReadPayments(entry.Payload);
+            JsonElement payload = default;
+            if (!string.IsNullOrEmpty(data.PayloadJson))
+            {
+                payload = JsonSerializer.Deserialize<JsonElement>(data.PayloadJson, HubJson.Options);
+            }
+
+            var payments = ReadPayments(payload);
             if (payments is null)
             {
                 unrecordedPaymentInvoices++;
@@ -191,7 +213,7 @@ public sealed class ManagementAccountingService
                 }
             }
 
-            if (TryReadRemainingBalance(entry.Payload, out var remainingRials))
+            if (TryReadRemainingBalance(payload, out var remainingRials))
             {
                 receivableInvoices++;
                 outstandingRials = checked(outstandingRials + remainingRials);
