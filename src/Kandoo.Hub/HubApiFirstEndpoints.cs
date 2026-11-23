@@ -19,6 +19,7 @@ public static partial class HubApiFirstEndpoints
         MapStatusApi(app);
         MapReviewApi(app);
         MapSmsApi(app);
+        MapAccountingApi(app);
     }
 
     private static void MapProductApi(WebApplication app)
