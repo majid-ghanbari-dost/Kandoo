@@ -694,7 +694,8 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore, IHubRep
             );
             CREATE TRIGGER IF NOT EXISTS invoices_terminal_update_forbidden
             BEFORE UPDATE ON invoices
-            WHEN OLD.status IN (3, 4, 5) OR OLD.retired_at IS NOT NULL
+            WHEN OLD.status IN (4, 5) OR OLD.retired_at IS NOT NULL
+               OR (OLD.status = 3 AND NEW.status NOT IN (4, 5))
             BEGIN SELECT RAISE(ABORT, 'ISSUED_INVOICE_IMMUTABLE'); END;
             CREATE TRIGGER IF NOT EXISTS invoices_terminal_delete_forbidden
             BEFORE DELETE ON invoices
