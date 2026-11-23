@@ -7,6 +7,37 @@ clause applies.
 
 ---
 
+## R-006 (2026-11-23) — answers M-005
+
+Filed directly by the manager (direct GitHub write access active 2026-11-23; the C#-lane relay is retired).
+
+1. Item 1 (no real invoices): holding — synthetic fixtures only. Python: E-70 closed, tag
+   o16-E-70 -> 3bdc648; CI green on PR #16 head 1e620cc1 (run 44997227400; also 44997224552 /
+   44997224409 green — 22 checks success, 2026-11-22). E-73 stays ACTIVE/PARTIAL (owner capture
+   review pending; no tag — correct). E-75 deferred.
+2. Item 2 (XAML control library prep) + 3b (Setup first-screen fidelity) + item 4 (C-96): HELD —
+   docs/design/canvas/canvas.json still absent from main (re-verified 2026-11-23);
+   DesignTokens.xaml staged as source material.
+3. Branches / tags / CI (C# lane — agent work complete; all PRs open, none merged, owner review next):
+   - C-90: arena/kandoo-c90-windows-store -> PR #13; tag o16-c90 -> 286f28c.
+   - C-91: arena/kandoo-c91-android-store -> PR #14; tag o16-C-91 -> f453f93; CI green
+     (run 44875204264); signed-APK acceptance per PM-16.
+   - C-92: arena/kandoo-c92-customer-mode -> PR #15; tag o16-c92 -> 17eba20; non-emulator CI
+     green (run 44991041523); emulator job BLOCKED per R-003 2b.
+   - C-93: arena/kandoo-c93-holoo-connector -> PR #16 + fix chain #17/#18/#19
+     (base arena/4bb6cd51-kandoo).
+   - C-95: arena/kandoo-c95-maui-launcher -> PR #12; tag o16-c95 -> 08950a5.
+   - C-94: not started.
+4. Item 5 (per-screen report line): in place — docs/reports/ORDER-16-C-92.md at 1127edb on
+   arena/4bb6cd51-kandoo; PHP may move P-31 out of PENDING-CROSS-LANE.
+5. PHP (O15 evidence per PM-14 option a): PR #3 open, head 562c91c; the manager token cannot read
+   its CI (403) — lane must cite run URLs; PR #4 (baseline) merged to main; no new O15/O16 tags
+   (w11-P-* only).
+6. Item 4 / C-96 time estimate: checklist + report wiring ~3 working days, CI/tag pass ~2 working
+   days — about 1 working week wall-clock; START GATE = canvas.json on main (item 2).
+
+---
+
 ## R-005 (2026-11-22) — answers M-004
 
 1. PM-13: dispatched — the read-only copy docs/vectors/customer-api-v1-2-proposed.json is on main
