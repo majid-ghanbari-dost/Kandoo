@@ -699,7 +699,7 @@ Fix: added `continue-on-error: true` to the `android-emulator-smoke` job so emul
 | **Phase 2** Consolidated C-93 PR (#16 + fix-2 + fix-3) | `arena/4bb6cd51-kandoo` | `8eb849b` | — | CI pending | PR #16 content + fix-2 + fix-3 merged; touches .github/workflows/ci.yml (yes) |
 | **Phase 3** C-96 Windows screens v2 groups 1-4 | `arena/4bb6cd51-kandoo` | `6aea923` | — | CI pending | DevicesPage, StatesPage added; ReturnsPage updated; MainPage navigation added |
 | **C-94** Management accounting summary (read-only, synthetic fixtures) | `arena/kandoo-c94-management-accounting` | `dc49ba6d67322da8c420697dd45c4e9f7bc8745a` | `o16-C-94` | [45182596762](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/45182596762) | GREEN (ubuntu + windows), PR #20 open |
-| **E-72 cross-lane review** (CSHARP-T2 item) — o17-E-72 vs frozen consumer | `arena/4bb6cd51-kandoo` | `ffe6c05` (corrected report; first pass `26d8806`) | `o17-E-72-REVIEW` | n/a (docs only) | **COMPLETE — INCOMPATIBLE**, report corrected; PHP objection partially upheld; PHP repo 403 blocks full read of PHP report |
+| **E-72 cross-lane review** (CSHARP-T2 item) — o17-E-72 vs frozen consumer | `arena/4bb6cd51-kandoo` | `d1767ac` (corrected report; first pass `26d8806`) | `o17-E-72-REVIEW`, `o17-E-72-REVIEW-v2` | n/a (docs only) | **DONE — INCOMPATIBLE**; fix owned by Python lane; **STANDBY for round 3** after Python's new tag |
 
 ### C-94 Management Accounting (CSHARP-T1) — COMPLETE
 
@@ -826,7 +826,12 @@ Three defect categories (not four):
 
 Items accepted from the 1e620cc round: `quantity`→`quantity_millis` (both levels), `display_number`→null for DRAFT, `provenance.fields.display_number`→`"unavailable"` — all four now pass.
 
-**Blocker:** `majid-ghanbari-dost/kandoo-cloud-php` returns 403 for lane credentials, so `docs/reports/E72-PHP-INDEPENDENT-VERDICT-FA.md` @ `3e44d51` could not be read directly; the response above is based on the objection as relayed in the trigger plus byte-level verification of the vector itself. PM to grant read access for a full review of the PHP report.
+**Blockers (two, both PM action):**
+
+1. `majid-ghanbari-dost/kandoo-cloud-php` returns **403 for lane credentials on reads**, so `docs/reports/E72-PHP-INDEPENDENT-VERDICT-FA.md` @ `3e44d51` could not be read directly; the response above rests on the objection as relayed in the trigger plus byte-level verification of the vector itself. PM to grant read access for a full review of the PHP report.
+2. The closing comment on the **Python repo's** PR #16 could not be posted: `Kandoo-Digital-Invoice` gives this lane **read but not write**. Two attempts, both `HTTP 403 Resource not accessible by integration`. The ready-to-paste body is preserved at `docs/reports/E72-PY-PR16-CLOSING-COMMENT.md`; PM to relay it or grant write access.
+
+**Standby:** round 3 re-review starts when the Python lane publishes its new tag (expected: flatten `base_invoice` to root, all 16 required root fields, drop the 4 unknown root fields, and a decision on `v1_2_draft_addendum`).
 
 
 ### C-93 Holoo Connector (original PR #16)
