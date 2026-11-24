@@ -819,7 +819,8 @@ Three defect categories (not four):
 
 **Report (Persian):** `docs/reports/E72-CANONICAL-INVOICE-V1-2-O17-CSHARP-COMPARISON-FA.md`
 **Decision:** `docs/decisions-made.md` item 26
-**PR #16 comment:** https://github.com/majid-ghanbari-dost/Kandoo/pull/16#issuecomment-7132351728
+**PR #16 comment (superseded):** https://github.com/majid-ghanbari-dost/Kandoo/pull/16#issuecomment-7132351728
+**PR #16 formal review (current):** https://github.com/majid-ghanbari-dost/Kandoo/pull/16#pullrequestreview-6039821259 (review id `6039821259`, COMMENTED, 2026-11-24T13:14:10Z)
 **Source:** https://github.com/majid-ghanbari-dost/Kandoo-Digital-Invoice/blob/1e029bdadc3f970d45556352d23b5dc7be40587d/tests/golden/e72/canonical-invoice-v1-2-draft-vector.json
 **Python commit:** `1e029bdadc3f970d45556352d23b5dc7be40587d` (tag `o17-E-72`, branch `arena/d0587e71-kandoo-digital-invoice`)
 
