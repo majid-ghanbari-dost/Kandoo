@@ -699,6 +699,7 @@ Fix: added `continue-on-error: true` to the `android-emulator-smoke` job so emul
 | **Phase 2** Consolidated C-93 PR (#16 + fix-2 + fix-3) | `arena/4bb6cd51-kandoo` | `8eb849b` | — | CI pending | PR #16 content + fix-2 + fix-3 merged; touches .github/workflows/ci.yml (yes) |
 | **Phase 3** C-96 Windows screens v2 groups 1-4 | `arena/4bb6cd51-kandoo` | `6aea923` | — | CI pending | DevicesPage, StatesPage added; ReturnsPage updated; MainPage navigation added |
 | **C-94** Management accounting summary (read-only, synthetic fixtures) | `arena/kandoo-c94-management-accounting` | `dc49ba6d67322da8c420697dd45c4e9f7bc8745a` | `o16-C-94` | [45182596762](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/45182596762) | GREEN (ubuntu + windows), PR #20 open |
+| **E-72 cross-lane review** (CSHARP-T2 item) — o17-E-72 vs frozen consumer | `arena/4bb6cd51-kandoo` | `ffe6c05` (corrected report; first pass `26d8806`) | `o17-E-72-REVIEW` | n/a (docs only) | **COMPLETE — INCOMPATIBLE**, report corrected; PHP objection partially upheld; PHP repo 403 blocks full read of PHP report |
 
 ### C-94 Management Accounting (CSHARP-T1) — COMPLETE
 
@@ -794,26 +795,38 @@ The C-93 consolidation (`8eb849b`) was committed on `arena/4bb6cd51-kandoo`, whi
 
 Tags `o16-C-96-1`, `o16-C-96-2`, `o16-C-96-3`, `o16-C-96-4` were created at `6aea923` before CI green — a recorded process violation. Tags are left in place (never move existing ones). No new tags before CI green. Per-group acceptance (CI green + per-screen screenshot artifact + per-screen report line) NOT met yet. D2 requires one create-only PR per group from its own branch.
 
-### Cross-lane item — E-72 canonical invoice v1.2 vector review — COMPLETE (INCOMPATIBLE) — Revised O17
+### Cross-lane item — E-72 canonical invoice v1.2 vector review — COMPLETE (INCOMPATIBLE, corrected)
 
-Reviewed revised vector `tests/golden/e72/canonical-invoice-v1-2-draft-vector.json` (Kandoo-Digital-Invoice @ `1e029bd`, tag `o17-E-72`) against frozen `src/Kandoo.Core/CanonicalInvoiceConsumer.cs`.
+Second-pass review of revised vector `tests/golden/e72/canonical-invoice-v1-2-draft-vector.json` (Kandoo-Digital-Invoice @ `1e029bd`, tag `o17-E-72`, 1518 bytes, md5 `1dc1a55dd9814e9434c1abeadd349163`) against frozen `src/Kandoo.Core/CanonicalInvoiceConsumer.cs`.
 
-**Verdict:** INCOMPATIBLE — C# rejects o17-E-72 with 14 `SchemaValidationFailed` errors (10 missing required root fields + 4 extra root fields):
+**Verdict: INCOMPATIBLE** (unchanged). C# is **fail-fast**, so it emits exactly ONE error, not a list:
 
-1. **`base_invoice` wrapper:** Invoice wrapped under `base_invoice` key; C# expects flat root-level invoice fields (lines 53–58).
-2. **10 missing root required fields:** mode, invoice_id, display_number, operation_id, device_id, customer, line_items, attention_cells, header, provenance — all inside `base_invoice`, not at root.
-3. **4 extra root fields:** base_invoice, synthetic_only, v1_2_draft_addendum, vector_id — not in `RootAllowed`.
-4. **Provenance field duplication:** `image_sha256`/`template_library_id` appear both inside `provenance` and at `base_invoice` level; C# expects them only inside `provenance` at root level (lines 315–327).
+```
+SchemaValidationFailed | Unexpected field: base_invoice.
+```
 
-**PHP claim (provenance field location):** REJECTED — C# frozen contract correctly requires `image_sha256`/`template_library_id` inside `provenance` at root level. E-72 has them in the wrong wrapper (`base_invoice`) and duplicated. No changes to frozen `CanonicalInvoiceConsumer.cs`.
+Three defect categories (not four):
+
+1. **`base_invoice` wrapper** — invoice wrapped under `base_invoice`; `RejectUnknown(root, RootAllowed)` at line 111 fires before any `Require`, so `base_invoice` itself is the first rejection.
+2. **All 16 `RootRequired` fields absent at root** (schema_version, mode, invoice_id, display_number, operation_id, device_id, public_token, store_id, customer, state, state_history, line_items, summary, attention_cells, header, provenance) — all live inside `base_invoice` (lines 53–58).
+3. **4 extra root fields** — base_invoice, synthetic_only, v1_2_draft_addendum, vector_id. `v1_2_draft_addendum` carries v1.2-only content (`currency_unit`, `invoice_discount`, `payments`, `walk_in_customer`, `schema_version: "1.2-draft"`) with no v0 home, so flattening alone does not resolve it — needs a separate contract decision.
+
+**PHP objection — UPHELD in part, REJECTED in conclusion.** The earlier C# claim of provenance field *duplication* was FALSE: `image_sha256` occurs exactly once in the file (byte offset 955) and `template_library_id` exactly once (byte offset 975), both inside `provenance`; `base_invoice` has neither. PHP correctly caught this. But PHP's conclusion — that C# is wrong about field location — is REJECTED: inside `provenance` is exactly where the frozen contract wants them (line 315), and `provenance` itself must sit at root (line 140). The real defect is that `provenance` is nested inside `base_invoice`.
+
+**Decisive test:** promoting `base_invoice` to root makes the vector pass every C# validation step (root, provenance, lifecycle, customer, state_history, line_items, summary, attention_cells, header). The fix path is flatten-to-root in the Python lane.
+
+**Corrections issued against the first C# report (commit `26d8806`):** (1) 16 missing root fields, not 10; (2) ONE fail-fast error, not 14 accumulated; (3) no provenance duplication — the claim PHP challenged was indeed wrong.
 
 **Report (Persian):** `docs/reports/E72-CANONICAL-INVOICE-V1-2-O17-CSHARP-COMPARISON-FA.md`
 **Decision:** `docs/decisions-made.md` item 26
 **PR #16 comment:** https://github.com/majid-ghanbari-dost/Kandoo/pull/16#issuecomment-7132351728
-**Source link:** https://github.com/majid-ghanbari-dost/Kandoo-Digital-Invoice/blob/1e029bdadc3f970d45556352d23b5dc7be40587d/tests/golden/e72/canonical-invoice-v1-2-draft-vector.json
+**Source:** https://github.com/majid-ghanbari-dost/Kandoo-Digital-Invoice/blob/1e029bdadc3f970d45556352d23b5dc7be40587d/tests/golden/e72/canonical-invoice-v1-2-draft-vector.json
 **Python commit:** `1e029bdadc3f970d45556352d23b5dc7be40587d` (tag `o17-E-72`, branch `arena/d0587e71-kandoo-digital-invoice`)
 
-Items fixed from earlier version (1e620cc): `quantity`→`quantity_millis` (both levels), `display_number`→null for DRAFT, `provenance.fields.display_number`→`"unavailable"`. Remaining 4 defect categories above still apply.
+Items accepted from the 1e620cc round: `quantity`→`quantity_millis` (both levels), `display_number`→null for DRAFT, `provenance.fields.display_number`→`"unavailable"` — all four now pass.
+
+**Blocker:** `majid-ghanbari-dost/kandoo-cloud-php` returns 403 for lane credentials, so `docs/reports/E72-PHP-INDEPENDENT-VERDICT-FA.md` @ `3e44d51` could not be read directly; the response above is based on the objection as relayed in the trigger plus byte-level verification of the vector itself. PM to grant read access for a full review of the PHP report.
+
 
 ### C-93 Holoo Connector (original PR #16)
 

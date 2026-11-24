@@ -1,101 +1,196 @@
-# گزارش بازبینی ماشهٔ E-72 (تگ o17-E-72) — تطبیق وکتور Canonical Invoice v1.2 با C#
+# بازبینی ماشهٔ E-72 (تگ `o17-E-72`) — تطبیق وکتور Canonical Invoice v1.2 با مصرف‌کنندهٔ C#
 
-**ماشهٔ وکتور:** `tests/golden/e72/canonical-invoice-v1-2-draft-vector.json` در ریپوی `majid-ghanbari-dost/Kandoo-Digital-Invoice` @ `1e029bd` (تگ `o17-E-72`)
-**پیگیر C#:** `src/Kandoo.Core/CanonicalInvoiceConsumer.cs` (مصرف‌کننده strict Canonical Invoice v0 — قرارداد منجمد)
-**نتیجه:** **NASĀZGAR (INCOMPATIBLE)** — C# وکتور o17-E-72 را رد می‌کند
+**نسخهٔ ۲ (اصلاح‌شده)** — این گزارش جانشین نسخهٔ اول است. سه خطای واقعی نسخهٔ اول در بخش «اصلاحیه» فهرست شده است.
 
-## وکتور o17-E-72 (ساختار ریشه)
+| مورد | مقدار |
+|---|---|
+| وکتور | `tests/golden/e72/canonical-invoice-v1-2-draft-vector.json` |
+| ریپوی وکتور | `majid-ghanbari-dost/Kandoo-Digital-Invoice` |
+| کامیت | `1e029bdadc3f970d45556352d23b5dc7be40587d` (تگ `o17-E-72`) |
+| شاخه | `arena/d0587e71-kandoo-digital-invoice` |
+| حجم فایل | ۱۵۱۸ بایت |
+| MD5 | `1dc1a55dd9814e9434c1abeadd349163` |
+| قرارداد منجمد | `src/Kandoo.Core/CanonicalInvoiceConsumer.cs` (`RootAllowed` دست‌نخورده) |
+| **رأی** | **ناسازگار (INCOMPATIBLE)** |
 
-کلیدهای سطح ریشه وکتور:
-`base_invoice`, `public_token`, `schema_version`, `state`, `state_history`, `store_id`, `summary`, `synthetic_only`, `v1_2_draft_addendum`, `vector_id`
+---
 
-فaturas اصلی داخل `base_invoice` است، نه مستقیماً در سطح ریشه.
+## ۱. رأی صریح
 
-## فهرست دقیق مغایرات (چهار دسته)
+**وکتور `o17-E-72` با مصرف‌کنندهٔ C# سازگار نیست.**
 
-### مغایرهٔ ۱ — بسته‌بندی شWrapper `base_invoice` (ساختمانی)
+C# در نخستین گام اعتبارسنجی سطح ریشه، وکتور را رد می‌کند:
 
-وکتور o17-E-72 کل فاکتور را dưới کلید `base_invoice` در سطح ریشه قرار می‌دهد. اما C# `CanonicalInvoiceConsumer.ConsumeForReview` (خط ۹۳) ریشه JSON را مستقیماً به `ValidateRoot` می‌فرستد و می‌طلبد که `schema_version`, `mode`, `invoice_id`, `display_number` و سایر فیلدهای ضرور **مستقیماً در سطح ریشه** باشند (خطوط ۵۳–۵۸ و ۱۱۱–۱۱۲).
-
-### مغایرهٔ ۲ — فیلدهای ضرور الغا‌شده در سطح ریشه (۱۰ مورد)
-
-C# می‌طلبد این ۱۰ فیلد مستقیماً در سطح ریشه باشد، اما وکتور o17-E-72 آن‌ها را تنها داخل `base_invoice` دارد:
-
-| # | فیلدガぶ Hilfe | وضعیت در o17-E-72 ریشه | خطای C# |
-|---|---|---|---|
-| 1 | `mode` | غایب (داخل `base_invoice`) | `Required field is missing: mode.` |
-| 2 | `invoice_id` | غایب (داخل `base_invoice`) | `Required field is missing: invoice_id.` |
-| 3 | `display_number` | غایب (داخل `base_invoice`) | `Required field is missing: display_number.` |
-| 4 | `operation_id` | غایب (داخل `base_invoice`) | `Required field is missing: operation_id.` |
-| 5 | `device_id` | غایب (داخل `base_invoice`) | `Required field is missing: device_id.` |
-| 6 | `customer` | غایب (داخل `base_invoice`) | `Required field is missing: customer.` |
-| 7 | `line_items` | غایب (داخل `base_invoice`) | `Required field is missing: line_items.` |
-| 8 | `attention_cells` | غایب (داخل `base_invoice`) | `Required field is missing: attention_cells.` |
-| 9 | `header` | غایب (داخل `base_invoice`) | `Required field is missing: header.` |
-| 10 | `provenance` | غایب (داخل `base_invoice`) | `Required field is missing: provenance.` |
-
-### مغایرهٔ ۳ — فیلدهای اضافی غیرمجاز در سطح ریشه (۴ مورد)
-
-C# با `RejectUnknown(root, RootAllowed)` (خط ۱۱۱) هر فیلد غیرمجاز در سطح ریشه را رد می‌کند. `RootAllowed` شامل ۱۶ فیلد ضرور + `issued_content_sha256` است. وکتور o17-E-72 ۴ فیلد اضافی دارد:
-
-| # | فیلد اضافی | خطای C# |
-|---|---|---|
-| 1 | `base_invoice` | `Unexpected field: base_invoice.` |
-| 2 | `synthetic_only` | `Unexpected field: synthetic_only.` |
-| 3 | `v1_2_draft_addendum` | `Unexpected field: v1_2_draft_addendum.` |
-| 4 | `vector_id` | `Unexpected field: vector_id.` |
-
-### مغایرهٔ ۴ — تکرار دو فیلد provenance (مواردی که PHP اشاره کرده)
-
-وکتور o17-E-72 دو فیلد `image_sha256` و `template_library_id` را **دو‌بار** دارد:
-- یک بار داخل `provenance` (در `base_invoice.provenance`)
-- یک بار مستقیماً در سطح `base_invoice` (هم‌سطح با `provenance`)
-
-C# این دو فیلد را **تنها داخل `provenance`** می‌طلبد (خطوط ۳۱۵–۳۲۷):
-```csharp
-RejectUnknown(provenance, "image_sha256", "template_library_id", "engine_version", "fields");
-foreach (var name in new[] { "image_sha256", "template_library_id", "engine_version", "fields" })
-{
-    Require(provenance, name);
-}
+```
+SchemaValidationFailed | Unexpected field: base_invoice.
 ```
 
-اما چون C# در اعتبارسنجی سطح ریشه شکست می‌خورد (مغایرات ۱–۳)، هرگز به اعتبارسنجی `provenance` نمی‌رسید.
+این نخستین و تنها خطایی است که C# تولید می‌کند، زیرا اعتبارسنج در `CanonicalInvoiceConsumer.cs` **fail-fast** است (نخستین خطا با `throw` بالا می‌رود و اعتبارسنجی متوقف می‌شود). C# هرگز فهرستی از خطاها برنمی‌گرداند و فقط **یک** کد خطا (`ErrorCode`) می‌دهد.
 
-## پاسخ به ادعای PHP دربارهٔ «محل دو فیلد provenance»
+---
 
-گزارش آزاد PHP (ریپو `kandoo-cloud-php`، شاخهٔ `o16-P-E72-review`، کامیت `3e44d51`؛ reports/E72-PHP-INDEPENDENT-VERDICT-FA.md) ادعا می‌کند گزارش C# در مورد «محل دو فیلد provenance» خطا دارد.
+## ۲. مغایرت‌ها (سه دسته)
 
-**پاسخ C# — رد ed و مستند:**
+### مغایرت ۱ — پوشش `base_invoice` در سطح ریشه
 
-從 C# کد Frozen (`src/Kandoo.Core/CanonicalInvoiceConsumer.cs`):
+کلیدهای سطح ریشهٔ وکتور:
 
-1. **محل صحیح `image_sha256` و `template_library_id`:** داخل `provenance` (خط ۳۱۵) نه در سطح ریشه و نه در سطح `base_invoice`.
-2. **محل صحیح `provenance`:** مستقیماً در سطح ریشه invoice (خط ۵۸، `RootRequired`) نه در অন্তরী `base_invoice`.
+```
+base_invoice, synthetic_only, v1_2_draft_addendum, vector_id
+```
 
-وکتور o17-E-72:
-- `provenance` را داخل `base_invoice` دارد → **موقع炼错了** (باید در سطح ریشه باشد)
-- `image_sha256` و `template_library_id` را هر دو داخل `provenance` و هم‌زمان در سطح `base_invoice` دارد → **تکرار غیرمجاز**
+پیکرهٔ فاکتور به‌طور کامل داخل کلید `base_invoice` قرار گرفته است، در حالی که C# می‌خواهد فیلدهای فاکتور مستقیماً در سطح ریشه باشند.
 
-در هر دو مورد، C# مطابق کد frozen عمل می‌کند؛ ادعای PHP درباره خطای C# در تعیین محل فیلدها **رد می‌شود** با شواهد بایتی به Lines ۵۳–۵۸، ۱۱۱–۱۱۲، ۳۱۵–۳۲۷ در `CanonicalInvoiceConsumer.cs`.
+**شاهد کد:** `CanonicalInvoiceConsumer.cs`
 
-## مواردی که در o17-E-72 اصلاح شده‌اند (از نسخه 1e620cc)
+| خط | کد | نقش |
+|---|---|---|
+| ۱۰۹ | `private static void ValidateRoot(JsonElement root)` | ورودی، ریشهٔ سند است |
+| ۱۱۱ | `RejectUnknown(root, RootAllowed);` | نخستین گام؛ پیش از هر `Require` |
+| ۵۳–۵۸ | `RootRequired` (۱۶ فیلد) | فیلدهای ضرور سطح ریشه |
 
-| مورد | نسخه قبلی (1e620cc) | نسخه o17-E-72 (1e029bd) | وضعیت C# |
+چون `RejectUnknown` در خط ۱۱۱ **پیش از** حلقهٔ `Require` (خط ۱۱۲) اجرا می‌شود، نخستین خطا `Unexpected field: base_invoice.` است.
+
+### مغایرت ۲ — غیبت هر ۱۶ فیلد ضرور در سطح ریشه
+
+`RootRequired` در خطوط ۵۳–۵۸ شامل **۱۶** فیلد است. **هیچ‌یک** از این ۱۶ فیلد در سطح ریشهٔ وکتور وجود ندارد؛ همه داخل `base_invoice` هستند.
+
+| # | فیلد | در سطح ریشهٔ `o17-E-72` |
+|---|---|---|
+| ۱ | `schema_version` | غایب |
+| ۲ | `mode` | غایب |
+| ۳ | `invoice_id` | غایب |
+| ۴ | `display_number` | غایب |
+| ۵ | `operation_id` | غایب |
+| ۶ | `device_id` | غایب |
+| ۷ | `public_token` | غایب |
+| ۸ | `store_id` | غایب |
+| ۹ | `customer` | غایب |
+| ۱۰ | `state` | غایب |
+| ۱۱ | `state_history` | غایب |
+| ۱۲ | `line_items` | غایب |
+| ۱۳ | `summary` | غایب |
+| ۱۴ | `attention_cells` | غایب |
+| ۱۵ | `header` | غایب |
+| ۱۶ | `provenance` | غایب |
+
+### مغایرت ۳ — چهار فیلد غیرمجاز در سطح ریشه
+
+`RootAllowed` (خط ۶۰) برابر است با `RootRequired` به‌اضافهٔ `issued_content_sha256`. وکتور چهار فیلد دارد که در این فهرست نیستند:
+
+| # | فیلد | خطای C# |
+|---|---|---|
+| ۱ | `base_invoice` | `Unexpected field: base_invoice.` ← نخستین خطا |
+| ۲ | `synthetic_only` | `Unexpected field: synthetic_only.` |
+| ۳ | `v1_2_draft_addendum` | `Unexpected field: v1_2_draft_addendum.` |
+| ۴ | `vector_id` | `Unexpected field: vector_id.` |
+
+**نکتهٔ قراردادی مهم:** `v1_2_draft_addendum` محتوایی دارد که در Canonical Invoice v0 هیچ جایگاهی ندارد: `currency_unit`، `invoice_discount`، `payments`، `walk_in_customer`، `schema_version: "1.2-draft"`. این‌ها افزوده‌های v1.2 هستند و صرفاً با برداشتن پوشش `base_invoice` حل نمی‌شوند؛ نیازمند تصمیم قراردادی جداگانه‌اند.
+
+---
+
+## ۳. پاسخ صریح به ادعای PHP دربارهٔ محل دو فیلد `provenance`
+
+### رأی: **تأیید می‌شود — ادعای PHP درست است و گزارش پیشین C# در این بند خطا داشت.**
+
+گزارش پیشین C# ادعا کرده بود `image_sha256` و `template_library_id` **دو بار** ظاهر شده‌اند: یک بار داخل `provenance` و یک بار در سطح `base_invoice`. **این ادعا نادرست بود.** شواهد بایتی:
+
+| سنجه | نتیجه |
+|---|---|
+| تعداد رخداد واژهٔ `image_sha256` در کل فایل ۱۵۱۸ بایتی | **۱** |
+| آفست بایتی آن | **۹۵۵** |
+| تعداد رخداد واژهٔ `template_library_id` در کل فایل | **۱** |
+| آفست بایتی آن | **۹۷۵** |
+
+هر دو رخداد **تنها** درون شیء `provenance` قرار دارند. سطح `base_invoice` هیچ‌یک از این دو فیلد را ندارد. کلیدهای سطح `base_invoice` به‌طور دقیق:
+
+```
+attention_cells, customer, device_id, display_number, header, invoice_id,
+line_items, mode, operation_id, provenance, public_token, schema_version,
+state, state_history, store_id, summary
+```
+
+پس:
+- **تکرار (duplication) وجود ندارد.** ادعای پیشین C# باطل است.
+- **محل این دو فیلد درست است:** داخل `provenance`، که همان جایی است که C# می‌خواهد (خط ۳۱۵: `RejectUnknown(provenance, "image_sha256", "template_library_id", "engine_version", "fields")`).
+
+### اما یک تمایز حیاتی که رأی را تغییر نمی‌دهد
+
+محل *درست* این دو فیلد **درون** `provenance` بودن است — و این برقرار است. مشکل در **محل خودِ `provenance`** است: `provenance` باید در سطح ریشهٔ فاکتور باشد (`RootRequired` خط ۵۸؛ مصرف در خط ۱۴۰: `ValidateProvenance(Require(root, "provenance"))`)، ولی در وکتور داخل `base_invoice` نشسته است.
+
+بنابراین:
+- **ادعای PHP دربارهٔ نبود تکرار: تأیید می‌شود.**
+- **نتیجه‌گیری PHP مبنی بر خطای C# در تعیین محل فیلدها: رد می‌شود.** C# دقیقاً همان جایی را می‌خواهد که قرارداد منجمد می‌گوید (درون `provenance`، و `provenance` در ریشه). وکتور `o17-E-72` `provenance` را در جای غلط گذاشته است.
+
+به بیان کوتاه: PHP ایراد را به گزارش C# درست گرفته، اما این ایراد رأی «ناسازگار» را باطل نمی‌کند.
+
+---
+
+## ۴. آنچه در `o17-E-72` نسبت به `1e620cc` اصلاح شد
+
+| مورد | نسخهٔ پیشین (`1e620cc`) | `o17-E-72` (`1e029bd`) | وضعیت |
 |---|---|---|---|
-| `quantity` در `line_items` | `quantity` (اشتباه) | `quantity_millis` ✓ | سازگار |
-| `quantity_millis` در `provenance.fields.line_items` | `quantity` (اشتباه) | `quantity_millis` ✓ | سازگار |
-| `display_number` برای DRAFT | `"SYN-E72-001"` (اشتباه) | `null` ✓ | سازگار |
-| `provenance.fields.display_number` | `"native"` (اشتباه) | `"unavailable"` ✓ | سازگار |
+| `quantity` → `quantity_millis` در `line_items` | `quantity` | `quantity_millis` | **اصلاح شد** |
+| `quantity` → `quantity_millis` در `provenance.fields.line_items` | `quantity` | `quantity_millis` | **اصلاح شد** |
+| `display_number` برای حالت DRAFT | `"SYN-E72-001"` | `null` | **اصلاح شد** |
+| `provenance.fields.display_number` | `"native"` | `"unavailable"` | **اصلاح شد** |
 
-با این حال، چهار دسته مغایر بالا همچنان برقرار است و وکتور o17-E-72 را **NASĀZGAR** می‌سازد.
+این چهار مورد که در بازبینی پیشین گزارش شده بود، همگی درست اصلاح شده‌اند.
 
-## نتیجه نهایی
+---
 
-**وکتور o17-E-72 بایت‌به‌بایت با پیاده‌سازی C# سازگار نیست.** C# CanonicalInvoiceConsumer وکتور را با ۱۴ خطای `SchemaValidationFailed` (۱۰ مورد 필드 الغا‌شده + ۴ مورد فیلد اضافی در سطح ریشه) رد می‌کند.
+## ۵. آزمون تعیین‌کننده: اگر پوشش برداشته شود
 
-**لینک وکتور:** https://github.com/majid-ghanbari-dost/Kandoo-Digital-Invoice/blob/1e029bdadc3f970d45556352d23b5dc7be40587d/tests/golden/e72/canonical-invoice-v1-2-draft-vector.json
+برای سنجش اینکه آیا پیکرهٔ فاکتور **درون** `base_invoice` از نظر معنایی سالم است، اعتبارسنج C# به‌صورت گام‌به‌گام بازتولید شد و سپس `base_invoice` به سطح ریشه ترفیع داده شد.
 
-**کامیت پایتون:** `1e029bdadc3f970d45556352d23b5dc7be40587d` (تگ `o17-E-72`، شاخه `arena/d0587e71-kandoo-digital-invoice`)
+**نتیجه:** پیکرهٔ ترفیع‌یافته **پذیرفته می‌شود**.
 
-**عقده:** قرارداد `src/Kandoo.Core/CanonicalInvoiceConsumer.cs` (RootAllowed دست‌نخورده) تغییر نمی‌کند. وکتور باید با四 دسته مغایر بالا اصلاح شود تا از نظر C# قابل پذیرش باشد.
+| گام اعتبارسنجی | نتیجه |
+|---|---|
+| `RejectUnknown(root, RootAllowed)` | گذشت |
+| همهٔ ۱۶ فیلد `RootRequired` | موجود |
+| `schema_version == "0"` | گذشت |
+| `mode in ("A","B")` | گذشت (`B`) |
+| `public_token` — base64url ≥ ۲۲ نویسه | گذشت (۲۹ نویسه) |
+| `state` | گذشت (`DRAFT`) |
+| `ValidateProvenance` | گذشت |
+| `ValidateLifecycle` (پیش از ISSUE) | گذشت (`display_number: null` + `"unavailable"`) |
+| `ValidateCustomer` | گذشت (`claimed`) |
+| `ValidateStateHistory` | گذشت (آرایهٔ خالی) |
+| `ValidateLineItems` | گذشت (`quantity_millis: 1000` عدد صحیح) |
+| `ValidateSummary` | گذشت |
+| `ValidateAttentionCells` | گذشت (آرایهٔ خالی) |
+| `ValidateHeader` | گذشت |
+
+**این یعنی مسیر اصلاح روشن است:** برداشتن پوشش `base_invoice` و انتقال فیلدهای فاکتور به سطح ریشه، وکتور را برای C# قابل‌پذیرش می‌کند. تنها بخشی که با این کار حل نمی‌شود، محتوای `v1_2_draft_addendum` است که در v0 جایگاهی ندارد و نیازمند تصمیم قراردادی است.
+
+---
+
+## ۶. اصلاحیه بر گزارش پیشین C#
+
+نسخهٔ اول گزارش C# (کامیت `26d8806`، تگ `o17-E-72-REVIEW`) سه خطای واقعی داشت:
+
+| # | ادعای نادرست پیشین | واقعیت |
+|---|---|---|
+| ۱ | «۱۰ فیلد ضرور ریشه غایب است» | **۱۶** فیلد غایب است (تمام `RootRequired`) |
+| ۲ | «۱۴ خطای `SchemaValidationFailed`» | C# **fail-fast** است و فقط **۱** خطا برمی‌گرداند: `Unexpected field: base_invoice.` |
+| ۳ | «`image_sha256`/`template_library_id` دو بار تکرار شده‌اند» | هر واژه **یک بار** در کل فایل ظاهر می‌شود، هر دو درون `provenance` — **تکرار وجود ندارد** |
+
+خطای سوم همان موردی است که PHP به‌درستی شناسایی کرد. رأی نهایی (ناسازگار) با این اصلاح تغییر نمی‌کند، اما دلایل آن محدود به سه دستهٔ بخش ۲ است، نه چهار دسته، و شمار خطاها یک است، نه ۱۴.
+
+---
+
+## ۷. نتیجهٔ نهایی
+
+**وکتور `o17-E-72` سازگار نیست (INCOMPATIBLE).**
+
+نخستین خطای C#: `SchemaValidationFailed | Unexpected field: base_invoice.`
+
+دلایل (سه دسته):
+1. پوشش `base_invoice` در ریشه به‌جای فیلدهای تخت.
+2. غیبت هر ۱۶ فیلد ضرور `RootRequired` در سطح ریشه.
+3. چهار فیلد غیرمجاز در سطح ریشه؛ که یکی از آن‌ها (`v1_2_draft_addendum`) افزودهٔ قراردادی v1.2 است و در v0 جایگاه ندارد.
+
+**قرارداد تغییر نمی‌کند.** `src/Kandoo.Core/CanonicalInvoiceConsumer.cs` دست‌نخورده می‌ماند. اقدام لازم در لِین پایتون است: تخت‌سازی سطح ریشه و تصمیم صریح دربارهٔ `v1_2_draft_addendum`.
+
+**دسترسی به ریپوی PHP:** ریپوی `kandoo-cloud-php` برای اعتبارنامه‌های این لِین با خطای ۴۰۳ (Resource not accessible by integration) مسدود است؛ لذا گزارش `docs/reports/E72-PHP-INDEPENDENT-VERDICT-FA.md` در کامیت `3e44d51` به‌طور مستقیم خوانده نشد. پاسخ بالا بر پایهٔ ادعای منتقل‌شده در درخواست بازبینی و راستی‌آزمایی بایتی خودِ وکتور نوشته شده است. برای بازبینی کامل گزارش PHP، اعطای دسترسی خواندن لازم است.
