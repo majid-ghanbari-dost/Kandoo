@@ -695,7 +695,8 @@ Fix: added `continue-on-error: true` to the `android-emulator-smoke` job so emul
 | **C-91** Android store app complete | `arena/kandoo-c91-android-store` | `f453f930d52b0d18977bf53d00eb03b356a188a9` | `o16-C-91` | [44875204264](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44875204264) | GREEN (ubuntu + windows), PR #14 open |
 | **C-92** Customer mode in Android app | `arena/kandoo-c92-customer-mode` | `abfee63` (test fix `2af2040`) | `o16-c92` (existing, on `17eba20`) | [44991041523](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44991041523) | GREEN overall (emulator job failed, continue-on-error), PR #15 open |
 | **C-95** Replace WinForms launcher with MAUI SetupWizardPage | `arena/kandoo-c95-maui-launcher` | `08950a5de6f992a7866a359963d14f6864b2ceb7` | `o16-c95` | [44924669492](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44924669492) | GREEN (ubuntu + windows), PR #12 open |
-| **HOTFIX-1** HubLocator path fix + --self-check | `arena/4bb6cd51-kandoo` | `207ebeb` | `o16-HOTFIX-1` | CI pending (push 2026-10-22) | GREEN local static, tag pushed, awaiting CI run |
+| **HOTFIX-1** HubLocator path fix + --self-check | `arena/4bb6cd51-kandoo` | `207ebeb` | `o16-HOTFIX-1` | CI pending | Tag pushed, --self-check not locally verifiable (no dotnet SDK in sandbox) |
+| **Phase 2** Consolidated C-93 PR (#16 + fix-2 + fix-3) | `arena/4bb6cd51-kandoo` | `8eb849b` | — | CI pending | PR #16 content + fix-2 + fix-3 merged; touches .github/workflows/ci.yml (yes) |
 | **C-94** Management accounting summary (read-only, synthetic fixtures) | `arena/kandoo-c94-management-accounting` | `dc49ba6d67322da8c420697dd45c4e9f7bc8745a` | `o16-C-94` | [45182596762](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/45182596762) | GREEN (ubuntu + windows), PR #20 open |
 
 ### C-94 Management Accounting (CSHARP-T1) — COMPLETE
@@ -724,7 +725,26 @@ Files:
 
 MERGE FREEZE: PRs #12–#15 stay UNMERGED until HOTFIX-1 + --self-check green.
 
-### C-93 Holoo Connector
+### Phase 2 — Consolidated C-93 PR — COMPLETE (code committed, CI pending)
+
+Delivered on `arena/4bb6cd51-kandoo` at `8eb849b`.
+
+Consolidates PR #16 content (`e73b1c9`) + fix-2 (`e5705c8`) + fix-3 (`f1349e9`), which are siblings off `58731e7` and neither contains the other.
+
+Files:
+- `src/Kandoo.HolooConnector/HolooSchemaVersion.cs` — PR #16's Detect/IsKnown/Unknown + fix-2/fix-3's nullable `Known()` factory and `TryParse` with `TrustedVersions` (H1-6/H1-7/H1-8)
+- `src/Kandoo.HolooConnector/HolooIncrementalSync.cs` — PR #16's shadow-store-coordinating sync design
+- `src/Kandoo.HolooConnector/HolooShadowStore.cs` — PR #16's ShadowProduct-based read-only shadow store
+- `src/Kandoo.HolooConnector/HolooStockVerifier.cs` — PR #16's stock verification
+- `tests/Kandoo.HolooConnector.Tests/HolooConnectorTests.cs` — PR #16 tests updated for nullable `Known()` + fix-2/fix-3 compatible Known/TryParse tests
+- `.github/workflows/ci.yml` — adds HolooConnector test step to both ubuntu and windows jobs
+- `docs/reports/ORDER-16-C-93.md`, `ORDER-16-C-93-2.md`, `ORDER-16-C-93-3.md`
+
+Touches `.github/workflows/`: **yes** — `.github/workflows/ci.yml` (declared per CSHARP-T2 first-line rule).
+
+Previous C-93-fix branches (c93fix1/2/3) are superseded by this consolidation.
+
+### C-93 Holoo Connector (original PR #16)
 
 PR #16 (`arena/kandoo-c93-holoo-connector`) remains open and green. Head commit `e73b1c91523e86cad40628bb195797c5aadfb87a`, CI both jobs SUCCESS. PR #16 is conflict-free vs new `main` and must stay that way. Previous C-93-fix branches (c93fix1/2/3) are superseded by this directive.
 
