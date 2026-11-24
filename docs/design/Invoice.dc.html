@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>صدور فاکتور</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.f{display:flex;flex-direction:column;gap:6px;flex:1;min-width:180px}
+.f label{font-weight:600;font-size:14px}
+.f input,.f select{height:44px;border:1px solid #C9B88E;border-radius:8px;padding:0 12px;font-family:inherit;font-size:16px;background:#FFFFFF;color:#2B1D0E}
+.pm{width:44px;height:44px;border:0;border-radius:8px;background:#F5E9C8;color:#2B1D0E;font-size:22px;font-family:inherit;cursor:pointer}
+.tab{padding:10px 24px;border-radius:8px;font-family:inherit;font-size:16px;border:0;min-height:44px}
+</style>
+</helmet>
+<div style="width:100%;min-height:820px;box-sizing:border-box;display:flex;background:#FFF8E7;color:#2B1D0E;font-family:'Vazirmatn',Tahoma,sans-serif">
+<nav style="width:220px;background:#2B1D0E;color:#FFF8E7;padding:24px 16px;box-sizing:border-box;display:flex;flex-direction:column;gap:8px">
+<div style="font-size:24px;font-weight:800;margin-bottom:16px">کندو</div>
+<a href="#" style="color:#FFF8E7;padding:12px;text-decoration:none">صف بازبینی</a>
+<a href="#" style="color:#2B1D0E;background:#F2A900;border-radius:8px;padding:12px;text-decoration:none;font-weight:600">فاکتورها</a>
+<a href="#" style="color:#FFF8E7;padding:12px;text-decoration:none">کالاها</a>
+<a href="#" style="color:#FFF8E7;padding:12px;text-decoration:none">تنظیمات</a>
+</nav>
+<main style="flex:1;padding:32px;display:flex;flex-direction:column;gap:20px;max-width:920px">
+<h1 style="margin:0;font-size:28px">صدور فاکتور</h1>
+<div style="display:flex;gap:8px">
+<button class="tab" style="background:#F2A900;color:#2B1D0E;font-weight:600">فروش</button>
+<button class="tab" disabled style="background:#F5E9C8;color:#6B5A3E">اجاره (به‌زودی)</button>
+<button class="tab" disabled style="background:#F5E9C8;color:#6B5A3E">سایر خدمات (به‌زودی)</button>
+</div>
+<div style="background:#FFFFFF;border-radius:12px;padding:20px;display:flex;gap:16px;flex-wrap:wrap">
+<div class="f"><label for="m">شماره‌ی مشتری (برای پیامک فاکتور)</label><input id="m" placeholder="[۰۹…]" inputmode="tel"></div>
+<div class="f"><label for="d">تاریخ</label><input id="d" value="[تاریخ امروز، خودکار]" readonly></div>
+<div class="f"><label for="cn">نام مشتری (الزامی)</label><input id="cn" placeholder="[نام مشتری]"></div>
+</div>
+<div style="background:#FFFFFF;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px">
+<div style="font-weight:600">کالاها</div>
+<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;background:#FFF8E7;border-radius:8px;padding:12px">
+<div class="f"><label for="tg">تگ رقمی (سریع‌ترین راه)</label><input id="tg" placeholder="[تگ]" inputmode="numeric"></div>
+<div class="f"><label for="pn">یا نام کالا</label><input id="pn" placeholder="[نام کالا]"></div>
+<div class="f"><label for="pt">نوع</label><select id="pt"><option>[گزینه‌های همین کالا]</option></select></div>
+<div class="f"><label for="pc">رنگ</label><select id="pc"><option>[گزینه‌های همین کالا]</option></select></div>
+<div class="f" style="max-width:150px"><label for="q">تعداد</label><input id="q" placeholder="[تعداد]" inputmode="numeric"></div>
+<div style="font-size:14px;color:#256B43;font-weight:600;padding-bottom:12px">موجودی: [n]</div>
+<button class="pm" aria-label="افزودن ردیف کالا">+</button><button class="pm" aria-label="حذف این ردیف">−</button>
+</div>
+</div>
+<div style="background:#FFFFFF;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px">
+<fieldset style="border:0;padding:0;margin:0;display:flex;gap:24px;flex-wrap:wrap"><legend style="font-weight:600;margin-bottom:8px">روش تسویه</legend>
+<label><input type="radio" name="pay" checked> کارت‌خوان</label>
+<label><input type="radio" name="pay"> کارت‌به‌کارت</label>
+<label><input type="radio" name="pay"> نقدی</label>
+</fieldset>
+<label><input type="checkbox"> چاپ فاکتور برای مشتری (اختیاری)</label>
+<div style="font-size:14px;color:#5A4630">فاکتور دیجیتال همیشه برای مشتری پیامک می‌شود.</div>
+</div>
+<div><button style="background:#F2A900;color:#2B1D0E;border:0;border-radius:8px;padding:12px 40px;min-height:52px;font-family:inherit;font-size:18px;font-weight:800">صدور فاکتور</button></div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":820}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

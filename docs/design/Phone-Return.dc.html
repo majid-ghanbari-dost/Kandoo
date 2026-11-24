@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head><meta charset="utf-8"><title>Phone-Return</title><script src="./support.js"></script></head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.c{background:#fff;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.b{border:0;border-radius:8px;font-family:inherit;font-size:16px;font-weight:600;min-height:48px;padding:0 20px}
+.ch{border:0;border-radius:20px;padding:8px 16px;font-family:inherit;font-size:14px;min-height:40px;background:#F5E9C8;color:#2B1D0E}
+.st{border-radius:6px;padding:4px 10px;font-size:13px;color:#fff;display:inline-block}
+.i{height:44px;border:1px solid #C9B88E;border-radius:8px;padding:0 12px;font-family:inherit;font-size:16px;background:#fff;box-sizing:border-box;width:100%;color:#2B1D0E}
+.k{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #F0E4C2}
+th{padding:12px;color:#5A4630;font-size:14px}td{padding:12px;border-top:1px solid #F0E4C2}
+</style>
+</helmet>
+<div style="width:390px;min-height:844px;box-sizing:border-box;background:#FFF8E7;font-family:'Vazirmatn',Tahoma,sans-serif;color:#2B1D0E;display:flex;flex-direction:column"><header style="background:#2B1D0E;color:#FFF8E7;padding:16px 20px;font-size:20px;font-weight:800">برگشت فاکتور</header><main style="padding:16px;display:flex;flex-direction:column;gap:12px"><div class="c"><div style="display:flex;flex-direction:column;gap:4px"><label style="font-weight:600;font-size:14px">شماره‌ی فاکتور</label><input class="i" placeholder="[شماره]"></div><label><input type="checkbox"> [نام کالا] × [تعداد]</label><div style="display:flex;flex-direction:column;gap:4px"><label style="font-weight:600;font-size:14px">تعداد برگشتی</label><input class="i" placeholder="[تعداد]"></div><div style="display:flex;flex-direction:column;gap:4px"><label style="font-weight:600;font-size:14px">دلیل (الزامی)</label><input class="i" placeholder="[دلیل]"></div></div><button class="b" style="background:#9A3B0A;color:#fff;">ثبت برگشت</button><div style="font-size:13px;color:#5A4630">فاکتور اصلی پاک نمی‌شود. یک رویداد برگشت ثبت می‌شود.</div></main><nav style="margin-top:auto;display:flex;background:#2B1D0E;padding:8px 0"><a href="#" style="flex:1;text-align:center;padding:10px 0;text-decoration:none;font-size:13px;color:#FFF8E7">بازبینی</a><a href="#" style="flex:1;text-align:center;padding:10px 0;text-decoration:none;font-size:13px;color:#F2A900;font-weight:800">فاکتور</a><a href="#" style="flex:1;text-align:center;padding:10px 0;text-decoration:none;font-size:13px;color:#FFF8E7">کالاها</a><a href="#" style="flex:1;text-align:center;padding:10px 0;text-decoration:none;font-size:13px;color:#FFF8E7">بیشتر</a></nav></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

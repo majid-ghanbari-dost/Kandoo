@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Kandoo.App.StatesPage"
+             Title="حالت‌های خالی و خطا"
+             Style="{StaticResource PageStyle}">
+    <ScrollView>
+        <VerticalStackLayout Style="{StaticResource RootStackStyle}">
+            <Label Style="{StaticResource TitleStyle}"
+                   Text="حالت‌های خالی و خطا" />
+            <Label Style="{StaticResource BodyStyle}"
+                   Text="نمونه‌ی حالت‌های خالی، قطع ارتباط با هاب و خطای غیرمنتظره. هر کدام پیام مناسبی برای کاربر نمایش می‌دهند." />
+
+            <!-- Empty state -->
+            <Border Style="{StaticResource CardStyle}">
+                <VerticalStackLayout Style="{StaticResource RowStackStyle}"
+                                     HorizontalOptions="Center">
+                    <Label Style="{StaticResource SectionTitleStyle}"
+                           Text="همه‌چیز بررسی شده است"
+                           HorizontalTextAlignment="Center" />
+                    <Label Style="{StaticResource BodyStyle}"
+                           Text="فاکتوری منتظر تأیید نیست."
+                           HorizontalTextAlignment="Center" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Hub disconnected -->
+            <Border Style="{StaticResource CardStyle}"
+                    BorderBrush="{StaticResource Review}"
+                    BorderThickness="2">
+                <VerticalStackLayout Style="{StaticResource RowStackStyle}"
+                                     HorizontalOptions="Center">
+                    <Label Style="{StaticResource SectionTitleStyle}"
+                           Text="ارتباط با هاب قطع است"
+                           TextColor="{StaticResource Review}"
+                           HorizontalTextAlignment="Center" />
+                    <Label Style="{StaticResource BodyStyle}"
+                           Text="فاکتورهای جدید در صف می‌مانند و پس از اتصال دوباره ارسال می‌شوند. چیزی از دست نمی‌رود."
+                           HorizontalTextAlignment="Center" />
+                    <Button x:Name="RetryButton"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Text="تلاش دوباره"
+                            Clicked="OnRetryClicked"
+                            SemanticProperties.Description="تلاش دوباره برای اتصال به هاب" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Unexpected error -->
+            <Border Style="{StaticResource CardStyle}"
+                    BorderBrush="{StaticResource Review}"
+                    BorderThickness="2">
+                <VerticalStackLayout Style="{StaticResource RowStackStyle}"
+                                     HorizontalOptions="Center">
+                    <Label Style="{StaticResource SectionTitleStyle}"
+                           Text="خطای غیرمنتظره"
+                           TextColor="{StaticResource Review}"
+                           HorizontalTextAlignment="Center" />
+                    <Label Style="{StaticResource BodyStyle}"
+                           Text="برنامه با مشکل مواجه شد. گزارش خطا را کپی و برای پشتیبانی بفرستید."
+                           HorizontalTextAlignment="Center" />
+                    <Button x:Name="CopyReportButton"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            Text="کپی گزارش خطا"
+                            Clicked="OnCopyReportClicked"
+                            SemanticProperties.Description="کپی گزارش خطا در حافظه موقت" />
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

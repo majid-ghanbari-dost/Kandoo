@@ -2,36 +2,72 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="Kandoo.App.ReturnsPage"
-             Title="برگشت کالاها"
+             Title="برگشت فاکتور"
              Style="{StaticResource PageStyle}">
     <ScrollView>
         <Border Style="{StaticResource CardStyle}">
             <VerticalStackLayout Style="{StaticResource RootStackStyle}">
-                <Label Style="{StaticResource TitleStyle}" Text="برگشت کالا / فاکتور" />
-                <Label Style="{StaticResource BodyStyle}" Text="ثبت و پیگیری برگشت‌های فروشگاهی." />
+                <Label Style="{StaticResource TitleStyle}"
+                       Text="برگشت فاکتور" />
+                <Label Style="{StaticResource BodyStyle}"
+                       Text="ثبت برگشت یک فاکتور صادرشده. فاکتور اصلی پاک نمی‌شود؛ یک رویداد «برگشت» ثبت می‌شود و موجودی و حساب‌ها خودکار اصلاح می‌شوند." />
 
-                <Button x:Name="LoadButton"
-                        Style="{StaticResource PrimaryButtonStyle}"
-                        Text="بارگذاری برگشت‌ها"
-                        Clicked="OnLoadClicked"
-                        SemanticProperties.Description="بارگذاری فهرست برگشت‌ها از هاب" />
-                <Label x:Name="StatusLabel" Style="{StaticResource CaptionStyle}" />
-
-                <VerticalStackLayout x:Name="ReturnsList" Style="{StaticResource RowStackStyle}" />
-
-                <!-- Empty state -->
-                <VerticalStackLayout x:Name="EmptyState"
-                                     IsVisible="False"
-                                     HorizontalOptions="Center"
-                                     VerticalOptions="Center"
-                                     Spacing="{StaticResource Space3}">
-                    <Label Style="{StaticResource SectionTitleStyle}"
-                           Text="هیچ برگشتی یافت نشد"
-                           HorizontalTextAlignment="Center" />
+                <VerticalStackLayout Style="{StaticResource RowStackStyle}">
                     <Label Style="{StaticResource BodyStyle}"
-                           Text="فهرست برگشت‌ها خالی است."
-                           HorizontalTextAlignment="Center" />
+                           Text="شماره‌ی فاکتور" />
+                    <Entry x:Name="InvoiceNumberEntry"
+                           Style="{StaticResource InputStyle}"
+                           Placeholder="[شماره فاکتور]" />
                 </VerticalStackLayout>
+
+                <Label Style="{StaticResource SectionTitleStyle}"
+                       Text="کالاهای برگشتی" />
+                <VerticalStackLayout x:Name="ReturnedItems"
+                                     Style="{StaticResource RowStackStyle}" />
+
+                <VerticalStackLayout Style="{StaticResource RowStackStyle}">
+                    <Label Style="{StaticResource BodyStyle}"
+                           Text="تعداد برگشتی" />
+                    <Entry x:Name="ReturnQuantityEntry"
+                           Style="{StaticResource InputStyle}"
+                           Placeholder="[تعداد]" />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Style="{StaticResource RowStackStyle}">
+                    <Label Style="{StaticResource BodyStyle}"
+                           Text="دلیل (الزامی)" />
+                    <Entry x:Name="ReasonEntry"
+                           Style="{StaticResource InputStyle}"
+                           Placeholder="[دلیل]" />
+                </VerticalStackLayout>
+
+                <Label Style="{StaticResource SectionTitleStyle}"
+                       Text="بازپرداخت" />
+                <HorizontalStackLayout Style="{StaticResource ButtonRowStyle}">
+                    <RadioButton x:Name="RefundCash"
+                                 GroupName="RefundMethod"
+                                 IsChecked="True"
+                                 Style="{StaticResource CheckBoxStyle}" />
+                    <Label Text="نقدی" Style="{StaticResource BodyStyle}" />
+                    <RadioButton x:Name="RefundCard"
+                                 GroupName="RefundMethod"
+                                 Style="{StaticResource CheckBoxStyle}" />
+                    <Label Text="کارت" Style="{StaticResource BodyStyle}" />
+                    <RadioButton x:Name="RefundCredit"
+                                 GroupName="RefundMethod"
+                                 Style="{StaticResource CheckBoxStyle}" />
+                    <Label Text="کسر از طلب" Style="{StaticResource BodyStyle}" />
+                </HorizontalStackLayout>
+
+                <Button x:Name="SubmitReturnButton"
+                        Style="{StaticResource DangerButtonStyle}"
+                        Text="ثبت برگشت"
+                        Clicked="OnSubmitReturnClicked"
+                        SemanticProperties.Description="ثبت برگشت فاکتور و اصلاح موجودی" />
+
+                <Label x:Name="StatusLabel"
+                       Style="{StaticResource CaptionStyle}"
+                       HorizontalTextAlignment="Center" />
             </VerticalStackLayout>
         </Border>
     </ScrollView>
