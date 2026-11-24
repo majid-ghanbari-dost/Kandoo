@@ -794,19 +794,26 @@ The C-93 consolidation (`8eb849b`) was committed on `arena/4bb6cd51-kandoo`, whi
 
 Tags `o16-C-96-1`, `o16-C-96-2`, `o16-C-96-3`, `o16-C-96-4` were created at `6aea923` before CI green — a recorded process violation. Tags are left in place (never move existing ones). No new tags before CI green. Per-group acceptance (CI green + per-screen screenshot artifact + per-screen report line) NOT met yet. D2 requires one create-only PR per group from its own branch.
 
-### Cross-lane item — E-72 canonical invoice v1.2 vector review — COMPLETE (INCOMPATIBLE)
+### Cross-lane item — E-72 canonical invoice v1.2 vector review — COMPLETE (INCOMPATIBLE) — Revised O17
 
-Reviewed `tests/golden/e72/canonical-invoice-v1-2-draft-vector.json` (Kandoo-Digital-Invoice @ `1e620cc`) against `src/Kandoo.Core/CanonicalInvoiceConsumer.cs` (C# Canonical Invoice v0 consumer).
+Reviewed revised vector `tests/golden/e72/canonical-invoice-v1-2-draft-vector.json` (Kandoo-Digital-Invoice @ `1e029bd`, tag `o17-E-72`) against frozen `src/Kandoo.Core/CanonicalInvoiceConsumer.cs`.
 
-**Verdict:** NOT byte-for-byte compatible — C# would reject the E-72 vector with three `SchemaValidationFailed` errors:
+**Verdict:** INCOMPATIBLE — C# rejects o17-E-72 with 14 `SchemaValidationFailed` errors (10 missing required root fields + 4 extra root fields):
 
-1. **Root-level extra fields:** `image_sha256` and `template_library_id` present in E-72 `base_invoice` but not in C# `RootAllowed` → `Unexpected field: image_sha256.` / `Unexpected field: template_library_id.`
-2. **Line item field name:** E-72 uses `quantity`; C# requires `quantity_millis` (root `line_items[]` and `provenance.fields.line_items[]`) → `Required field is missing: quantity_millis.` / `Unexpected field: quantity.`
-3. **DRAFT state display_number:** E-72 has `display_number: "SYN-E72-001"` (non-null) for DRAFT state; C# requires `null` + `provenance.fields.display_number: "unavailable"` → `display_number is unavailable before ISSUE.`
+1. **`base_invoice` wrapper:** Invoice wrapped under `base_invoice` key; C# expects flat root-level invoice fields (lines 53–58).
+2. **10 missing root required fields:** mode, invoice_id, display_number, operation_id, device_id, customer, line_items, attention_cells, header, provenance — all inside `base_invoice`, not at root.
+3. **4 extra root fields:** base_invoice, synthetic_only, v1_2_draft_addendum, vector_id — not in `RootAllowed`.
+4. **Provenance field duplication:** `image_sha256`/`template_library_id` appear both inside `provenance` and at `base_invoice` level; C# expects them only inside `provenance` at root level (lines 315–327).
 
-**Report (Persian):** `docs/reports/E72-CANONICAL-INVOICE-V1-2-CSHARP-COMPARISON-FA.md`
-**Source link:** https://github.com/majid-ghanbari-dost/Kandoo-Digital-Invoice/blob/1e620cc1f990bec51566b5e1af26dcec97f26fdb/tests/golden/e72/canonical-invoice-v1-2-draft-vector.json
-**Python commit:** `1e620cc1f990bec51566b5e1af26dcec97f26fdb` (branch `arena/d0587e71-kandoo-digital-invoice`)
+**PHP claim (provenance field location):** REJECTED — C# frozen contract correctly requires `image_sha256`/`template_library_id` inside `provenance` at root level. E-72 has them in the wrong wrapper (`base_invoice`) and duplicated. No changes to frozen `CanonicalInvoiceConsumer.cs`.
+
+**Report (Persian):** `docs/reports/E72-CANONICAL-INVOICE-V1-2-O17-CSHARP-COMPARISON-FA.md`
+**Decision:** `docs/decisions-made.md` item 26
+**PR #16 comment:** https://github.com/majid-ghanbari-dost/Kandoo/pull/16#issuecomment-7132351728
+**Source link:** https://github.com/majid-ghanbari-dost/Kandoo-Digital-Invoice/blob/1e029bdadc3f970d45556352d23b5dc7be40587d/tests/golden/e72/canonical-invoice-v1-2-draft-vector.json
+**Python commit:** `1e029bdadc3f970d45556352d23b5dc7be40587d` (tag `o17-E-72`, branch `arena/d0587e71-kandoo-digital-invoice`)
+
+Items fixed from earlier version (1e620cc): `quantity`→`quantity_millis` (both levels), `display_number`→null for DRAFT, `provenance.fields.display_number`→`"unavailable"`. Remaining 4 defect categories above still apply.
 
 ### C-93 Holoo Connector (original PR #16)
 
