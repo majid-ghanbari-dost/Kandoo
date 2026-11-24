@@ -51,10 +51,6 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      - name: Log dotnet version
-        shell: pwsh
-        run: dotnet --info
-
       - name: Set up Python 3.11 for C-21
         uses: actions/setup-python@v6
         with:
@@ -120,6 +116,9 @@ jobs:
       - name: Test Capture and write TRX
         run: dotnet test tests/Kandoo.Capture.Tests/Kandoo.Capture.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Capture.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
 
+      - name: Test HolooConnector and write TRX
+        run: dotnet test tests/Kandoo.HolooConnector.Tests/Kandoo.HolooConnector.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.HolooConnector.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -130,6 +129,7 @@ jobs:
             tests/Kandoo.Cloud.Tests/TestResults/*.trx
             tests/Kandoo.Hub.Tests/TestResults/*.trx
             tests/Kandoo.Capture.Tests/TestResults/*.trx
+            tests/Kandoo.HolooConnector.Tests/TestResults/*.trx
           if-no-files-found: error
 
   build-and-test-windows:
@@ -205,6 +205,9 @@ jobs:
       - name: Test Capture and write TRX
         run: dotnet test tests/Kandoo.Capture.Tests/Kandoo.Capture.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Capture.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
 
+      - name: Test HolooConnector and write TRX
+        run: dotnet test tests/Kandoo.HolooConnector.Tests/Kandoo.HolooConnector.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.HolooConnector.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
+
       - name: Publish self-contained win-x64 Hub host
         run: dotnet publish src/Kandoo.Hub/Kandoo.Hub.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts/Kandoo.Hub-win-x64
 
@@ -272,233 +275,6 @@ jobs:
           }
           exit $exitCode
 
-      - name: Install MAUI Windows workload (C-87-fix-6)
-        working-directory: src/Kandoo.App
-        shell: pwsh
-        run: |
-          dotnet --version
-          dotnet --list-sdks
-          dotnet workload install maui-windows
-          if ($LASTEXITCODE -ne 0) { throw "maui-windows workload install failed." }
-          dotnet workload list
-
-      - name: Build Windows MAUI app (C-87-fix-6)
-        working-directory: src/Kandoo.App
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE\artifacts" | Out-Null
-          $publishArgs = @(
-            'publish', 'Kandoo.App.csproj',
-            '-c', 'Release', '-f', 'net8.0-windows10.0.19041.0', '-r', 'win-x64', '--self-contained', 'true',
-            '-p:KandooWindowsOnly=true',
-            '-p:WindowsPackageType=None', '-p:WindowsAppSDKSelfContained=true',
-            '-o', "$env:GITHUB_WORKSPACE\artifacts\Kandoo.App-win-x64",
-            "-bl:$env:GITHUB_WORKSPACE\artifacts\maui-publish.binlog",
-            '-v:m'
-          )
-          $publishArgs | ForEach-Object { Write-Host "ARG: $_" }
-          Write-Host "RUN: dotnet $($publishArgs -join ' ')"
-          & dotnet @publishArgs 2>&1 | Tee-Object -FilePath "$env:GITHUB_WORKSPACE\artifacts\maui-publish.log"
-          $code = $LASTEXITCODE
-          Write-Host "MAUI_PUBLISH_EXIT_CODE=$code"
-          if ($code -ne 0) {
-            $errs = @(Select-String -Path "$env:GITHUB_WORKSPACE\artifacts\maui-publish.log" -Pattern '(error|Error)[ :]+[A-Za-z]+[0-9]+|error:' |
-              ForEach-Object { $_.Line.Trim() } | Select-Object -Unique -First 15)
-            if ($errs.Count -eq 0) { $errs = @(Get-Content "$env:GITHUB_WORKSPACE\artifacts\maui-publish.log" -Tail 20) }
-            $summary = @('## MAUI publish failed', ('exit code ' + $code), '', '```text') + $errs + @('```')
-            if ($env:GITHUB_STEP_SUMMARY) { $summary | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY }
-            foreach ($e in $errs) { Write-Host "::error::$e" }
-            throw "MAUI Windows publish failed (exit $code)."
-          }
-
-      - name: Upload MAUI build log (C-87-fix-6)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: kandoo-maui-publish-binlog
-          path: |
-            artifacts/maui-publish.binlog
-            artifacts/maui-publish.log
-          if-no-files-found: warn
-          retention-days: 7
-
-      - name: Install Inno Setup (C-87-fix-12)
-        shell: pwsh
-        run: |
-          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
-          if (-not (Test-Path -LiteralPath $iscc -PathType Leaf)) {
-            choco install innosetup -y --no-progress
-            if ($LASTEXITCODE -ne 0) { throw "Chocolatey Inno Setup installation failed (exit $LASTEXITCODE)." }
-          }
-          if (-not (Test-Path -LiteralPath $iscc -PathType Leaf)) { throw "ISCC.exe not found at expected path: $iscc" }
-          Write-Host "ISCC_PATH=$iscc"
-          "ISCC_PATH=$iscc" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-
-      - name: Stage installer inputs (C-87-fix-12)
-        shell: pwsh
-        run: |
-          $sourceFolders = @(
-            "artifacts/Kandoo.Hub-win-x64",
-            "artifacts/Kandoo.App-win-x64"
-          )
-          foreach ($source in $sourceFolders) {
-            if (-not (Test-Path -LiteralPath $source -PathType Container)) { throw "MISSING $source" }
-          }
-          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
-          $publishDir = Join-Path $env:GITHUB_WORKSPACE "packaging\HubPilot\publish"
-          if (Test-Path $publishDir) { Remove-Item $publishDir -Recurse -Force }
-          New-Item -ItemType Directory -Force -Path $publishDir | Out-Null
-          New-Item -ItemType Directory -Force -Path "$publishDir\hub" | Out-Null
-          New-Item -ItemType Directory -Force -Path "$publishDir\app" | Out-Null
-          Copy-Item -Path "artifacts/Kandoo.Hub-win-x64/*" -Destination "$publishDir\hub" -Recurse -Force
-          Copy-Item -Path "artifacts/Kandoo.App-win-x64/*" -Destination "$publishDir\app" -Recurse -Force
-          Copy-Item -Path "packaging\HubPilot\Start-KandooHub.ps1" -Destination "$publishDir" -Force
-          Copy-Item -Path "packaging\HubPilot\README.txt" -Destination "$publishDir" -Force
-
-      - name: Diagnose staged runtimes (C-87-fix-12)
-        shell: pwsh
-        run: |
-          $publishDir = Join-Path $env:GITHUB_WORKSPACE "packaging\HubPilot\publish"
-          foreach ($folder in @("hub", "app")) {
-            $path = Join-Path $publishDir $folder
-            $hostfxr = Test-Path -LiteralPath "$path\hostfxr.dll" -PathType Leaf
-            $hostpolicy = Test-Path -LiteralPath "$path\hostpolicy.dll" -PathType Leaf
-            $coreclrVersion = ""
-            if (Test-Path -LiteralPath "$path\coreclr.dll" -PathType Leaf) {
-              $coreclrVersion = (Get-Item -LiteralPath "$path\coreclr.dll").VersionInfo.FileVersion
-            }
-            $line = "STAGE $folder hostfxr=$hostfxr hostpolicy=$hostpolicy coreclr=$coreclrVersion"
-            Write-Host $line
-          }
-
-      - name: Build Kandoo-Setup-x64.exe with Inno Setup (C-87-fix-12)
-        shell: pwsh
-        run: |
-          $isccLog = "$env:GITHUB_WORKSPACE\artifacts\iscc.log"
-          & $env:ISCC_PATH "packaging\HubPilot\KandooHub.Installer.iss" 2>&1 | Tee-Object -FilePath $isccLog
-          $isccExitCode = $LASTEXITCODE
-          if ($isccExitCode -ne 0) {
-            $errorLines = @(Get-Content -LiteralPath $isccLog | Select-String -Pattern 'Error' | Select-Object -First 10 | ForEach-Object { $_.Line })
-            foreach ($line in $errorLines) { Write-Host "::error::$line" }
-            throw "Inno Setup build failed (exit $isccExitCode)."
-          }
-          $setupPath = "packaging/HubPilot/Output/Kandoo-Setup-x64.exe"
-          if (-not (Test-Path -LiteralPath $setupPath -PathType Leaf)) { throw "MISSING installer output: $setupPath" }
-          $setupFile = Get-Item -LiteralPath $setupPath
-          if ($setupFile.Length -le 0) { throw "Installer output is empty: $setupPath" }
-          Write-Host "C87_SETUP_EXE_PATH=$($setupFile.FullName)"
-          Write-Host "C87_SETUP_EXE_SIZE=$($setupFile.Length)"
-
-      - name: Upload C-87 setup.exe (C-87-fix-12)
-        uses: actions/upload-artifact@v4
-        if: success()
-        with:
-          name: kandoo-hub-c87-setup-exe
-          path: packaging/HubPilot/Output/Kandoo-Setup-x64.exe
-          if-no-files-found: error
-          retention-days: 7
-      - name: Install and smoke-test the installer (C-87-fix-12)
-        shell: pwsh
-        run: |
-          $setup = "$env:GITHUB_WORKSPACE\packaging\HubPilot\Output\Kandoo-Setup-x64.exe"
-          if (-not (Test-Path -LiteralPath $setup -PathType Leaf)) { throw "setup.exe not found at $setup" }
-          $installDir = "C:\KandooInstallTest"
-          $setupLog = "$installDir\setup.log"
-          $smokeFile = "$installDir\smoke.txt"
-          $outcomeFile = "$env:GITHUB_WORKSPACE\artifacts\smoke-outcome.txt"
-
-          # 1. Silent install
-          Remove-Item -Recurse -Force $installDir -ErrorAction SilentlyContinue
-          New-Item -ItemType Directory -Force -Path $installDir | Out-Null
-          $proc = Start-Process -FilePath $setup -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', "/DIR=$installDir", "/LOG=$setupLog" -Wait -PassThru
-          if ($proc.ExitCode -ne 0) { throw "Installer exit code $($proc.ExitCode)" }
-          Write-Host "SMOKE_STEP=1_installer PASS"
-
-          # 2. Layout assertions (C-95: no separate launcher; MAUI app is the entry point)
-          # Each component (Hub, App) has its own self-contained runtime in its own folder.
-          foreach ($f in @("$installDir\hub\Kandoo.Hub.exe", "$installDir\app\Kandoo.App.exe")) {
-            if (-not (Test-Path -LiteralPath $f -PathType Leaf)) { throw "MISSING $f" }
-          }
-          foreach ($f in @("$installDir\Kandoo.Hub.exe", "$installDir\Kandoo.App.exe", "$installDir\Kandoo.SetupLauncher.exe")) {
-            if (Test-Path -LiteralPath $f -PathType Leaf) { throw "UNEXPECTED $f in the install root" }
-          }
-          Write-Host "SMOKE_STEP=2_layout PASS"
-
-          # 3. Hub smoke from INSTALLED folder (fixed port 5000 for smoke harness)
-          $hubGuid = [guid]::NewGuid().ToString()
-          $hubProc = Start-Process -FilePath "$installDir\hub\Kandoo.Hub.exe" -WorkingDirectory "$installDir\hub" -PassThru -Environment @{ ASPNETCORE_URLS = "http://localhost:5000"; "Hub__OwnerBootstrapProof" = $hubGuid }
-          $hubUrl = "http://localhost:5000/health"
-          $hubOk = $false
-          for ($i = 0; $i -lt 40; $i++) {
-            Start-Sleep -Seconds 1
-            try {
-              $response = Invoke-RestMethod -Uri $hubUrl -Method Get -ErrorAction Stop
-              $hubOk = $true
-              break
-            } catch {
-              # keep trying
-            }
-          }
-          if (-not $hubOk) { throw "Hub /health did not return 200 within 40s" }
-          Write-Host "SMOKE_HUB_PASS proof=$hubGuid"
-          Write-Host "SMOKE_STEP=3_hub PASS"
-          if (-not $hubProc.WaitForExit(5000)) { $hubProc.Kill() }
-
-          # 4. MAUI app smoke (SOFT)
-          $mauiProc = Start-Process -FilePath "$installDir\app\Kandoo.App.exe" -PassThru
-          Start-Sleep -Seconds 15
-          if (-not $mauiProc.WaitForExit(0)) {
-            Write-Host "SMOKE_MAUI_PASS still running after 15s"
-            $mauiProc.Kill()
-          } else {
-            Write-Host "::warning::SMOKE_MAUI_EXIT_CODE=$($mauiProc.ExitCode)"
-          }
-          Write-Host "SMOKE_STEP=4_maui PASS"
-
-          # 5. Copy smoke files into workspace for artifact upload
-          Copy-Item -Path "$installDir\setup.log" -Destination "$env:GITHUB_WORKSPACE\artifacts\setup.log" -Force -ErrorAction SilentlyContinue
-          Copy-Item -Path "$installDir\smoke.txt" -Destination "$env:GITHUB_WORKSPACE\artifacts\smoke.txt" -Force -ErrorAction SilentlyContinue
-          "Installer smoke (C-95 layout): all hard checks passed" | Out-File -FilePath $outcomeFile -Encoding utf8
-
-      - name: Upload install smoke artifact (C-87-fix-12)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: kandoo-install-smoke
-          path: |
-            artifacts/setup.log
-            artifacts/smoke.txt
-            artifacts/smoke-outcome.txt
-          if-no-files-found: warn
-          retention-days: 7
-
-      - name: Upload iscc log (C-87-fix-12)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: kandoo-iscc-log
-          path: artifacts/iscc.log
-          if-no-files-found: warn
-          retention-days: 7
-
-      - name: Fallback zip (C-87)
-        if: always()
-        shell: pwsh
-        run: |
-          $setup = "packaging/HubPilot/Output/Kandoo-Setup-x64.exe"
-          if (-not (Test-Path $setup)) {
-            Compress-Archive -Path "artifacts/Kandoo.Hub-win-x64/*" -DestinationPath "artifacts/Kandoo.Hub-win-x64.zip" -Force
-            Write-Host "C87_FALLBACK_ZIP artifacts/Kandoo.Hub-win-x64.zip"
-          }
-
-      - name: Upload fallback zip (C-87)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: kandoo-hub-c87-win-x64-zip
-          path: artifacts/Kandoo.Hub-win-x64.zip
-          if-no-files-found: warn
-          retention-days: 7
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -508,4 +284,6 @@ jobs:
             tests/Kandoo.Core.Tests/TestResults/*.trx
             tests/Kandoo.Cloud.Tests/TestResults/*.trx
             tests/Kandoo.Hub.Tests/TestResults/*.trx
+            tests/Kandoo.Capture.Tests/TestResults/*.trx
+            tests/Kandoo.HolooConnector.Tests/TestResults/*.trx
           if-no-files-found: error
