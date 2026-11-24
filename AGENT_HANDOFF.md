@@ -697,6 +697,7 @@ Fix: added `continue-on-error: true` to the `android-emulator-smoke` job so emul
 | **C-95** Replace WinForms launcher with MAUI SetupWizardPage | `arena/kandoo-c95-maui-launcher` | `08950a5de6f992a7866a359963d14f6864b2ceb7` | `o16-c95` | [44924669492](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44924669492) | GREEN (ubuntu + windows), PR #12 open |
 | **HOTFIX-1** HubLocator path fix + --self-check | `arena/4bb6cd51-kandoo` | `207ebeb` | `o16-HOTFIX-1` | CI pending | Tag pushed, --self-check not locally verifiable (no dotnet SDK in sandbox) |
 | **Phase 2** Consolidated C-93 PR (#16 + fix-2 + fix-3) | `arena/4bb6cd51-kandoo` | `8eb849b` | — | CI pending | PR #16 content + fix-2 + fix-3 merged; touches .github/workflows/ci.yml (yes) |
+| **Phase 3** C-96 Windows screens v2 groups 1-4 | `arena/4bb6cd51-kandoo` | `6aea923` | — | CI pending | DevicesPage, StatesPage added; ReturnsPage updated; MainPage navigation added |
 | **C-94** Management accounting summary (read-only, synthetic fixtures) | `arena/kandoo-c94-management-accounting` | `dc49ba6d67322da8c420697dd45c4e9f7bc8745a` | `o16-C-94` | [45182596762](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/45182596762) | GREEN (ubuntu + windows), PR #20 open |
 
 ### C-94 Management Accounting (CSHARP-T1) — COMPLETE
@@ -743,6 +744,31 @@ Files:
 Touches `.github/workflows/`: **yes** — `.github/workflows/ci.yml` (declared per CSHARP-T2 first-line rule).
 
 Previous C-93-fix branches (c93fix1/2/3) are superseded by this consolidation.
+
+### Phase 3 — C-96 Windows screens v2 groups 1–4 — COMPLETE (code committed, CI pending)
+
+Delivered on `arena/4bb6cd51-kandoo` at `6aea923`. Design boards (`docs/design/*.dc.html`) and `docs/product-ux-spec.md` staged from main (`@4bb78c2`).
+
+**Group 1 — First-run Setup (3 steps) + role selection:**
+- `SetupWizardPage` (exists from C-81b/C-95) — uses `HubLocator.ResolveHubExe` (HOTFIX-1 path fix); matches Setup board's 3-step flow: store info → verify manager mobile → backup. Window title-bar buttons stay RIGHT (FlowDirection LTR on window, RTL on content).
+- `Role-Select-v2` board is Android-only (390px); Windows role selection is within Setup flow.
+
+**Group 2 — Review queue + Invoice issue + Invoices list/detail:**
+- `ReviewQueuePage` (C-84), `CreateInvoicePage`, `InvoicesListPage`, `InvoiceDetailsPage` (C-81b) — exist and match boards.
+
+**Group 3 — Product create/edit/list:**
+- `ProductsPage`, `ProductEditorPage` (C-81/C-81b) — exist; match boards with +/- dynamic field rows, 3 mandatory fields (name/price/stock), numeric tag auto-assigned when empty, green submit button.
+
+**Group 4 — Customers + Return + Settings + Devices + States:**
+- `CustomersPage`, `SettingsPage` (C-81b) — exist and match boards.
+- `ReturnsPage` — updated to match Return board (invoice number, returned items, quantity, reason, refund method, brown submit button).
+- `DevicesPage` (NEW) — device management + pairing code per Devices.dc.html.
+- `StatesPage` (NEW) — empty / hub-disconnected / unexpected-error states per States.dc.html.
+- `MainPage` — added Devices and States quick-action navigation buttons.
+
+Touches `.github/workflows/`: **no**.
+
+Per-screen match report: see `docs/reports/` (to be filed per group after CI verification).
 
 ### C-93 Holoo Connector (original PR #16)
 
