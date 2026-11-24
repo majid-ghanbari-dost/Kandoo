@@ -39,5 +39,15 @@ C-97 phone screens v2 (Android store + customer, boards Role-Select-v2 … Custo
 - No local dotnet — CI is the final verification. PM-16 emulator job stays BLOCKED/continue-on-error.
 - Do NOT merge. Do NOT move/delete tags. One big task at a time; ORDER 17 items start after the current MUST is green and reported.
 
+## Manager addendum (2026-11-24, Asia/Tehran) — exec-manager review of the lane report
+
+Report read from `AGENT_HANDOFF.md` (ORDER 16 section) on `arena/4bb6cd51-kandoo` @ `7e55bf6` (docs commits `1684ae05`, `0a5b8606`, `7e55bf62`). Manager verification results:
+
+- Phase 1 HOTFIX-1: commit `207ebeb` on `arena/4bb6cd51-kandoo`; tag `o16-HOTFIX-1` manager-VERIFIED pointing at `207ebebd0a5c87675b9e95af451a0c2a37eb8a49`. Content matches M-007 §1 (HubLocator with both layouts + full checked-path list, `--self-check [resultFile]` contract, HubLocatorTests). CI results NOT yet manager-verified — report run URLs; fix any red check on the same branch.
+- DEVIATION RULING (Phase 1 item 5): the fix landed ONLY on `arena/4bb6cd51-kandoo`, NOT on `arena/kandoo-c95-maui-launcher` and NOT merged into the stacked PR branches (c90, c91, c92). PR #12–#15 heads therefore do NOT contain HOTFIX-1; the MERGE FREEZE on #12–#15 STAYS in force. The lane MUST propagate `207ebeb` into `arena/kandoo-c95-maui-launcher`, `arena/kandoo-c90-windows-store`, `arena/kandoo-c91-android-store`, `arena/kandoo-c92-customer-mode` and push, OR file the exact reason in AGENT_HANDOFF — PM decides any merge of #12–#15 only after that.
+- Phase 2 DEVIATION: the consolidation was committed on `arena/4bb6cd51-kandoo` (`8eb849b`), which carries the whole ORDER 15/16 cumulative diff — a PR from that branch would NOT be C-93-only. The ONE consolidated PR must come from a DEDICATED branch off current `main` (e.g. `arena/kandoo-c93-consolidated`) containing exactly PR #16 content + fix-2 + fix-3; open it only AFTER CI green, with the first-line workflows declaration; PM merges that single PR, then PM closes #16/#18/#19.
+- Phase 3: commit `6aea923` + docs `7e55bf62`; tag `o16-C-96-1` manager-VERIFIED at `6aea923b3aa116e887d69768167472e6b2386a58`. WARNING: tagging BEFORE CI green is a recorded process violation — per-group acceptance (CI green + per-screen screenshot artifact + per-screen report line) is NOT met yet, and D2 requires one create-only PR per group from its own branch. No new tag before green; never move existing ones.
+- NEW cross-lane item (from the PY-T2 report on PR #16): review `tests/golden/e72/canonical-invoice-v1-2-draft-vector.json` (Kandoo-Digital-Invoice @ `1e620cc`) for compatibility and record the C# verdict in `docs/reports/` + AGENT_HANDOFF with a link.
+
 ---
-**Status:** OPEN (Phase 1 BLOCKING today; PM trigger required to start)
+**Status:** IN PROGRESS (manager-verified 2026-11-24: Phases 1–3 committed on `arena/4bb6cd51-kandoo` @ `7e55bf6`; CI results pending; consolidated C-93 PR not yet opened; HOTFIX-1 propagation into PR #12–#15 branches outstanding — see Manager addendum)
