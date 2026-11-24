@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
+using Kandoo.App.Logic;
 
 public partial class SetupWizardPage : ContentPage
 {
@@ -101,16 +102,10 @@ public partial class SetupWizardPage : ContentPage
         // C-95: Stop the Hub started by a previous run of this setup, if any.
         StopPreviousHub();
 
-        // C-95: Locate Hub.exe in its own folder (hub\\) under the install root.
-        // The Hub is a separate self-contained runtime and must not share a folder with the app.
+        // C-95 + HOTFIX-1: Locate Hub.exe using HubLocator (install layout: ..\hub\,
+        // dev layout: .\hub\). Error lists every path checked.
         var appDir = Path.GetDirectoryName(Environment.ProcessPath) ?? string.Empty;
-        var hubDir = Path.Combine(appDir, "hub");
-        var hubExe = Path.Combine(hubDir, "Kandoo.Hub.exe");
-
-        if (!File.Exists(hubExe))
-        {
-            throw new InvalidOperationException("فایل Kandoo.Hub.exe در پوشه نصب یافت نشد.");
-        }
+        var hubExe = HubLocator.ResolveHubExe(appDir);
 
         // C-95: Generate OwnerBootstrapProof so the First-Run Setup can configure
         // owner bootstrap without editing JSON or using PowerShell.
