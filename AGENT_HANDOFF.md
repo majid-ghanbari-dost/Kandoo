@@ -695,6 +695,7 @@ Fix: added `continue-on-error: true` to the `android-emulator-smoke` job so emul
 | **C-91** Android store app complete | `arena/kandoo-c91-android-store` | `f453f930d52b0d18977bf53d00eb03b356a188a9` | `o16-C-91` | [44875204264](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44875204264) | GREEN (ubuntu + windows), PR #14 open |
 | **C-92** Customer mode in Android app | `arena/kandoo-c92-customer-mode` | `abfee63` (test fix `2af2040`) | `o16-c92` (existing, on `17eba20`) | [44991041523](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44991041523) | GREEN overall (emulator job failed, continue-on-error), PR #15 open |
 | **C-95** Replace WinForms launcher with MAUI SetupWizardPage | `arena/kandoo-c95-maui-launcher` | `08950a5de6f992a7866a359963d14f6864b2ceb7` | `o16-c95` | [44924669492](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44924669492) | GREEN (ubuntu + windows), PR #12 open |
+| **HOTFIX-1** HubLocator path fix + --self-check | `arena/4bb6cd51-kandoo` | `207ebeb` | `o16-HOTFIX-1` | CI pending (push 2026-10-22) | GREEN local static, tag pushed, awaiting CI run |
 | **C-94** Management accounting summary (read-only, synthetic fixtures) | `arena/kandoo-c94-management-accounting` | `dc49ba6d67322da8c420697dd45c4e9f7bc8745a` | `o16-C-94` | [45182596762](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/45182596762) | GREEN (ubuntu + windows), PR #20 open |
 
 ### C-94 Management Accounting (CSHARP-T1) — COMPLETE
@@ -710,6 +711,18 @@ Delivered:
   2. `src/Kandoo.Hub/SqliteHubStore.cs` — SQLite trigger `invoices_terminal_update_forbidden` permits same transition; `ReadReplicationEntries` clones `JsonElement` Payload/Outcome/ResponseSnapshot to prevent dangling references after GC (counters read as 0).
 - Registers test factory `SqliteHubStore` as `TestStore` so the accounting endpoint reads the populated test store (not the empty Program.cs default store).
 - Does NOT touch `.github/workflows/` (no emulator impact). Does NOT touch `KandooHub.Installer.iss` or `Invoke-InstallerSmoke.ps1`.
+
+### HOTFIX-1 — HubLocator path fix + --self-check (BLOCKING) — COMPLETE
+
+Delivered on `arena/4bb6cd51-kandoo` at `207ebeb`, tag `o16-HOTFIX-1` pushed to origin.
+
+Files:
+- `src/Kandoo.App/Logic/HubLocator.cs` (NEW) — `HubLocator.ResolveHubExe(appDir)` resolves Kandoo.Hub.exe via `..\hub\` (install layout) then `.\hub\` (dev layout); `FileNotFoundException` lists every path checked, including the Persian message `فایل Kandoo.Hub.exe در پوشه نصب یافت نشد`
+- `src/Kandoo.App/SetupWizardPage.xaml.cs` (MODIFIED) — `ConfigureShopAsync` now calls `HubLocator.ResolveHubExe(appDir)` instead of the hardcoded `hub\Kandoo.Hub.exe` path
+- `src/Kandoo.App/Program.cs` (NEW) — `Main` entry point; `--self-check [resultFile]` runs before UI: resolves Hub, starts it on a free TCP port, writes bootstrap proof, owner-session call, prints `KANDOO_SETUP_OK port=<n>` / `KANDOO_SETUP_FAIL <reason>`, exit 0/1
+- `tests/Kandoo.App.Tests/HubLocatorTests.cs` (NEW) — covers install layout, dev layout, install-over-dev preference, and not-found error-path listing
+
+MERGE FREEZE: PRs #12–#15 stay UNMERGED until HOTFIX-1 + --self-check green.
 
 ### C-93 Holoo Connector
 
