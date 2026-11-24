@@ -794,14 +794,19 @@ The C-93 consolidation (`8eb849b`) was committed on `arena/4bb6cd51-kandoo`, whi
 
 Tags `o16-C-96-1`, `o16-C-96-2`, `o16-C-96-3`, `o16-C-96-4` were created at `6aea923` before CI green — a recorded process violation. Tags are left in place (never move existing ones). No new tags before CI green. Per-group acceptance (CI green + per-screen screenshot artifact + per-screen report line) NOT met yet. D2 requires one create-only PR per group from its own branch.
 
-### Cross-lane item — E-72 canonical invoice v1.2 vector review — COMPLETE
+### Cross-lane item — E-72 canonical invoice v1.2 vector review — COMPLETE (INCOMPATIBLE)
 
-Reviewed `tests/golden/e72/canonical-invoice-v1-2-draft-vector.json` (Kandoo-Digital-Invoice @ `1e620cc`).
+Reviewed `tests/golden/e72/canonical-invoice-v1-2-draft-vector.json` (Kandoo-Digital-Invoice @ `1e620cc`) against `src/Kandoo.Core/CanonicalInvoiceConsumer.cs` (C# Canonical Invoice v0 consumer).
 
-**Verdict:** COMPATIBLE — C# Canonical Invoice v0 model matches the `base_invoice` shape; `v1_2_draft_addendum` is a draft extension tolerated by default `System.Text.Json` unknown-property handling; all data is synthetic/fictional (PM-06/PM-17 compliant); DRAFT state does not trigger `ISSUED_INVOICE_IMMUTABLE` guard; empty `attention_cells` matches C# review-queue empty state.
+**Verdict:** NOT byte-for-byte compatible — C# would reject the E-72 vector with three `SchemaValidationFailed` errors:
 
-**Report:** `docs/reports/E72-CANONICAL-INVOICE-V1-2-CSHARP-REVIEW.md`
+1. **Root-level extra fields:** `image_sha256` and `template_library_id` present in E-72 `base_invoice` but not in C# `RootAllowed` → `Unexpected field: image_sha256.` / `Unexpected field: template_library_id.`
+2. **Line item field name:** E-72 uses `quantity`; C# requires `quantity_millis` (root `line_items[]` and `provenance.fields.line_items[]`) → `Required field is missing: quantity_millis.` / `Unexpected field: quantity.`
+3. **DRAFT state display_number:** E-72 has `display_number: "SYN-E72-001"` (non-null) for DRAFT state; C# requires `null` + `provenance.fields.display_number: "unavailable"` → `display_number is unavailable before ISSUE.`
+
+**Report (Persian):** `docs/reports/E72-CANONICAL-INVOICE-V1-2-CSHARP-COMPARISON-FA.md`
 **Source link:** https://github.com/majid-ghanbari-dost/Kandoo-Digital-Invoice/blob/1e620cc1f990bec51566b5e1af26dcec97f26fdb/tests/golden/e72/canonical-invoice-v1-2-draft-vector.json
+**Python commit:** `1e620cc1f990bec51566b5e1af26dcec97f26fdb` (branch `arena/d0587e71-kandoo-digital-invoice`)
 
 ### C-93 Holoo Connector (original PR #16)
 
