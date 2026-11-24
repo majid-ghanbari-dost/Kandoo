@@ -770,6 +770,39 @@ Touches `.github/workflows/`: **no**.
 
 Per-screen match report: see `docs/reports/` (to be filed per group after CI verification).
 
+---
+
+## MANAGER DEVIATION RULINGS (2026-11-24, exec-manager)
+
+Read from `AGENT_HANDOFF.md` @ `7e55bf6`. Manager verification results and required corrective actions:
+
+### Phase 1 deviation — HOTFIX-1 propagation into PR #12–#15 branches
+
+HOTFIX-1 fix (`207ebeb`) landed only on `arena/4bb6cd51-kandoo`. It was NOT propagated to `arena/kandoo-c95-maui-launcher`, `arena/kandoo-c90-windows-store`, `arena/kandoo-c91-android-store`, `arena/kandoo-c92-customer-mode`. PR #12–#15 heads therefore do NOT contain HOTFIX-1; the MERGE FREEZE on #12–#15 STAYS in force.
+
+**Status of stacked branches:** None of `arena/kandoo-c95-maui-launcher`, `arena/kandoo-c90-windows-store`, `arena/kandoo-c91-android-store`, `arena/kandoo-c92-customer-mode` exist as git branches (local or remote). Their referenced base commits (`286f28cb`, `abfee63`) are not in the object store. Propagation into non-existent branches is impossible without first recreating those branches from their base commits.
+
+**Corrective action filed:** Cannot propagate `207ebeb` into branches that do not exist. Lane requests PM to either (a) create the stacked branches from their documented base commits so HOTFIX-1 can be merged into them, or (b) confirm that PR #12–#15 should be rebased onto `arena/4bb6cd51-kandoo` @ `207ebeb` instead. Until resolved, MERGE FREEZE on #12–#15 remains.
+
+### Phase 2 deviation — dedicated C-93 consolidated branch required
+
+The C-93 consolidation (`8eb849b`) was committed on `arena/4bb6cd51-kandoo`, which carries the whole ORDER 15/16 cumulative diff — a PR from that branch would NOT be C-93-only.
+
+**Corrective action taken:** Created dedicated branch `arena/kandoo-c93-consolidated` off `main` @ `649ccb0`, pushed to origin. Contains exactly PR #16 content (`e73b1c9`) + fix-2 (`e5705c8`) + fix-3 (`f1349e9`). One PR base `main` should be opened only AFTER CI green; first line of body declares workflows touch (yes — `.github/workflows/ci.yml`). PM merges that single PR, then PM closes #16/#18/#19 as superseded. Agent does NOT open/close/merge PRs.
+
+### Phase 3 warning — tags before CI green
+
+Tags `o16-C-96-1`, `o16-C-96-2`, `o16-C-96-3`, `o16-C-96-4` were created at `6aea923` before CI green — a recorded process violation. Tags are left in place (never move existing ones). No new tags before CI green. Per-group acceptance (CI green + per-screen screenshot artifact + per-screen report line) NOT met yet. D2 requires one create-only PR per group from its own branch.
+
+### Cross-lane item — E-72 canonical invoice v1.2 vector review — COMPLETE
+
+Reviewed `tests/golden/e72/canonical-invoice-v1-2-draft-vector.json` (Kandoo-Digital-Invoice @ `1e620cc`).
+
+**Verdict:** COMPATIBLE — C# Canonical Invoice v0 model matches the `base_invoice` shape; `v1_2_draft_addendum` is a draft extension tolerated by default `System.Text.Json` unknown-property handling; all data is synthetic/fictional (PM-06/PM-17 compliant); DRAFT state does not trigger `ISSUED_INVOICE_IMMUTABLE` guard; empty `attention_cells` matches C# review-queue empty state.
+
+**Report:** `docs/reports/E72-CANONICAL-INVOICE-V1-2-CSHARP-REVIEW.md`
+**Source link:** https://github.com/majid-ghanbari-dost/Kandoo-Digital-Invoice/blob/1e620cc1f990bec51566b5e1af26dcec97f26fdb/tests/golden/e72/canonical-invoice-v1-2-draft-vector.json
+
 ### C-93 Holoo Connector (original PR #16)
 
 PR #16 (`arena/kandoo-c93-holoo-connector`) remains open and green. Head commit `e73b1c91523e86cad40628bb195797c5aadfb87a`, CI both jobs SUCCESS. PR #16 is conflict-free vs new `main` and must stay that way. Previous C-93-fix branches (c93fix1/2/3) are superseded by this directive.
