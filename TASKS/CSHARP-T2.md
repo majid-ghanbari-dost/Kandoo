@@ -49,5 +49,28 @@ Report read from `AGENT_HANDOFF.md` (ORDER 16 section) on `arena/4bb6cd51-kandoo
 - Phase 3: commit `6aea923` + docs `7e55bf62`; tag `o16-C-96-1` manager-VERIFIED at `6aea923b3aa116e887d69768167472e6b2386a58`. WARNING: tagging BEFORE CI green is a recorded process violation — per-group acceptance (CI green + per-screen screenshot artifact + per-screen report line) is NOT met yet, and D2 requires one create-only PR per group from its own branch. No new tag before green; never move existing ones.
 - NEW cross-lane item (from the PY-T2 report on PR #16): review `tests/golden/e72/canonical-invoice-v1-2-draft-vector.json` (Kandoo-Digital-Invoice @ `1e620cc`) for compatibility and record the C# verdict in `docs/reports/` + AGENT_HANDOFF with a link.
 
+## Manager addendum 2 (2026-11-25, Asia/Tehran) — PM-22: ONE integration PR (answers M-009 §1; supersedes the R-008 addendum points 1–2 and the Phase 2 dedicated-branch plan)
+
+Source: `docs/messages/M-009.md` on `main` @ `cb1730aa`. Manager pre-verification (read-only git + REST, 2026-11-25):
+
+- `arena/4bb6cd51-kandoo` tip: `dca2e1ebbd0c8c3809edae7dece8255a5e935cfc` ("E-72 close-out: mark cross-lane review done, standby for round 3").
+- `git merge-base --is-ancestor` vs tip — ALL FIVE M-009 §1.1 heads are MISSING (their content was re-committed on this branch instead of merged; merge conflicts are expected and are resolved per the policy below):
+  - `arena/kandoo-c95-maui-launcher` @ `c76046aa4ba89e72fe0673b5a872a3c6fbbc372d`
+  - `arena/kandoo-c90-windows-store` @ `15aadc62bccf9490c093085f1eb97ab4e3382477`
+  - `arena/kandoo-c91-android-store` @ `39bca968666790cfa902d42c344b3299489c3db5`
+  - `arena/kandoo-c92-customer-mode` @ `992b0a0110db006c38e4ff49af5d95612431e25b`
+  - `arena/kandoo-c93-holoo-connector` @ `e73b1c91523e86cad40628bb195797c5aadfb87a` (= PR #16 head)
+  - (`arena/kandoo-c93-consolidated` @ `649ccb03` is also unmerged; not required by M-009 — merge only if its content differs from what this branch already holds.)
+  - `pm/order21-selfcheck` @ `f4debb2453611cbe01b0c959e321794410237495` — MISSING, must be merged (adds CI check `first-run-selfcheck` to `scripts/Invoke-InstallerSmoke.ps1`).
+- Manager-verified CI on the two M-009 §4 evidence commits — NOT fully green; fix on this branch BEFORE opening the integration PR and attach the verbatim error line of each failed job to the lane report:
+  - `207ebebd0a5c87675b9e95af451a0c2a37eb8a49` (HOTFIX-1): RED — `App tests + Windows + Android` = failure (runs 45346666579 / 45346666591), `Build and test (windows-latest)` = failure; GREEN — `MAUI Windows + Android`, `Avalonia Windows + Android`, `Synthetic C-52` (ubuntu+windows), `Build and test (ubuntu-latest)` (runs 45346674379 / 45346675893 / 45346674417).
+  - `6aea923b3aa116e887d69768167472e6b2386a58` (C-96 g1–4): RED — `App tests + Windows + Android` = failure (at least one push run, e.g. 45347940756 / 45347942357); GREEN — latest `Build and test` (ubuntu+windows), `MAUI Windows + Android`, `Avalonia Windows + Android`, `Synthetic C-52` (runs 45347937469 / 45347937473 / 45347937495 / 45347942332 / 45347942360).
+
+Execution order (M-009 §1):
+1. Merge every MISSING head above + `origin/pm/order21-selfcheck` into `arena/4bb6cd51-kandoo`. Conflict policy: this branch wins for code/CI/tests; `packaging/HubPilot/KandooHub.Installer.iss` and `scripts/Invoke-InstallerSmoke.ps1` come from `pm/order21-selfcheck`. Do NOT edit the smoke script: `first-run-selfcheck` runs `<install>\app\Kandoo.App.exe --self-check <file>` against the INSTALLED app and expects exit 0 + first line starting `KANDOO_SETUP_OK`; if it fails, fix the APP, or report the verbatim failing line to the PM.
+2. Open ONE PR, base `main`, from `arena/4bb6cd51-kandoo`: title `O16 integration (C-90..C-96 g1-4, C-93, HOTFIX-1)`; FIRST LINE of the body: `This PR changes .github/workflows/*`; body lists each task with tag, full SHA and CI run URL. Gate: CI green on both jobs with `SMOKE_ALL_HARD_CHECKS_PASSED` and artifacts `kandoo-hub-c87-setup-exe` + `kandoo-install-smoke`.
+3. PM merges (PO notified — workflow-touching). After the PM confirms the merge, the PM/manager closes #12, #13, #14, #15, #16, #18, #19 as superseded (comment with the integration PR number); the lane does NOT close/merge. The freeze on them stays until then.
+4. Then continue C-96 remaining groups, C-97, C-98 (Phase 3 / Queue unchanged).
+
 ---
-**Status:** IN PROGRESS (manager-verified 2026-11-24: Phases 1–3 committed on `arena/4bb6cd51-kandoo` @ `7e55bf6`; CI results pending; consolidated C-93 PR not yet opened; HOTFIX-1 propagation into PR #12–#15 branches outstanding — see Manager addendum)
+**Status:** IN PROGRESS (2026-11-25 — PM-22 dispatched, see Manager addendum 2: all five heads + `pm/order21-selfcheck` MISSING from `arena/4bb6cd51-kandoo` @ `dca2e1eb` and must be merged; CI on `207ebeb`/`6aea923` NOT fully green (`App tests + Windows + Android` failure) and must be fixed before the ONE integration PR opens; E-72 round-3 standby unchanged)
