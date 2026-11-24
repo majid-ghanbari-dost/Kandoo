@@ -186,12 +186,24 @@
                             Clicked="OnCustomersClicked"
                             IsEnabled="False"
                             SemanticProperties.Description="فهرست مشتریان" />
-                    <Button x:Name="SettingsButton"
-                            Style="{StaticResource SecondaryButtonStyle}"
-                            Text="تنظیمات"
-                            Clicked="OnSettingsClicked"
-                            IsEnabled="False"
-                            SemanticProperties.Description="تنظیمات برنامه" />
+                <Button x:Name="SettingsButton"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Text="تنظیمات"
+                        Clicked="OnSettingsClicked"
+                        IsEnabled="False"
+                        SemanticProperties.Description="تنظیمات برنامه" />
+                <Button x:Name="ReturnsButton"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Text="برگشت‌ها"
+                        Clicked="OnReturnsClicked"
+                        IsEnabled="False"
+                        SemanticProperties.Description="صف برگشت کالاها" />
+                <Button x:Name="InvoicesButton"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Text="فاکتورها"
+                        Clicked="OnInvoicesClicked"
+                        IsEnabled="False"
+                        SemanticProperties.Description="فهرست فاکتورها" />
                 </HorizontalStackLayout>
 
                 <Label Style="{StaticResource SectionTitleStyle}"
@@ -220,9 +232,17 @@
                         Style="{StaticResource CardStyle}"
                         IsVisible="False">
                     <VerticalStackLayout Style="{StaticResource RowStackStyle}">
-                        <Label Style="{StaticResource SectionTitleStyle}" Text="مشتری نمونه" />
-                        <Label Style="{StaticResource BodyStyle}"
-                               Text="نقش مشتری فعال است؛ فهرست فاکتورها در این مرحله اضافه نشده است." />
+                        <Label Style="{StaticResource SectionTitleStyle}" Text="حساب مشتری" />
+                        <Button x:Name="CustomerOtpButton"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Text="ورود به حساب مشتری"
+                                Clicked="OnCustomerOtpClicked"
+                                SemanticProperties.Description="ورود به حساب مشتری با کد تایید پیامک" />
+                        <Button x:Name="CustomerInvoicesButton"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Text="فاکتورهای من"
+                                Clicked="OnCustomerInvoicesClicked"
+                                SemanticProperties.Description="مشاهده فهرست فاکتورهای مشتری" />
                     </VerticalStackLayout>
                 </Border>
 

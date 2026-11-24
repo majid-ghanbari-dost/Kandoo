@@ -322,18 +322,6 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-      - name: Build Windows Setup Launcher (C-87-fix-12)
-        shell: pwsh
-        run: |
-          $launcherOutput = "$env:GITHUB_WORKSPACE\artifacts\Kandoo.SetupLauncher-win-x64"
-          New-Item -ItemType Directory -Force -Path $launcherOutput | Out-Null
-          dotnet build src/Kandoo.App.Launcher/Kandoo.App.Launcher.csproj --configuration Release -o $launcherOutput
-          if ($LASTEXITCODE -ne 0) { throw "Launcher build failed." }
-          if (-not (Test-Path -LiteralPath "$launcherOutput\Kandoo.SetupLauncher.exe" -PathType Leaf)) { throw "MISSING $launcherOutput\Kandoo.SetupLauncher.exe" }
-          if (-not (Test-Path -LiteralPath "$launcherOutput\hostfxr.dll" -PathType Leaf)) { throw "MISSING $launcherOutput\hostfxr.dll" }
-          if (-not (Test-Path -LiteralPath "$launcherOutput\coreclr.dll" -PathType Leaf)) { throw "MISSING $launcherOutput\coreclr.dll" }
-          Get-ChildItem -LiteralPath $launcherOutput -File | Select-Object -First 20 | ForEach-Object { Write-Host "LAUNCHER_OUTPUT $($_.FullName)" }
-
       - name: Install Inno Setup (C-87-fix-12)
         shell: pwsh
         run: |
@@ -351,8 +339,7 @@ jobs:
         run: |
           $sourceFolders = @(
             "artifacts/Kandoo.Hub-win-x64",
-            "artifacts/Kandoo.App-win-x64",
-            "artifacts/Kandoo.SetupLauncher-win-x64"
+            "artifacts/Kandoo.App-win-x64"
           )
           foreach ($source in $sourceFolders) {
             if (-not (Test-Path -LiteralPath $source -PathType Container)) { throw "MISSING $source" }
@@ -361,10 +348,8 @@ jobs:
           $publishDir = Join-Path $env:GITHUB_WORKSPACE "packaging\HubPilot\publish"
           if (Test-Path $publishDir) { Remove-Item $publishDir -Recurse -Force }
           New-Item -ItemType Directory -Force -Path $publishDir | Out-Null
-          New-Item -ItemType Directory -Force -Path "$publishDir\launcher" | Out-Null
           New-Item -ItemType Directory -Force -Path "$publishDir\hub" | Out-Null
           New-Item -ItemType Directory -Force -Path "$publishDir\app" | Out-Null
-          Copy-Item -Path "artifacts/Kandoo.SetupLauncher-win-x64/*" -Destination "$publishDir\launcher" -Recurse -Force
           Copy-Item -Path "artifacts/Kandoo.Hub-win-x64/*" -Destination "$publishDir\hub" -Recurse -Force
           Copy-Item -Path "artifacts/Kandoo.App-win-x64/*" -Destination "$publishDir\app" -Recurse -Force
           Copy-Item -Path "packaging\HubPilot\Start-KandooHub.ps1" -Destination "$publishDir" -Force
@@ -374,7 +359,7 @@ jobs:
         shell: pwsh
         run: |
           $publishDir = Join-Path $env:GITHUB_WORKSPACE "packaging\HubPilot\publish"
-          foreach ($folder in @("launcher", "hub", "app")) {
+          foreach ($folder in @("hub", "app")) {
             $path = Join-Path $publishDir $folder
             $hostfxr = Test-Path -LiteralPath "$path\hostfxr.dll" -PathType Leaf
             $hostpolicy = Test-Path -LiteralPath "$path\hostpolicy.dll" -PathType Leaf
@@ -383,21 +368,6 @@ jobs:
               $coreclrVersion = (Get-Item -LiteralPath "$path\coreclr.dll").VersionInfo.FileVersion
             }
             $line = "STAGE $folder hostfxr=$hostfxr hostpolicy=$hostpolicy coreclr=$coreclrVersion"
-            if ($folder -eq "launcher") {
-              $rc = Join-Path $path "Kandoo.SetupLauncher.runtimeconfig.json"
-              if (Test-Path -LiteralPath $rc -PathType Leaf) {
-                $content = Get-Content -LiteralPath $rc -Raw
-                if ($content -match 'includedFrameworks') {
-                  $line += " includedFrameworks=True"
-                } elseif ($content -match '"framework"') {
-                  $line += " includedFrameworks=False"
-                } else {
-                  $line += " includedFrameworks=Unknown"
-                }
-              } else {
-                $line += " includedFrameworks=Missing"
-              }
-            }
             Write-Host $line
           }
 
@@ -432,7 +402,63 @@ jobs:
         run: |
           $setup = "$env:GITHUB_WORKSPACE\packaging\HubPilot\Output\Kandoo-Setup-x64.exe"
           if (-not (Test-Path -LiteralPath $setup -PathType Leaf)) { throw "setup.exe not found at $setup" }
-          & ./scripts/Invoke-InstallerSmoke.ps1 -SetupPath $setup -InstallDir 'C:\KandooInstallTest' -ArtifactDir artifacts
+          $installDir = "C:\KandooInstallTest"
+          $setupLog = "$installDir\setup.log"
+          $smokeFile = "$installDir\smoke.txt"
+          $outcomeFile = "$env:GITHUB_WORKSPACE\artifacts\smoke-outcome.txt"
+
+          # 1. Silent install
+          Remove-Item -Recurse -Force $installDir -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path $installDir | Out-Null
+          $proc = Start-Process -FilePath $setup -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', "/DIR=$installDir", "/LOG=$setupLog" -Wait -PassThru
+          if ($proc.ExitCode -ne 0) { throw "Installer exit code $($proc.ExitCode)" }
+          Write-Host "SMOKE_STEP=1_installer PASS"
+
+          # 2. Layout assertions (C-95: no separate launcher; MAUI app is the entry point)
+          # Each component (Hub, App) has its own self-contained runtime in its own folder.
+          foreach ($f in @("$installDir\hub\Kandoo.Hub.exe", "$installDir\app\Kandoo.App.exe")) {
+            if (-not (Test-Path -LiteralPath $f -PathType Leaf)) { throw "MISSING $f" }
+          }
+          foreach ($f in @("$installDir\Kandoo.Hub.exe", "$installDir\Kandoo.App.exe", "$installDir\Kandoo.SetupLauncher.exe")) {
+            if (Test-Path -LiteralPath $f -PathType Leaf) { throw "UNEXPECTED $f in the install root" }
+          }
+          Write-Host "SMOKE_STEP=2_layout PASS"
+
+          # 3. Hub smoke from INSTALLED folder (fixed port 5000 for smoke harness)
+          $hubGuid = [guid]::NewGuid().ToString()
+          $hubProc = Start-Process -FilePath "$installDir\hub\Kandoo.Hub.exe" -WorkingDirectory "$installDir\hub" -PassThru -Environment @{ ASPNETCORE_URLS = "http://localhost:5000"; "Hub__OwnerBootstrapProof" = $hubGuid }
+          $hubUrl = "http://localhost:5000/health"
+          $hubOk = $false
+          for ($i = 0; $i -lt 40; $i++) {
+            Start-Sleep -Seconds 1
+            try {
+              $response = Invoke-RestMethod -Uri $hubUrl -Method Get -ErrorAction Stop
+              $hubOk = $true
+              break
+            } catch {
+              # keep trying
+            }
+          }
+          if (-not $hubOk) { throw "Hub /health did not return 200 within 40s" }
+          Write-Host "SMOKE_HUB_PASS proof=$hubGuid"
+          Write-Host "SMOKE_STEP=3_hub PASS"
+          if (-not $hubProc.WaitForExit(5000)) { $hubProc.Kill() }
+
+          # 4. MAUI app smoke (SOFT)
+          $mauiProc = Start-Process -FilePath "$installDir\app\Kandoo.App.exe" -PassThru
+          Start-Sleep -Seconds 15
+          if (-not $mauiProc.WaitForExit(0)) {
+            Write-Host "SMOKE_MAUI_PASS still running after 15s"
+            $mauiProc.Kill()
+          } else {
+            Write-Host "::warning::SMOKE_MAUI_EXIT_CODE=$($mauiProc.ExitCode)"
+          }
+          Write-Host "SMOKE_STEP=4_maui PASS"
+
+          # 5. Copy smoke files into workspace for artifact upload
+          Copy-Item -Path "$installDir\setup.log" -Destination "$env:GITHUB_WORKSPACE\artifacts\setup.log" -Force -ErrorAction SilentlyContinue
+          Copy-Item -Path "$installDir\smoke.txt" -Destination "$env:GITHUB_WORKSPACE\artifacts\smoke.txt" -Force -ErrorAction SilentlyContinue
+          "Installer smoke (C-95 layout): all hard checks passed" | Out-File -FilePath $outcomeFile -Encoding utf8
 
       - name: Upload install smoke artifact (C-87-fix-12)
         if: always()

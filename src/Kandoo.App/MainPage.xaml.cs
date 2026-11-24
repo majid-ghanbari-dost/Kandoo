@@ -354,6 +354,42 @@ public partial class MainPage : ContentPage
         }
     }
 
+    private async void OnReturnsClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            var settings = ReadHubSettings();
+            await Navigation.PushAsync(new ReturnsPage(settings));
+        }
+        catch (Exception exception) when (IsExpected(exception))
+        {
+            StatusLabel.Text = exception.Message;
+        }
+    }
+
+    private async void OnInvoicesClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            var settings = ReadHubSettings();
+            await Navigation.PushAsync(new InvoicesListPage(settings));
+        }
+        catch (Exception exception) when (IsExpected(exception))
+        {
+            StatusLabel.Text = exception.Message;
+        }
+    }
+
+    private async void OnCustomerOtpClicked(object? sender, EventArgs e)
+    {
+        await Navigation.PushModalAsync(new CustomerOtpPage());
+    }
+
+    private async void OnCustomerInvoicesClicked(object? sender, EventArgs e)
+    {
+        await Navigation.PushModalAsync(new CustomerInvoicesPage());
+    }
+
     private async Task LoadDevicesAsync()
     {
         LoadDevicesButton.IsEnabled = false;
@@ -419,6 +455,8 @@ public partial class MainPage : ContentPage
         CreateInvoiceButton.IsEnabled = hasSettings;
         ProductEditorButton.IsEnabled = hasSettings;
         CustomersButton.IsEnabled = hasSettings;
+        ReturnsButton.IsEnabled = hasSettings;
+        InvoicesButton.IsEnabled = hasSettings;
         SettingsButton.IsEnabled = true; // Settings page works without Hub settings for local backup
     }
 

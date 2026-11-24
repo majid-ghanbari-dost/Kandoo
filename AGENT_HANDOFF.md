@@ -661,3 +661,58 @@ dotnet --info قابل بازیابی نیست. متن خطای نهایی: نو
 
 توقف در اینجا. منتظر تصمیم اجرایی.
 
+
+## ORDER 16 Handoff (`arena/4bb6cd51-kandoo`, 2026-11-21)
+
+Branch `arena/4bb6cd51-kandoo`, branched from `712ce0711812f1dd4121014539c0d7bb6332d7d9` of `arena/456e429d-kandoo`. Merged `origin/pm/order20-installer-layout` (commit `64b04a6`) into this branch. All ORDER 16 C# work on task branches; no push to `main`; no tag moves; no PR-object actions on PR #2/PR #15.
+
+### PM Decisions in Force (2026-11-21)
+
+- **D1:** Self-hosted runners REJECTED — MAUI workloads unavailable on GitHub-hosted `windows-latest` runners (15+ prior attempts all failed).
+- **D2:** One create-only PR per task from own branch.
+- **D3:** Tag `o16-<task>` on green commit of own branch; never move/delete/re-use existing tag; never tag `main`.
+- **ORDER-15-STATUS:** accepted, no further ORDER 15 reports.
+- **ORDER 20-B:** do NOT create coordination channel issue yet — PM coordinating with Owner first.
+- Do not edit `KandooHub.Installer.iss` or `Invoke-InstallerSmoke.ps1` again; report problems to PM.
+
+### Android Emulator Fix
+
+The Android 10 emulator smoke job (kandoo-app.yml) failed on `ubuntu-latest` because runners lack KVM/nested virtualization. Verbatim error from CI annotations: **"Timeout waiting for emulator to boot."** Three fix pushes were attempted (ORDER 16 rule 7: max 3 REAL fix pushes before `continue-on-error`):
+
+- **Push 1** (`b1fecb1`): KVM diagnostic (`ls -l /dev/kvm`, `kvm-ok`) — CI run 44991053739, emulator job FAILED
+- **Push 2** (`7e24af5`): udev rule `99-kvm4all.rules` + `udevadm trigger` + `emulator-parameters: -no-window -no-audio -gpu swiftshader_indirect` — CI run 44991053739, emulator job FAILED
+- **Push 3** (`0edbef9`): added `-no-accel` to emulator parameters — CI run 44992987552, emulator job FAILED at "Launch on Android 10 emulator" step
+
+All three pushes exhausted. Per rule 7: `continue-on-error: true` remains on the emulator job, verbatim error reported ("Timeout waiting for emulator to boot"), status PARTIAL/BLOCKED. The emulator failure is a CI infrastructure issue, not a code regression — all code steps pass.
+
+Fix: added `continue-on-error: true` to the `android-emulator-smoke` job so emulator infrastructure failure does not fail the overall CI workflow. All code steps (test app logic, Windows publish, Android Debug APK, Android Release APK) pass.
+
+### ORDER 16 C# Tasks
+
+| Task | Branch | Full Commit SHA | Tag | CI Run | Status |
+|------|--------|-----------------|-----|--------|--------|
+| **C-90** Windows store software pilot | `arena/kandoo-c90-windows-store` | `286f28cbb4503bd148635facf293283c3ac43238` | `o16-c90` | [44922803863](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44922803863) | GREEN (ubuntu + windows), PR #13 open |
+| **C-91** Android store app complete | `arena/kandoo-c91-android-store` | `f453f930d52b0d18977bf53d00eb03b356a188a9` | `o16-C-91` | [44875204264](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44875204264) | GREEN (ubuntu + windows), PR #14 open |
+| **C-92** Customer mode in Android app | `arena/kandoo-c92-customer-mode` | `abfee63` (test fix `2af2040`) | `o16-c92` (existing, on `17eba20`) | [44991041523](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44991041523) | GREEN overall (emulator job failed, continue-on-error), PR #15 open |
+| **C-95** Replace WinForms launcher with MAUI SetupWizardPage | `arena/kandoo-c95-maui-launcher` | `08950a5de6f992a7866a359963d14f6864b2ceb7` | `o16-c95` | [44924669492](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44924669492) | GREEN (ubuntu + windows), PR #12 open |
+
+### C-93 Holoo Connector
+
+PR #16 (`arena/kandoo-c93-holoo-connector`) remains open and green. Head commit `e73b1c91523e86cad40628bb195797c5aadfb87a`, CI both jobs SUCCESS. PR #16 is conflict-free vs new `main` and must stay that way. Previous C-93-fix branches (c93fix1/2/3) are superseded by this directive.
+
+### Persian Reports
+
+| Report | File | Task |
+|--------|------|------|
+| گزارش ORDER 16 — تسک C-90 | `docs/reports/ORDER-16-C-90.md` | C-90 |
+| گزارش ORDER 16 — تسک C-91 | `docs/reports/ORDER-16-C-91.md` | C-91 |
+| گزارش ORDER 16 — تسک C-92 | `docs/reports/ORDER-16-C-92.md` | C-92 |
+| گزارش ORDER 16 — تسک C-95 | `docs/reports/ORDER-16-C-95.md` | C-95 |
+
+### Notes
+
+- C-90 replication queue with retry/backoff already exists in `HubCloudReplicationClient` (exponential backoff: `Math.Min(60_000, 1_000 * (1 << (attempt - 1)))` ms). Added `tests/Kandoo.Hub.Tests/C90ReplicationRetryTests.cs` covering retryable vs non-retryable error handling.
+- C-92 verified-device storage via `SharedTokenFile` (`kandoo.device-token.v1.json`) already exists. Added `tests/Kandoo.App.Tests/C92CustomerModeTests.cs` covering token save/load/clear and JSON snake_case format.
+- C-95 MAUI `SetupWizardPage` already replaces WinForms launcher as app entry point (`App.xaml.cs`). WinForms launcher project is not in `Kandoo.sln` and not built by CI.
+- MAUI Windows builds now pass on `windows-latest` CI runners (previously blocked by missing MAUI workloads).
+- Android emulator smoke job on `ubuntu-latest`: Push 1 (KVM diagnostic), Push 2 (udev rules + flags), Push 3 (-no-accel final tuning) all FAILED with "Timeout waiting for emulator to boot." Per ORDER 16 rule 7: `continue-on-error` kept, status PARTIAL/BLOCKED. Verbatim error and all three attempts documented above. Not a code regression — all code steps pass.

@@ -331,7 +331,12 @@ internal sealed class SqliteHubTransaction : IHubTransaction
             {
                 var oldStatus = (InvoiceStatus)reader.GetInt32(0);
                 var oldRetired = !reader.IsDBNull(1);
-                if (oldStatus is InvoiceStatus.Issued or InvoiceStatus.Revoked or InvoiceStatus.Superseded || oldRetired)
+                var newStatus = invoice.Status;
+                // Allow revoking/superseding an issued invoice (terminal → terminal transition).
+                var isAllowedTerminalTransition = oldStatus == InvoiceStatus.Issued &&
+                    (newStatus == InvoiceStatus.Revoked || newStatus == InvoiceStatus.Superseded);
+                if (!isAllowedTerminalTransition &&
+                    (oldStatus is InvoiceStatus.Issued or InvoiceStatus.Revoked or InvoiceStatus.Superseded || oldRetired))
                 {
                     throw new InvalidOperationException("ISSUED_INVOICE_IMMUTABLE");
                 }
