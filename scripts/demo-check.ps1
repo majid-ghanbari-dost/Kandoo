@@ -60,14 +60,13 @@ function Write-Point {
         [string]$Status,
         [string]$Detail
     )
+    # GitHub keeps only ~10 annotations per check run, so per-point annotations get truncated
+    # (observed: points 1 and 2 silently dropped from /check-runs/{id}/annotations). Publish one
+    # compact line per point to the console, and a single summary annotation at the end that
+    # carries every status — that one always fits.
     $line = "C98_POINT=$Number $Status $Name :: $Detail"
     Write-Host $line
-    switch ($Status) {
-        'PASS' { Write-Host "::notice::$line" }
-        'GAP' { Write-Host "::warning::$line" }
-        'FAIL' { Write-Host "::error::$line" }
-        default { Write-Host "::notice::$line" }
-    }
+    if ($Status -eq 'FAIL') { Write-Host "::error::$line" }
     $results.Add([pscustomobject]@{ point = $Number; name = $Name; status = $Status; detail = $Detail })
 }
 
@@ -356,6 +355,13 @@ $jsonPath = Join-Path $artifactDir 'c98-demo-check.json'
 $summary | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $jsonPath -Encoding utf8
 Write-Host "C98_RESULT $($summary.verdict) passed=$($passed.Count) failed=$($hardFailures.Count) gaps=$($gaps.Count)"
 Write-Host "::notice::C98_RESULT $($summary.verdict) passed=$($passed.Count) failed=$($hardFailures.Count) gaps=$($gaps.Count)"
+# One annotation holding every point, so the API audit sees the whole run and not a truncated slice.
+# Keep it under the 64 KB annotation limit; the detail text is capped per point.
+$compact = ($results | ForEach-Object {
+        $d = if ($_.detail.Length -gt 120) { $_.detail.Substring(0, 120) } else { $_.detail }
+        "$($_.point)=$($_.status)($($_.name)) $d"
+    }) -join ' | '
+Write-Host "::notice::C98_ALL_POINTS $compact"
 
 if ($env:GITHUB_STEP_SUMMARY) {
     $lines = [System.Collections.Generic.List[string]]::new()
