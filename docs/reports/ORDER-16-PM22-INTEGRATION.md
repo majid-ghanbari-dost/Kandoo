@@ -168,3 +168,55 @@ ci.yml  =  main + فقط افزوده‌های C-93 این شاخه
 2. پس از merge، #12، #13، #14، #15، #16، #18، #19 با اشاره به شمارهٔ PR یکپارچه بسته شوند.
 3. تصمیم دربارهٔ تگ `o17-E-72-REVIEW` (روی کامیت `ffe6c05` با گزارش نادرست) — جابه‌جا نشد.
 4. دسترسی نوشتن روی `Kandoo-Digital-Invoice` برای کامنت PR #16 (فعلاً ۴۰۳).
+
+---
+
+## ۸. ادغام `origin/main` برای رفع تعارض PR
+
+GitHub ابتدا PR را **CONFLICTING** نشان داد. علت: `origin/main` به‌صورت یک اسنپ‌شات **orphan** بازنویسی شده است (تنها ریشه‌اش `0d1ef67` است)، پس هیچ جد مشترکی با این شاخه ندارد و `git merge-base` خالی برمی‌گردد. قاعدهٔ ۸ OPERATING-RULES-v2 می‌گوید شاخه باید `origin/main` را merge کند، پس با `--allow-unrelated-histories` انجام شد.
+
+### حل ۲۲ فایل متعارض
+
+| دسته | تصمیم |
+|---|---|
+| کد / CI / تست | این شاخه |
+| `scripts/Invoke-InstallerSmoke.ps1` | از `pm/order21-selfcheck` (تأیید یکسان، ویرایش نشد) |
+| `docs/OPERATING-RULES-v2.md` | نسخهٔ `main` (جدیدتر: اصلاحیهٔ ۲۰۲۶-۱۱-۲۱، قاعدهٔ ۸ و ۹) |
+| `docs/decisions-made.md` | این شاخه (بند ۲۶) |
+| گزارش‌های ORDER-16 C-90/C-92/C-95 | این شاخه (وضعیت تحویل‌شده + رفع متن خراب) |
+| `AGENT_HANDOFF.md`، `TASKS/CSHARP-T2.md` | این شاخه (وضعیت PM-22 EXECUTED) + نگه‌داشتن Manager addendum 2 از main |
+
+**تأیید پیش از کامیت:** هیچ فایلی از `main` حذف نشد (`comm -23` = صفر) — پس خطر حذف C-94 و فایل‌های M-007..M-011 برطرف شد؛ هیچ نشانگر تعارضی باقی نماند.
+
+### خطای پس از merge و رفع آن
+
+جاب ubuntu شکست خورد:
+
+```
+Kandoo.Hub.Tests.ManagementAccountingTests.C94_AccountingSummary_DerivesLightFiguresFromSyntheticEvents:
+  System.InvalidOperationException : ISSUED_INVOICE_IMMUTABLE
+Kandoo.Hub.Tests.ManagementAccountingTests.C94_AccountingRouteIsStoreScoped:
+  System.Text.Json.JsonReaderException : The input does not contain any JSON tokens.
+```
+
+علت: چون `main` اسنپ‌شات orphan است، تست‌ها و سرویس C-94 به‌عنوان فایل جدید آمدند ولی سه فایلی که C-94 واقعاً تغییر می‌دهد در نسخهٔ قدیمی این شاخه ماندند. از `main` بازگردانده شد:
+
+- `SqliteHubStore.cs` — `Clone()` روی JsonElement در `ReadReplicationEntries` و گارد تریگر برای گذار مجاز `ISSUED → REVOKED/SUPERSEDED`
+- `SqliteHubTransaction.cs` — `isAllowedTerminalTransition` (همان که `ISSUED_INVOICE_IMMUTABLE` می‌داد)
+- `HubApiFirstEndpoints.cs` — بازگرداندن `MapAccountingApi(app)`
+- `HubApiTestHarness.cs` — `AddSingleton<SqliteHubStore>(TestStore)`
+
+نگه‌داشته‌شده از این شاخه: گارد `EnsureColumn` و تست‌های C-90.
+
+### وضعیت نهایی
+
+| جاب | نتیجه |
+|---|---|
+| `Build and test (ubuntu-latest)` | ✅ pass |
+| `Build and test (windows-latest)` | ✅ pass |
+| `App tests + Windows + Android` | ✅ pass |
+| `Android 10 emulator` | pending / continue-on-error (PM-16) |
+
+`mergeable: MERGEABLE`. آرتیفکت‌ها: `kandoo-install-smoke` (۲۴,۰۱۳ بایت)، `kandoo-hub-c87-setup-exe` (۸۹,۸۴۳,۴۲۱ بایت).
+
+**نکته برای PM:** بازنویسی `main` به‌صورت orphan یعنی هر PR لِین دیگری هم با همین تعارض روبه‌روست؛ این ساختار باید اصلاح شود وگرنه هر ادغام بعدی نیازمند `--allow-unrelated-histories` و حل دستی است.
