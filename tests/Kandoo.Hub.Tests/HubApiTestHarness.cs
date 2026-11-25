@@ -44,7 +44,12 @@ public sealed class HubApiFactory : WebApplicationFactory<Program>
     }
 
     /// <summary>Creates a factory whose store writes the demo SMS to the given directory (C-98).</summary>
-    public HubApiFactory(string demoSmsOutboxDirectory) : this(new HubReplicationOptions(), demoSmsOutboxDirectory) { }
+    /// <remarks>
+    /// Internal on purpose: xUnit uses <see cref="HubApiFactory"/> as a class fixture and requires
+    /// exactly one PUBLIC constructor ("Class fixture type ... may only define a single public
+    /// constructor"). Only the C-98 tests in this assembly need the outbox.
+    /// </remarks>
+    internal HubApiFactory(string demoSmsOutboxDirectory) : this(new HubReplicationOptions(), demoSmsOutboxDirectory) { }
 
     public string ConnectionString { get; }
     public ManualHubClock Clock { get; } = new();
