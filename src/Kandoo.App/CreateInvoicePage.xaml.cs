@@ -99,9 +99,10 @@ public partial class CreateInvoicePage : ContentPage
             {
                 await dataSource.AddItemAsync(
                     invoiceId,
-                    item.ProductName,
-                    item.Quantity,
-                    item.UnitPriceRials);
+                    description: item.Description,
+                    productId: item.ProductId,
+                    quantity: item.Quantity,
+                    unitPriceRials: item.UnitPriceRials);
             }
 
             await dataSource.IssueAsync(invoiceId);

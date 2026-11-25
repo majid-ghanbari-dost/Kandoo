@@ -46,25 +46,37 @@ public sealed class HubInvoiceDataSource
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
-        var root = document.RootElement;
-        if (!root.TryGetProperty("invoice_id", out var invoiceId))
-            throw new JsonException("Hub draft response missing invoice_id.");
-        return invoiceId.GetString()!;
+
+        // The Hub answers with an operation envelope:
+        //   { status, result_status, operation_seq, request_hash, idempotent_replay, response, currency }
+        // and the invoice lives at response.invoice.invoice_id. Reading invoice_id off the root
+        // (what this method used to do) always threw "Hub draft response missing invoice_id",
+        // so creating an invoice from the app could never succeed.
+        if (!OperationResponse.TryReadInvoiceId(document.RootElement, out var invoiceId))
+            throw new JsonException("Hub draft response missing response.invoice.invoice_id.");
+        return invoiceId;
     }
 
+    /// <summary>Adds one line to a draft invoice.</summary>
+    /// <param name="description">Required by the Hub: an invoice line without text is rejected.</param>
     public async Task AddItemAsync(
         string invoiceId,
-        string productId,
+        string description,
+        string? productId,
         int quantity,
         long unitPriceRials,
         CancellationToken cancellationToken = default)
     {
         var body = new Dictionary<string, object?>
         {
-            ["product_id"] = productId,
-            ["quantity"] = quantity,
+            ["operation_id"] = $"item-{invoiceId}-{Guid.NewGuid():N}",
+            ["service_type"] = "SALE",
+            ["description"] = description,
+            ["quantity_millis"] = quantity * 1000L,
             ["unit_price_rials"] = unitPriceRials,
         };
+        if (!string.IsNullOrWhiteSpace(productId))
+            body["product_id"] = productId;
 
         using var request = new HttpRequestMessage(
             HttpMethod.Post,
@@ -85,6 +97,7 @@ public sealed class HubInvoiceDataSource
         var body = new Dictionary<string, object?>
         {
             ["operation_id"] = $"issue-{invoiceId}",
+            ["service_type"] = "SALE",
         };
 
         using var request = new HttpRequestMessage(
@@ -140,12 +153,19 @@ public sealed class HubInvoiceDataSource
 public sealed record InvoiceDraftResult(string InvoiceId);
 
 /// <summary>Invoice line item for display.</summary>
+/// <remarks>
+/// <paramref name="ProductName"/> is both the label and the Hub line description: the Hub
+/// requires a non-empty description on every line.
+/// </remarks>
 public sealed record InvoiceItemRow(
     string ProductName,
     int Quantity,
     long UnitPriceRials,
-    long TotalRials)
+    long TotalRials,
+    string? ProductId = null)
 {
+    public string Description => ProductName;
+
     public string TotalDisplay => FormattableString.Invariant($"{TotalRials:N0} ریال");
 }
 
@@ -159,4 +179,33 @@ public sealed record InvoiceSummary(
     IReadOnlyList<InvoiceItemRow> Items)
 {
     public string TotalDisplay => FormattableString.Invariant($"{TotalRials:N0} ریال");
+}
+
+/// <summary>Reads the Hub's operation envelope, which wraps every invoice response.</summary>
+internal static class OperationResponse
+{
+    /// <summary>Extracts <c>response.invoice.invoice_id</c> from a Hub operation reply.</summary>
+    public static bool TryReadInvoiceId(JsonElement root, out string invoiceId)
+    {
+        invoiceId = string.Empty;
+        if (!root.TryGetProperty("response", out var response) ||
+            response.ValueKind != JsonValueKind.Object ||
+            !response.TryGetProperty("invoice", out var invoice) ||
+            invoice.ValueKind != JsonValueKind.Object)
+        {
+            return false;
+        }
+
+        if (!invoice.TryGetProperty("invoice_id", out var id))
+        {
+            return false;
+        }
+
+        // Guid or string: accept both rather than depending on the serializer's choice.
+        invoiceId = id.ValueKind == JsonValueKind.String
+            ? id.GetString() ?? string.Empty
+            : id.GetRawText().Trim('"');
+
+        return !string.IsNullOrWhiteSpace(invoiceId);
+    }
 }
