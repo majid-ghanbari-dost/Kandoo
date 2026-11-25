@@ -79,6 +79,7 @@ public sealed class HubApiFactory : WebApplicationFactory<Program>
             }
 
             services.AddSingleton<IHubStore>(TestStore);
+            services.AddSingleton<SqliteHubStore>(TestStore);
             services.AddSingleton<IHubAccessStore>(TestStore);
             services.AddSingleton<IHubSmsDeliveryGateway>(TestSms);
             services.AddSingleton(ReplicationOptions);

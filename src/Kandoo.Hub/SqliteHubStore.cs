@@ -158,8 +158,19 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore, IHubRep
             var entries = new List<ReplicationLogEntry>();
             while (reader.Read())
             {
-                entries.Add(JsonSerializer.Deserialize<ReplicationLogEntry>(reader.GetString(0), HubJson.Options)
-                    ?? throw new InvalidOperationException("Invalid durable replication entry."));
+                var entry = JsonSerializer.Deserialize<ReplicationLogEntry>(reader.GetString(0), HubJson.Options)
+                    ?? throw new InvalidOperationException("Invalid durable replication entry.");
+
+                // Clone JsonElement properties so they hold an independent reference to their backing
+                // JsonDocument. Without this, the deserialization's internal JsonDocument can be GC'd
+                // after Deserialize returns, leaving Payload/Outcome/ResponseSnapshot as dangling
+                // references. Downstream consumers (e.g. ManagementAccountingService) then read
+                // ValueKind=Undefined, causing counters to read as 0.
+                entry.Payload = entry.Payload.Clone();
+                entry.Outcome = entry.Outcome.Clone();
+                entry.ResponseSnapshot = entry.ResponseSnapshot.Clone();
+
+                entries.Add(entry);
             }
 
             return entries;
@@ -694,7 +705,8 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore, IHubRep
             );
             CREATE TRIGGER IF NOT EXISTS invoices_terminal_update_forbidden
             BEFORE UPDATE ON invoices
-            WHEN OLD.status IN (3, 4, 5) OR OLD.retired_at IS NOT NULL
+            WHEN OLD.status IN (4, 5) OR OLD.retired_at IS NOT NULL
+               OR (OLD.status = 3 AND NEW.status NOT IN (4, 5))
             BEGIN SELECT RAISE(ABORT, 'ISSUED_INVOICE_IMMUTABLE'); END;
             CREATE TRIGGER IF NOT EXISTS invoices_terminal_delete_forbidden
             BEFORE DELETE ON invoices
