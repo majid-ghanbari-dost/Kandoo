@@ -169,9 +169,13 @@ else {
 if (-not $ownerToken) { Write-Point -Number 3 -Name 'pairing' -Status 'SKIP' -Detail 'skipped: no owner session' }
 else {
     try {
+        # The API requires a NON-loopback HTTPS LAN endpoint for the grant (Program.cs:
+        # "A companion-only grant requires the current Hub and a LAN HTTPS endpoint").
+        # The endpoint is only carried in the QR for the device to dial later; this run never
+        # dials it, so a documentation-range address is enough and keeps the check honest.
         $grant = (Invoke-HubJson -Method POST -Path "/v1/stores/$storeId/pairing-grants" -Token $ownerToken -Body @{
             hub_device_id         = $hubDeviceId
-            hub_endpoint          = $script:baseUrl
+            hub_endpoint          = 'https://192.0.2.10:5000'
             requested_device_role = 'COMPANION'
         }).qr
         $paired = Invoke-HubJson -Method POST -Path '/v1/pairing-grants/consume' -Body @{
@@ -186,7 +190,13 @@ else {
         $companionToken = $paired.session_token
         Write-Point -Number 3 -Name 'pairing' -Status 'PASS' -Detail "status=$($paired.status) role=$($paired.session.device_role)"
     }
-    catch { Write-Point -Number 3 -Name 'pairing' -Status 'FAIL' -Detail ($_.Exception.Message -replace '[\r\n]+', ' ') }
+    catch {
+        $msg = ($_.Exception.Message -replace '[\r\n]+', ' ')
+        # A 400/422 here is the run's own bad input, not a product defect. Report it as the
+        # harness's fault so a red CI does not get blamed on the demo chain.
+        if ($msg -match '\(4\d\d\)') { Write-Point -Number 3 -Name 'pairing' -Status 'FAIL' -Detail "check harness rejected by the API: $msg" }
+        else { Write-Point -Number 3 -Name 'pairing' -Status 'FAIL' -Detail $msg }
+    }
 }
 
 # --- 4. Product with the 3 mandatory fields ------------------------------------------------------

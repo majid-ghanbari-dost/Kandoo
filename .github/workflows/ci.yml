@@ -509,7 +509,10 @@ jobs:
           if (Test-Path -LiteralPath $outcome) {
             Write-Host "::notice::SMOKE_ALL_HARD_CHECKS_PASSED"
           } else {
-            Write-Host "::error::SMOKE_ALL_HARD_CHECKS_PASSED not reported: no smoke-outcome.txt"
+            # No outcome file means the smoke step did not run to completion. That can be its
+            # own hard failure OR an earlier step failing (this step is `always()`), so a
+            # ::error:: here would invent a second, misleading failure. State the fact only.
+            Write-Host "::warning::SMOKE_ALL_HARD_CHECKS_PASSED not reported: no smoke-outcome.txt"
           }
           Write-Host "::notice::INSTALL_SMOKE_ARTIFACT=kandoo-install-smoke"
           Write-Host "::notice::SETUP_EXE_ARTIFACT=kandoo-hub-c87-setup-exe"
