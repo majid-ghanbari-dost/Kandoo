@@ -1,0 +1,30 @@
+{
+  "status": "PROPOSED — not an accepted contract",
+  "description": "Synthetic sequential scenarios; placeholders refer only to test-generated values. JSON object fields in expect.body are required subsets; arrays and scalar values compare exactly.",
+  "setup": {
+    "phone": "+989120000001",
+    "device": "QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ",
+    "other_device": "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ",
+    "store": "11111111-1111-4111-8111-111111111111",
+    "invoice": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    "foreign_invoice": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+    "store_name": "TEST Store",
+    "display_number": 7,
+    "announcement": "one verified synthetic notification for the invoice",
+    "clock_unix": 1767323045
+  },
+  "steps": [
+    {"id":"missing-session", "method":"GET", "path":"/v1/customer/invoices", "headers":{}, "expect":{"http":401,"body":{"status":"UNAUTHENTICATED"}}},
+    {"id":"issue", "method":"POST", "path":"/v1/customer/otp/challenges", "headers":{"content-type":"application/json","idempotency-key":"TEST-native-issue","x-kandoo-device":"{{device}}"}, "body":{"phone":"{{phone}}"}, "expect":{"http":201,"body":{"status":"OTP_SENT"},"capture":{"challenge":"challenge_id"}}},
+    {"id":"issue-idempotent", "method":"POST", "path":"/v1/customer/otp/challenges", "headers":{"content-type":"application/json","idempotency-key":"TEST-native-issue","x-kandoo-device":"{{device}}"}, "body":{"phone":"{{phone}}"}, "expect":{"http":200,"body":{"status":"DUPLICATE","challenge_id":"{{challenge}}"}}},
+    {"id":"verify-wrong-device", "method":"POST", "path":"/v1/customer/otp/challenges/{{challenge}}/verify", "headers":{"content-type":"application/json","x-kandoo-device":"{{other_device}}"}, "body":{"code":"{{otp}}"}, "expect":{"http":400,"body":{"status":"INVALID"}}},
+    {"id":"verify", "method":"POST", "path":"/v1/customer/otp/challenges/{{challenge}}/verify", "headers":{"content-type":"application/json","x-kandoo-device":"{{device}}"}, "body":{"code":"{{otp}}"}, "expect":{"http":200,"body":{"status":"OK"},"capture":{"session":"token"}}},
+    {"id":"verify-replay", "method":"POST", "path":"/v1/customer/otp/challenges/{{challenge}}/verify", "headers":{"content-type":"application/json","x-kandoo-device":"{{device}}"}, "body":{"code":"{{otp}}"}, "expect":{"http":400,"body":{"status":"INVALID"}}},
+    {"id":"list", "method":"GET", "path":"/v1/customer/invoices", "headers":{"authorization":"Bearer {{session}}"}, "expect":{"http":200,"body":{"stores":[{"store_id":"{{store}}","store_name":"TEST Store","invoices":[{"invoice_id":"{{invoice}}","display_number":7}]}]}}},
+    {"id":"detail", "method":"GET", "path":"/v1/customer/invoices/{{store}}/{{invoice}}", "headers":{"authorization":"Bearer {{session}}"}, "expect":{"http":200,"body":{"invoice":{"store_id":"{{store}}","invoice_id":"{{invoice}}","display_number":7,"payable_rials":25000,"line_items":[]}}}},
+    {"id":"foreign-or-unknown", "method":"GET", "path":"/v1/customer/invoices/{{store}}/{{foreign_invoice}}", "headers":{"authorization":"Bearer {{session}}"}, "expect":{"http":404,"body":{"status":"NOT_FOUND"}}},
+    {"id":"logout", "method":"DELETE", "path":"/v1/customer/session", "headers":{"authorization":"Bearer {{session}}"}, "expect":{"http":200,"body":{"status":"REVOKED"}}},
+    {"id":"revoked-session", "method":"GET", "path":"/v1/customer/invoices", "headers":{"authorization":"Bearer {{session}}"}, "expect":{"http":401,"body":{"status":"UNAUTHENTICATED"}}},
+    {"id":"logout-replay", "method":"DELETE", "path":"/v1/customer/session", "headers":{"authorization":"Bearer {{session}}"}, "expect":{"http":401,"body":{"status":"UNAUTHENTICATED"}}}
+  ]
+}
