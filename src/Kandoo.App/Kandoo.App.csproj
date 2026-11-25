@@ -25,9 +25,9 @@
   <PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows' and '$(RuntimeIdentifierOverride)' != ''">
     <RuntimeIdentifier>$(RuntimeIdentifierOverride)</RuntimeIdentifier>
   </PropertyGroup>
-  <!-- HOTFIX-1: Program.cs owns Main so `Kandoo.App.exe --self-check` can run before any UI.
-       The WinUI SDK otherwise generates its own Main in App.g.i.cs -> CS0017 (duplicate entry point).
-       Only the Windows head sets this; Android needs the generated entry point. -->
+  <!-- HOTFIX-1: Program.cs owns Main so the self-check switch can run before any UI.
+       The WinUI SDK otherwise generates its own Main in App.g.i.cs, giving CS0017 (duplicate
+       entry point). Only the Windows head sets this; Android needs the generated entry point. -->
   <PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
     <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
   </PropertyGroup>
