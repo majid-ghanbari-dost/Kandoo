@@ -11,6 +11,8 @@ Checks:
                      no exe in the install root, no leftover Kandoo.SetupLauncher.exe
   shortcuts          Start Menu shortcut "Kandoo" exists and its target file exists
   app-selfcontained  app\Kandoo.App.runtimeconfig.json declares includedFrameworks (no machine .NET needed)
+  first-run-selfcheck  app\Kandoo.App.exe --self-check <file>: the INSTALLED app resolves the installed Hub, starts it,
+                     creates the owner session and writes KANDOO_SETUP_OK (catches path/layout/bootstrap bugs)
   hub-health         installed hub\Kandoo.Hub.exe answers GET /health with 200
   maui-app           (SOFT) installed app\Kandoo.App.exe stays alive for 15 s
 #>
@@ -127,7 +129,32 @@ Invoke-Check 'app-selfcontained' {
     'app runtimeconfig declares includedFrameworks'
 }
 
-# 5. Hub from the INSTALLED folder -----------------------------------------------------------------
+# 5. First-run flow of the INSTALLED app (headless self-check) ---------------------------------------
+Invoke-Check 'first-run-selfcheck' {
+    Assert-Installed
+    $appDir = Join-Path $InstallDir 'app'
+    $resultFile = Join-Path $InstallDir 'selfcheck.txt'
+    Remove-Item -LiteralPath $resultFile -ErrorAction SilentlyContinue
+    $p = Start-Proc -File (Join-Path $appDir 'Kandoo.App.exe') -Arguments @('--self-check', $resultFile) -WorkDir $appDir
+    try {
+        if (-not $p.WaitForExit(120000)) {
+            try { $p.Kill($true) } catch { }
+            throw 'app --self-check did not exit within 120 s'
+        }
+        $code = $p.ExitCode
+        $line = if (Test-Path -LiteralPath $resultFile -PathType Leaf) { (Get-Content -LiteralPath $resultFile -TotalCount 1) } else { '(no result file written)' }
+        Copy-Item -LiteralPath $resultFile -Destination (Join-Path $artifactDirFull 'selfcheck.txt') -Force -ErrorAction SilentlyContinue
+        if ($code -ne 0) { throw "app --self-check exit code $code; result: $line" }
+        if ($line -notmatch '^KANDOO_SETUP_OK') { throw "unexpected self-check output: $line" }
+        $line
+    }
+    finally {
+        # The self-check must stop the Hub it started; make sure nothing is left behind for the next check.
+        Get-Process -Name 'Kandoo.Hub' -ErrorAction SilentlyContinue | ForEach-Object { try { $_.Kill($true) } catch { } }
+    }
+}
+
+# 6. Hub from the INSTALLED folder -----------------------------------------------------------------
 Invoke-Check 'hub-health' {
     Assert-Installed
     $hubDir = Join-Path $InstallDir 'hub'
@@ -154,7 +181,7 @@ Invoke-Check 'hub-health' {
     }
 }
 
-# 6. MAUI app (SOFT: reported as a warning, does not fail the job) ----------------------------------
+# 7. MAUI app (SOFT: reported as a warning, does not fail the job) ----------------------------------
 Invoke-Check 'maui-app' -Soft {
     Assert-Installed
     $appDir = Join-Path $InstallDir 'app'
