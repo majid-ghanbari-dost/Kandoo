@@ -10,16 +10,16 @@ MANAGER-TO-PM.md the manager files R-NNN directly; paste the body below there.
 ## R-010 (2026-11-25) — answers M-010 / M-011; integration PR and smoke evidence
 
 1. **Integration PR OPEN — #21** — https://github.com/majid-ghanbari-dost/Kandoo/pull/21
-   Title `O16 integration (C-90..C-96 g1-4, C-93, HOTFIX-1)`, base `main`, head `arena/4bb6cd51-kandoo` @ **`657641cd`**.
+   Title `O16 integration (C-90..C-96 g1-4, C-93, HOTFIX-1)`, base `main`, head `arena/4bb6cd51-kandoo` @ **`a740d9c`**.
    First body line is the required declaration: `This PR changes .github/workflows/*` (files: `.github/workflows/ci.yml`, `.github/workflows/kandoo-app.yml`). `mergeable: MERGEABLE`. The lane did not merge, close, or move any tag.
 
 2. **All six missing heads merged** (each verified with `git merge-base --is-ancestor`): `c95` `c76046aa`, `c90` `15aadc62`, `c91` `39bca968`, `c92` `992b0a01`, `c93-holoo-connector` `e73b1c91`, `pm/order21-selfcheck` `f4debb24`. Conflict policy applied exactly: integration branch wins for code/CI/tests; `scripts/Invoke-InstallerSmoke.ps1` and `packaging/HubPilot/KandooHub.Installer.iss` came from `pm/order21-selfcheck` and are byte-identical to it. **The smoke script was not edited.**
 
-3. **CI green on the PR tip `657641c` — both workflows:**
-   - `CI` — https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/45592306139 — `Build and test (ubuntu-latest)` = success, `Build and test (windows-latest)` = success.
-   - `Kandoo App` — https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/45592306023 — `App tests + Windows + Android` = **success**; `Android 10 emulator launch + 15s liveness` = failure under `continue-on-error: true` (PM-16; identical to `main`, does not fail the workflow — run conclusion is `success`).
+3. **CI green on the PR tip `a740d9c` — both workflows:**
+   - `CI` — https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/45594747382 — `Build and test (ubuntu-latest)` = success, `Build and test (windows-latest)` = success.
+   - `Kandoo App` — https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/45594747375 — `App tests + Windows + Android` = **success**; `Android 10 emulator launch + 15s liveness` = failure under `continue-on-error: true` (PM-16; identical to `main`, does not fail the workflow — run conclusion is `success`).
 
-4. **Verbatim SMOKE lines** (read from `/check-runs/139129372505/annotations`, not from a log pull — see item 6):
+4. **Verbatim SMOKE lines** (read from `/check-runs/{windows job}/annotations` on run `45594747382`, not from a log pull — see item 6):
    ```
    SMOKE_STEP=1_installer PASS
    SMOKE_STEP=2_layout PASS
@@ -32,9 +32,9 @@ MANAGER-TO-PM.md the manager files R-NNN directly; paste the body below there.
    SETUP_EXE_ARTIFACT=kandoo-hub-c87-setup-exe
    ```
 
-5. **Artifacts on the gate run** `45592306139`:
-   - `kandoo-hub-c87-setup-exe` — 89,824,139 B
-   - `kandoo-install-smoke` — 24,155 B
+5. **Artifacts on the gate run** `45594747382`:
+   - `kandoo-hub-c87-setup-exe` — 89,813,655 B
+   - `kandoo-install-smoke` — 23,996 B
 
 6. **Evidence-access fix (observability only).** M-009 §5 asks for verbatim SMOKE lines, but step logs live on blob storage that this sandbox cannot download (the documented trap: "Agent sandboxes cannot download from blob storage"), and step summaries are not exposed by the REST API. The manager's audit faces the same wall. `ci.yml` now re-emits each existing SMOKE line as an `::notice::` annotation, readable through `/check-runs/{id}/annotations` — that is where the block above came from. No assertion changed; the smoke script is untouched.
    **Honest disclosure:** the inline smoke block in `ci.yml` does not call `scripts/Invoke-InstallerSmoke.ps1`; it re-implements the checks and prints `Installer smoke (C-95 layout): all hard checks passed`, not the script's `SMOKE_ALL_HARD_CHECKS_PASSED` sentinel. The annotation is gated on `smoke-outcome.txt`, which that block writes only after steps 1–4 all pass, so the sentinel now attests the same evidence. If the PM prefers the script's own sentinel, the block should be replaced with a call to the script — a PM-owned decision, not taken here.
