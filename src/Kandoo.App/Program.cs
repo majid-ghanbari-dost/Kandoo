@@ -28,8 +28,9 @@ public static class Program
         // the generated one did — otherwise the host is built and the process exits with no
         // message loop, and the installed app would never show a window.
         global::WinRT.ComWrappersSupport.InitializeComWrappers();
-        global::Microsoft.UI.Xaml.Application.Start(_ =>
+        global::Microsoft.UI.Xaml.Application.Start(callbackParams =>
         {
+            _ = callbackParams; // unused, but required by the callback signature
             var context = new global::Microsoft.UI.Dispatching.DispatcherQueueSynchronizationContext(
                 global::Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread());
             global::System.Threading.SynchronizationContext.SetSynchronizationContext(context);

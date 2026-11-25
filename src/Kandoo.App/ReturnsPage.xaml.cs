@@ -2,9 +2,12 @@ namespace Kandoo.App;
 
 public sealed partial class ReturnsPage : ContentPage
 {
-    public ReturnsPage()
+    private readonly HubConnectionSettings? _settings;
+
+    public ReturnsPage(HubConnectionSettings? settings = null)
     {
         InitializeComponent();
+        _settings = settings;
     }
 
     private void OnSubmitReturnClicked(object? sender, EventArgs e)
