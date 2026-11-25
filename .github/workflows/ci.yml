@@ -230,6 +230,25 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      # C-98 / M-010 DoD-A point 4: the automatable subset of the demo chain, run against the
+      # published Hub. Points whose feature does not exist yet report GAP (never PASS); the
+      # step stays green so the hole is visible in the summary instead of being hidden.
+      - name: C-98 demo-day acceptance check (automatable subset)
+        shell: pwsh
+        run: scripts/demo-check.ps1 -HubDirectory artifacts/Kandoo.Hub-win-x64 -ArtifactDirectory artifacts
+
+      - name: Upload C-98 demo-check evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kandoo-c98-demo-check
+          path: |
+            artifacts/c98-demo-check.json
+            artifacts/c98-work/hub-stdout.log
+            artifacts/c98-work/hub-stderr.log
+          if-no-files-found: warn
+          retention-days: 7
+
       - name: Assemble C-22 Windows pilot package
         shell: pwsh
         run: scripts/Invoke-CiStep.ps1 -StepName 'Assemble C-22 Windows pilot package' -ScriptPath scripts/New-HubPilotPackage.ps1 -ScriptArguments @('-PublishDirectory', 'artifacts/Kandoo.Hub-win-x64', '-PackageDirectory', 'artifacts/Kandoo.Hub-Pilot-win-x64')
