@@ -47,6 +47,9 @@ public interface IHubStore : IDisposable
     IReadOnlyList<DraftLock> GetDraftLocks();
     void CompleteTimeout(DraftLock draftLock);
     int GetOutboxDepth(Guid storeId);
+
+    /// <summary>Appends one demo SMS line to the local outbox (C-98, DoD-A point 3).</summary>
+    DemoSmsMessage SendDemoSms(Guid storeId, string recipientPhone, string body, long? displayNumber);
     ProductCatalog LoadProductCatalog();
     InventoryLedger LoadInventoryLedger();
     InvoiceService LoadInvoiceService();

@@ -404,12 +404,44 @@ public sealed class HubOperationService
         transaction.SaveInvoice(invoice);
         transaction.SaveDraftLock(draftLock);
         transaction.SetDisplayNumberHighWatermark(request.StoreId, next);
+
+        // C-98 / DoD-A point 3: the demo SMS line. Called only after the invoice is durably
+        // issued, and wrapped because a demo-only side effect must never fail a real sale:
+        // the shop owner keeps a valid invoice even if the outbox file cannot be written.
+        var smsStatus = SendDemoSmsLine(request.StoreId, draftLock.CustomerPhone, next);
+
         return Accepted(new
         {
             invoice = v11 is not null ? (object)InvoiceProjectionV11(invoice, v11) : InvoiceProjection(invoice),
             @lock = LockProjection(draftLock),
-            next_display_number = checked(next + 1)
+            next_display_number = checked(next + 1),
+            demo_sms = smsStatus
         });
+    }
+
+    /// <summary>Writes the demo SMS line for an issued invoice and reports what happened.</summary>
+    private string SendDemoSmsLine(Guid storeId, string? customerPhone, long displayNumber)
+    {
+        if (string.IsNullOrWhiteSpace(customerPhone))
+        {
+            return "NO_CUSTOMER_PHONE";
+        }
+
+        try
+        {
+            _store.SendDemoSms(storeId, customerPhone, DemoSmsBody(displayNumber), displayNumber);
+            return "WRITTEN";
+        }
+        catch (Exception)
+        {
+            // Demo-only side effect. Never let it change the outcome of a real issue.
+            return "WRITE_FAILED";
+        }
+    }
+
+    /// <summary>Demo SMS text. No legal claims and no real invoice data (PM-06/PM-17).</summary>
+    private static string DemoSmsBody(long displayNumber) =>
+        $"فاکتور دیجیتال کندو صادر شد. شمارهٔ فاکتور: {displayNumber}";
     }
 
     private string Cancel(OperationRequest request, IHubTransaction transaction)

@@ -43,10 +43,9 @@ $hubDir = if ([System.IO.Path]::IsPathRooted($HubDirectory)) { $HubDirectory } e
 $artifactDir = if ([System.IO.Path]::IsPathRooted($ArtifactDirectory)) { $ArtifactDirectory } else { Join-Path $workspace $ArtifactDirectory }
 New-Item -ItemType Directory -Force -Path $artifactDir | Out-Null
 
-if (-not $OutboxPath) {
-    $outboxRoot = if ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA 'outbox' } else { Join-Path $workspace '.demo-outbox' }
-    $OutboxPath = Join-Path $outboxRoot 'demo-sms.log'
-}
+$outboxRoot = if ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA 'outbox' } else { Join-Path $workspace '.demo-outbox' }
+if (-not $OutboxPath) { $OutboxPath = Join-Path $outboxRoot 'demo-sms.log' }
+$script:outboxDir = Split-Path -Parent $OutboxPath
 
 # A fixed-size @() array cannot grow; use a generic list (see OPERATING-RULES-v2 traps).
 $results = [System.Collections.Generic.List[object]]::new()
@@ -114,6 +113,8 @@ try {
     $psi.Environment['ASPNETCORE_URLS'] = $script:baseUrl
     $psi.Environment['ConnectionStrings__HubSqlite'] = "Data Source=$dbPath;Pooling=False"
     $psi.Environment['Hub__OwnerBootstrapProof'] = 'c98-demo-owner-proof'
+    # Point 7 asserts the demo SMS line, so point it at a scratch outbox this run owns.
+    $psi.Environment['Hub__Demo__OutboxDirectory'] = $script:outboxDir
     $script:hubProcess = [System.Diagnostics.Process]::Start($psi)
     $script:hubProcess.BeginOutputReadLine()
     $script:hubProcess.BeginErrorReadLine()
@@ -283,18 +284,15 @@ $outboxLine = $null
 if (-not $invoiceId) { Write-Point -Number 7 -Name 'sms-outbox' -Status 'SKIP' -Detail 'skipped: no issued invoice' }
 else {
     if (-not (Test-Path -LiteralPath $OutboxPath -PathType Leaf)) {
-        $msg = "no outbox file at $OutboxPath after issuing invoice $invoiceId"
-        if ($FailOnGap) { Write-Point -Number 7 -Name 'sms-outbox' -Status 'FAIL' -Detail $msg }
-        else { Write-Point -Number 7 -Name 'sms-outbox' -Status 'GAP' -Detail "$msg (Hub does not emit the demo SMS yet)" }
+        Write-Point -Number 7 -Name 'sms-outbox' -Status 'FAIL' -Detail "no outbox file at $OutboxPath after issuing invoice $invoiceId"
     }
     else {
-        $outboxLine = Get-Content -LiteralPath $OutboxPath | Where-Object { $_ -match [regex]::Escape($invoiceId) } | Select-Object -Last 1
+        # The outbox line carries the display number, not the invoice UUID, so match on that.
+        $outboxLine = Get-Content -LiteralPath $OutboxPath | Where-Object { $_ -match "display_number=$displayNumber\b" } | Select-Object -Last 1
         if (-not $outboxLine) {
-            $msg = "outbox exists but holds no line for invoice $invoiceId"
-            if ($FailOnGap) { Write-Point -Number 7 -Name 'sms-outbox' -Status 'FAIL' -Detail $msg }
-            else { Write-Point -Number 7 -Name 'sms-outbox' -Status 'GAP' -Detail $msg }
+            Write-Point -Number 7 -Name 'sms-outbox' -Status 'FAIL' -Detail "outbox exists but holds no line with display_number=$displayNumber"
         }
-        else { Write-Point -Number 7 -Name 'sms-outbox' -Status 'PASS' -Detail 'SMS line present in the local outbox' }
+        else { Write-Point -Number 7 -Name 'sms-outbox' -Status 'PASS' -Detail "SMS line present (display_number=$displayNumber)" }
     }
 }
 

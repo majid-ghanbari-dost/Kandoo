@@ -13,9 +13,16 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore, IHubRep
     private readonly SqliteConnection _connection;
     private readonly HubWriterIdentity? _replicationWriter;
     private readonly IClock _clock;
+    private readonly string? _demoSmsOutboxDirectory;
+    private readonly string? _demoStoreName;
     private bool _disposed;
 
-    public SqliteHubStore(string connectionString, HubWriterIdentity? replicationWriter = null, IClock? clock = null)
+    public SqliteHubStore(
+        string connectionString,
+        HubWriterIdentity? replicationWriter = null,
+        IClock? clock = null,
+        string? demoSmsOutboxDirectory = null,
+        string? demoStoreName = null)
     {
         if (string.IsNullOrWhiteSpace(connectionString))
         {
@@ -24,6 +31,10 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore, IHubRep
 
         _replicationWriter = replicationWriter?.Validate();
         _clock = clock ?? new SystemHubClock();
+        // Optional: when set, a successful invoice issue also writes the demo SMS line to this
+        // directory (C-98 / DoD-A point 3). Null keeps the previous behaviour exactly.
+        _demoSmsOutboxDirectory = string.IsNullOrWhiteSpace(demoSmsOutboxDirectory) ? null : demoSmsOutboxDirectory;
+        _demoStoreName = string.IsNullOrWhiteSpace(demoStoreName) ? null : demoStoreName;
         _connection = new SqliteConnection(connectionString);
         _connection.Open();
         using var command = _connection.CreateCommand();
@@ -256,6 +267,27 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore, IHubRep
             command.Parameters.AddWithValue("$store", storeId.ToString("D"));
             return Convert.ToInt32(command.ExecuteScalar(), System.Globalization.CultureInfo.InvariantCulture);
         }
+    }
+
+    /// <summary>
+    /// Appends one demo SMS line to the local outbox (C-98 / DoD-A point 3).
+    /// </summary>
+    /// <remarks>
+    /// The provider is created per call and dropped: <see cref="DemoSmsProvider"/> is stateless
+    /// apart from an in-memory log nothing reads here, and its file append is already
+    /// synchronised by the OS. A failed append is swallowed by the provider on purpose — the
+    /// invoice has already been committed at this point, so a demo-only side effect must never
+    /// turn a successful issue into an error for the shop owner.
+    /// </remarks>
+    public DemoSmsMessage SendDemoSms(Guid storeId, string recipientPhone, string body, long? displayNumber)
+    {
+        if (storeId == Guid.Empty)
+        {
+            throw new ArgumentException("A store is required.", nameof(storeId));
+        }
+
+        var provider = new DemoSmsProvider(_demoSmsOutboxDirectory);
+        return provider.Send(recipientPhone, body, _demoStoreName, displayNumber);
     }
 
     public ReplicationBatch? ReadBatch(Guid storeId, int maxEntries, int maxBytes)
