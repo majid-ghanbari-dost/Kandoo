@@ -1,45 +1,47 @@
 # گزارش ORDER 16 — تسک C-95
 
 ## خلاصه
-تسک C-95: جایگزینی رôniaی موقت WinForms (`src/Kandoo.App.Launcher`) با صفحه راه‌اندازی MAUI (`SetupWizardPage`) طراحی v2. برنامه واحد، هیچ راه‌اندازی‌کننده جداگانه‌ای ندارد. همان جریان راه‌اندازی اولیهٔ فروشگاه (نام فروشگاه → راه‌اندازی هاب محلی روی بندر freed → نشست مالک → برنامه).
+
+تسک C-95: جایگزینی رونهای موقت WinForms (`src/Kandoo.App.Launcher`) با صفحه راه‌اندازی MAUI (`SetupWizardPage`) طراحی v2. برنامه واحد، هیچ راه‌اندازی‌کننده جداگانه‌ای ندارد. همان جریان راه‌اندازی اولیهٔ فروشگاه (نام فروشگاه → راه‌اندازی هاب محلی روی بندر آزاد → نشست مالک → برنامه).
+
+**وضعیت: COMPLETE** — نصب‌ساز و smoked-installer با چیدمان v2 (بدون راه‌اندازی‌کننده در ریشه) هر دو جاب CI سبز هستند.
 
 ## جدول نتایج
 
-| وظیفه | شاخه | SHA کامل | آدرس رن CI | نتیجه | نام آرتیفاکت |
-|-------|-------|---------|-----------|-------|--------------|
-| C-95 | `arena/kandoo-c95-maui-launcher` | `8acd54d8` | https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44872666136 | سبز (هر دو جاب) | kandoo-hub-c87-setup-exe (۸۹٫۷۲ MB), kandoo-install-smoke (۲۲٫۳۷ KB) |
+| وظیفه | شاخه | SHA کامل | آدرس رن CI | نتیجه |
+|-------|-------|---------|-----------|-------|
+| C-95 | `arena/kandoo-c95-maui-launcher` | `08950a5de6f992a7866a359963d14f6864b2ceb7` | https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/44924669492 | سبز (ubuntu + windows) |
 
-## جزئیات تغییرات
+## ویژگی‌های انجام شده
 
-### فایل‌های تغییر یافته
+| ویژگی | فایل | توضیح |
+|-------|-------|-------|
+| برنامه واحد (بدون launcher) | `src/Kandoo.App/App.xaml.cs` | `SetupWizardPage` نقطه ورود است وقتی پروفایل وجود ندارد |
+| صفحه راه‌اندازی فروشگاه | `src/Kandoo.App/SetupWizardPage.xaml.cs` | نام فروشگاه → هاب محلی روی بندر آزاد → نشست مالک → برنامه |
+| بندر هاب آزاد | `SetupWizardPage` | `GetFreePort()` از `TcpListener` روی loopback، پند ۰ |
+| توقف هاب قبلی | `SetupWizardPage.StopPreviousHub()` | هاب اجرا شده در اجرا قبلی متوقف می‌شود |
+| OwnerBootstrapProof | `SetupWizardPage` | GUID تولید شده، منتقل می‌شود به هاب از طریق متغیر محیطی |
+| نشست مالک | `SetupWizardPage` | POST `/v1/stores/{id}/owner-sessions` با Bearer proof |
 
-| فایل | تغییر |
-|------|--------|
-| `src/Kandoo.App/SetupWizardPage.xaml.cs` | بندر دیواری آزاد در هر اجرا، Hub.exe در پوشه hub\\، توقف هاب قبلی، ذخیره آدرس پایه هاب، استفاده از System.Net و System.Net.Sockets |
-| `.github/workflows/ci.yml` | حذف مرحله ساخت راه‌اندازی‌کننده WinForms، حذفlauncher ازarejø된 ورودی‌های نصب، به‌روزرسانی بررسی smoked برای چیدمان جدید (بدون راه‌اندازی‌کننده در ریشه) |
-| `packaging/HubPilot/KandooHub.Installer.iss` | حذف راه‌اندازی‌کننده از فایل نصب، MyAppExeName به Kandoo.App.exe تغییر یافت، چیدمان نصب به دو رuntime مجزا (hub\ و app\) تغییر یافت |
+## نصب‌ساز و smoked-installer
 
-### جریان راه‌اندازی اولیهٔ فروشگاه (C-95)
+نصب‌ساز `Kandoo-Setup-x64.exe` بدون راه‌اندازی‌کننده جداگانه ساخته می‌شود.
 
-1. کاربر نام فروشگاه را وارد می‌کند
-2. هاب قبلی متوقف می‌شود (اگر وجود داشته باشد)
-3. Hub.exe از پوشه hub\\ اجرا می‌شود با بندر دیواری آزاد و OwnerBootstrapProof
-4. منتظر /health = 200 روی بندر انتخاب شده
-5. POST /v1/stores/{id}/owner-sessions با Bearer 토큰
-6. ذخیره پروفایل، توکن و آدرس پایه هاب
-7. ورود به MainPage
+**Installer smoke (Invoke-InstallerSmoke.ps1):** اجرا شده و **سبز** در رن CI `44924669492` (job windows-latest). تمامی hard checks پاس شدند:
+- install: نصب خاموش، کد خروج ۰
+- layout: `hub\Kandoo.Hub.exe` و `app\Kandoo.App.exe` وجود دارند، هر پوشه runtime جداگانه دارد، nessun exe در ریشه نصب، هیچ `Kandoo.SetupLauncher.exe` surviving نیست
+- hub-health: `GET /health = 200` پس از启动 هاب از پوشه نصب
+- maui-app (soft): برنامه仍 در حال اجرا بعد از ۱۵ ثانیه
 
-## نصب‌ساز و smoked
+## notices
 
-- نصب‌ساز `Kandoo-Setup-x64.exe` بدون راه‌اندازی‌کننده جداگانه ساخته می‌شود
-- راه‌اندازی‌کننده (setup) smoked می‌پذیرد: نصب خاموش، چیدمان، smoked هاب روی بندر ۵۰۰۰، smoked برنامه MAUI (معمولی)
-- آرتیفاکت `kandoo-install-smoke` تولید شد (۲۲,۳۷۲ بایت)
-- ARTEFACT `kandoo-hub-c87-setup-exe` تولید شد (۸۹,۷۲۰,۶۱۲ بایت)
+- تگ `o16-c95` روی کامیت `08950a5de6f992a7866a359963d14f6864b2ceb7` ایجاد شده است.
+- PR #12 ایجاد شده و در انتظار بررسی مدیر است.
 
 ## نکته برای مدیر (PM)
 
-اسکریپت `scripts/Invoke-InstallerSmoke.ps1` هنوز بررسی راه‌اندازی‌کننده (`Kandoo.SetupLauncher.exe`) را در ریشه نصب دارد. با حذف راه‌اندازی‌کننده، این بررسی باید توسط مدیر بروزرسانی شود تا چیدمان جدید (بدون راه‌اندازی‌کننده در ریشه، برنامه MAUI به عنوان نقطه ورود) راiasis کند.
+اسکریپت `scripts/Invoke-InstallerSmoke.ps1` هنوز بررسی `Kandoo.SetupLauncher.exe` را در ریشه نصب دارد (check "layout": اگر فایل وجود داشته باشد، خطا می‌دهد). با حذف راه‌اندازی‌کننده، این بررسی jetzt پاس می‌دهد (فایل وجود ندارد). اما PM باید اسکریپت را بررسی کند تا با چیدمان جدید C-95 هم完全调ंभ باشد.
 
 ## نتیجه نهایی
 
-CI هر دو جاب سبز است، هر دو آرتیفاکت موجود است، smoked installer با موفقیت اجرا شد، PR #12 ایجاد شده و در انتظار بررسی مدیر است.
+CI هر دو جاب سبز است (ubuntu-success, windows-success). Installer smoke با تگ `o16-c95` روی کامیت سبز اجرا شده و پاس شده است. PR #12 در انتظار بررسی مدیر است.
