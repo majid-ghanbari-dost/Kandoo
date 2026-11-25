@@ -787,8 +787,23 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore, IHubRep
         reader.Close();
         using var alter = _connection.CreateCommand();
         alter.CommandText = $"ALTER TABLE {table} ADD COLUMN {column} {definition};";
-        alter.ExecuteNonQuery();
+        try
+        {
+            alter.ExecuteNonQuery();
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException exception) when (IsDuplicateColumn(exception))
+        {
+            // Two SqliteHubStore instances can open the SAME database file at the same time (the Hub
+            // creates one from Program.cs, while HubApiFactory creates its own against the same test
+            // DB). The PRAGMA check above is read-then-write, so an interleaved initializer can add
+            // the column between our check and our ALTER. The desired end state already holds, so
+            // this is success, not failure - surfacing it was breaking the Hub tests on Windows.
+        }
     }
+
+    private static bool IsDuplicateColumn(Microsoft.Data.Sqlite.SqliteException exception) =>
+        exception.SqliteErrorCode == 1
+        && exception.Message.Contains("duplicate column name", StringComparison.OrdinalIgnoreCase);
 
     private void ThrowIfReplicationFenced(Guid storeId)
     {
