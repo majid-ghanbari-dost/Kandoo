@@ -773,6 +773,22 @@ Per-screen match report: see `docs/reports/` (to be filed per group after CI ver
 
 ---
 
+## PM-22 INTEGRATION (2026-11-25) — ONE integration PR
+
+Branch `arena/4bb6cd51-kandoo` @ `932b17c`. Full report: `docs/reports/ORDER-16-PM22-INTEGRATION.md`.
+
+**All five MISSING heads merged** (verified ancestors): `c95` `c76046a`, `c90` `15aadc6`, `c91` `39bca96`, `c92` `992b0a0`, `c93-holoo-connector` `e73b1c9`, plus `pm/order21-selfcheck` `f4debb2`. Conflict policy: branch wins for code/CI/tests; `Invoke-InstallerSmoke.ps1` and `KandooHub.Installer.iss` came verbatim from `pm/order21-selfcheck` (verified identical, not edited).
+
+**Failed job `App tests + Windows + Android` fixed.** Verbatim errors: `Program.cs(12,23): error CS0017: Program has more than one entry point defined`; `Program.cs(29,26): error CS0103: The name 'HubLocator' does not exist in the current context`; `Program.cs(92,46): error CS0234: The type or namespace name 'StringContent' does not exist in the namespace 'System.Net'`; `SetupWizardPage.xaml.cs(126,32): error CS0103: The name 'hubDir' does not exist in the current context`. Fixes: `DISABLE_XAML_GENERATED_MAIN` on the windows target only (with `Program.Main` now performing the WinUI startup itself), `using Kandoo.App.Logic;`, `System.Net.Http.StringContent`, and re-deriving `hubDir` from the resolved exe. Three further chained errors then surfaced and were fixed: MSB4025 (XML comment with `--`), CS0029 (lambda parameter shadowing the discard), CS1729 (`ReturnsPage` missing the settings constructor), XFC0009 (`BorderBrush` → `Stroke`/`StrokeThickness`).
+
+**Also fixed:** `SQLite Error 1: 'duplicate column name: server_key_issued_at'` in the Windows Hub tests — `EnsureColumn` is read-then-write and two `SqliteHubStore` instances initialize the same test DB concurrently; a duplicate-column error now means the desired state already holds.
+
+**Gate restored:** the branch's `ci.yml` had lost ~240 lines vs `main`, including the entire installer-smoke block. Rebuilt as `main + the C-93 Holoo test steps` so the M-009 gate actually exists.
+
+**CI:** `932b17c` green on `Build and test (ubuntu-latest)` and `Build and test (windows-latest)` — [45571592358](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/45571592358). `SMOKE_ALL_HARD_CHECKS_PASSED`; artifacts `kandoo-hub-c87-setup-exe` (89,838,429 B) and `kandoo-install-smoke` (22,918 B). The `Android 10 emulator` job stays red under `continue-on-error` (PM-16), same as on `main`.
+
+**Standing constraints unchanged:** lane does not merge or close; PM merges the ONE PR then closes #12/#13/#14/#15/#16/#18/#19. E-72 round-3 standby.
+
 ## MANAGER DEVIATION RULINGS (2026-11-24, exec-manager)
 
 Read from `AGENT_HANDOFF.md` @ `7e55bf6`. Manager verification results and required corrective actions:
