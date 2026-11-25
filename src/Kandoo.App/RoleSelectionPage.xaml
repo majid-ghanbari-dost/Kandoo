@@ -11,8 +11,8 @@
                   Padding="{StaticResource PaddingSpace5}"
                   HorizontalOptions="Fill"
                   VerticalOptions="Start">
-                <Label Grid.Row="0" Style="{StaticResource TitleStyle}" Text="کندو" />
-                <Label Grid.Row="1" Style="{StaticResource SectionTitleStyle}" Text="انتخاب نقش کاربر" />
+                <Label Grid.Row="0" Style="{StaticResource TitleStyle}" Text="به کندو خوش آمدید" />
+                <Label Grid.Row="1" Style="{StaticResource SectionTitleStyle}" Text="نقش خود را انتخاب کنید" />
                 <Label Grid.Row="2" x:Name="CurrentRoleLabel" Style="{StaticResource BodyStyle}" />
                 <Label Grid.Row="3"
                        Style="{StaticResource DemoBannerStyle}"
@@ -20,22 +20,26 @@
                 <Button Grid.Row="4"
                         x:Name="StoreButton"
                         Style="{StaticResource PrimaryButtonStyle}"
-                        Text="فروشگاه نمونه"
+                        Text="فروشگاه"
                         Clicked="OnStoreClicked"
-                        SemanticProperties.Description="انتخاب نقش فروشگاه نمونه" />
+                        SemanticProperties.Description="انتخاب نقش فروشگاه: فاکتور، کالا و مشتری‌های فروشگاه خودم" />
                 <Button Grid.Row="5"
                         x:Name="CustomerButton"
                         Style="{StaticResource SecondaryButtonStyle}"
-                        Text="مشتری نمونه"
+                        Text="مشتری"
                         Clicked="OnCustomerClicked"
-                        SemanticProperties.Description="انتخاب نقش مشتری نمونه در اندروید" />
+                        SemanticProperties.Description="انتخاب نقش مشتری: فاکتورهای خریدم را یک‌جا ببینم" />
                 <Button Grid.Row="6"
                         x:Name="BothButton"
                         Style="{StaticResource SecondaryButtonStyle}"
-                        Text="فروشگاه و مشتری نمونه"
+                        Text="هر دو"
                         Clicked="OnBothClicked"
-                        SemanticProperties.Description="انتخاب هر دو نقش در اندروید" />
-                <Label Grid.Row="7" x:Name="PlatformNoteLabel" Style="{StaticResource BodyStyle}" />
+                        SemanticProperties.Description="انتخاب هر دو نقش: هم فروشگاه دارم، هم مشتری هستم" />
+                <VerticalStackLayout Grid.Row="7" Spacing="{StaticResource Space1}">
+                    <Label Style="{StaticResource CaptionStyle}"
+                           Text="هر وقت بخواهید می‌توانید از بخش «نقش‌ها» عوض کنید." />
+                    <Label x:Name="PlatformNoteLabel" Style="{StaticResource BodyStyle}" />
+                </VerticalStackLayout>
                 <Button Grid.Row="8"
                         x:Name="BackButton"
                         Style="{StaticResource SecondaryButtonStyle}"

@@ -348,6 +348,24 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+      # T3 stage 3-6: one screenshot per Windows screen as a CI artifact, so a screen-vs-board
+      # comparison is evidence and not a claim. Runs after the MAUI Windows publish above.
+      - name: Capture Windows screen screenshots (C-96)
+        continue-on-error: true
+        shell: pwsh
+        run: scripts/Capture-WindowsScreens.ps1 -AppDirectory artifacts/Kandoo.App-win-x64 -ArtifactDirectory artifacts
+
+      - name: Upload Windows screen screenshots (C-96)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kandoo-windows-screens-c96
+          path: |
+            artifacts/screens/*.png
+            artifacts/screens-manifest.json
+          if-no-files-found: warn
+          retention-days: 7
+
       - name: Install Inno Setup (C-87-fix-12)
         shell: pwsh
         run: |
