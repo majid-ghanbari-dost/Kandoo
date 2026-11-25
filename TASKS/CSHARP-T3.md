@@ -52,7 +52,15 @@ Android APK release build (C-97 APK), accounting, Holoo live, SMS real, hosting,
 - Hotfix cycles from the PO test reports outrank new work (M-010).
 
 ---
-**Status:** DISPATCHED (T0 2026-11-25) — ONE C# agent. Stage 1 DONE-GREEN (PR #21, PO merges). Stage 2 GREEN/PARTIAL (`o17-C-98`, run 45626612556) + stage 2b demo-SMS fix GREEN (`o17-C-98-SMS`, run 45629840285). Stage 3 PARTIAL (`o17-C-96-G1V`, run 45634326798). Two decisions owed by PM: `Q-C98-01` (who serves the customer link) and `Q-C98-02` (Setup board vs SMS verification).
+**Status:** all green stages below, one line each (branch `arena/4bb6cd51-kandoo` throughout; nothing merged).
+
+- **Stage 1** — DONE-GREEN (pre-existing): PR #21, runs 45603452519 / 45603453470.
+- **Stage 2** — GREEN: tag `o17-C-98`, run https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/45626612556 — `scripts/demo-check.ps1` + Persian `RUN-LOCAL.md`, `C98_RESULT PASS_WITH_GAPS passed=6`.
+- **Stage 2b** — GREEN: tag `o17-C-98-SMS`, run https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/45629840285 — demo SMS wired into the Hub, point 7 now PASS, `passed=7`.
+- **Stage 3** — GREEN CI, **PARTIAL** screen match: tag `o17-C-96-G1V`, run https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/45634326798 — role-selection copy matches its board; Setup does not (Q-C98-02); screenshots 1/10 distinct.
+- **Stage 4** — GREEN: tag `o17-C-96-G2V`, run https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/45638750569 — report `docs/reports/ORDER-17-C-96-G2V.md`; fixed the app↔Hub invoice wire contract (three defects, issuing an invoice from the app was impossible) with tests. Screen match PARTIAL (Q-C98-03: no invoices read route).
+
+**Decisions owed by PM before further screen work:** `Q-C98-01` (who serves the customer invoice link), `Q-C98-02` (Setup board vs SMS verification), `Q-C98-03` (invoices read route).
 
 **Stage 2 — GREEN (framework) / PARTIAL (demo chain).** branch `arena/4bb6cd51-kandoo`, tag `o17-C-98`, run https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/45626612556 — `C98_RESULT PASS_WITH_GAPS passed=6 failed=0 gaps=1`, points 1-6 PASS in CI, artifact `kandoo-c98-demo-check`. PARTIAL because DoD-A point 3 is not demonstrable: point 7 `GAP(sms-outbox)` — `Kandoo.Hub` never calls `DemoSmsProvider.Send()`, so no outbox line and therefore no customer link (point 8 SKIP). Fixing that next, before Stage 3, per "a DoD-A fix ALWAYS outranks the next stage".
 
