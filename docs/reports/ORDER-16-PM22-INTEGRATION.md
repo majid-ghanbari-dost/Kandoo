@@ -220,3 +220,20 @@ Kandoo.Hub.Tests.ManagementAccountingTests.C94_AccountingRouteIsStoreScoped:
 `mergeable: MERGEABLE`. آرتیفکت‌ها: `kandoo-install-smoke` (۲۴,۰۱۳ بایت)، `kandoo-hub-c87-setup-exe` (۸۹,۸۴۳,۴۲۱ بایت).
 
 **نکته برای PM:** بازنویسی `main` به‌صورت orphan یعنی هر PR لِین دیگری هم با همین تعارض روبه‌روست؛ این ساختار باید اصلاح شود وگرنه هر ادغام بعدی نیازمند `--allow-unrelated-histories` و حل دستی است.
+
+---
+
+## ۹. درس‌های ثبت‌شده برای جلوگیری از تکرار
+
+| تله | نشانه | راه‌حل |
+|---|---|---|
+| کامنت XML نمی‌تواند `--` داشته باشد | `MSB4025` هنگام بارگذاری csproj | نام سوییچ را در کامنت XML ننویسید؛ csproj را با XML parser قبل از push اعتبارسنجی کنید |
+| `Border` در MAUI `Brush/BorderBrush` ندارد | `XamlC XFC0009` | `Stroke` + `StrokeThickness` |
+| lambda با پارامتر `_` discard را سایه می‌اندازد | `CS0029` | پارامتر را نام‌دار کنید (`callbackParams`) |
+| WinUI خودش `Main` می‌سازد | `CS0017` | `DISABLE_XAML_GENERATED_MAIN` برای target ویندوز + انجام دستی استارت WinUI در `Program.Main` |
+| `EnsureColumn` چک-سپس-نوشتن و دو نمونه روی یک فایل | `duplicate column name` | خطای duplicate-column را موفقیت تلقی کنید |
+| `main` اسنپ‌شات orphan است | PR = CONFLICTING با وجود هم‌پوشانی محتوا | `--allow-unrelated-histories` + بررسی `comm -23` که هیچ فایلی از main حذف نشود |
+| تست‌ها از main می‌آیند ولی فایل‌های پشتیبان نه | تست C-94 با `ISSUED_INVOICE_IMMUTABLE` | فایل‌های پشتیبان C-94 را هم از main بگیرید (`SqliteHubStore`, `SqliteHubTransaction`, `HubApiFirstEndpoints`, `HubApiTestHarness`) |
+| لاگ و آرتیفکت CI روی blob است و از sandbox قابل دانلود نیست | `EOF` در `gh run view --log` و `gh run download` | خطوط evidence را به‌صورت `::notice::` annotation منتشر کنید (از `/check-runs/{id}/annotations` خواندنی است) |
+
+نکتهٔ آخر مهم است: پیش از این هیچ لِینی نمی‌توانست evidence خودش را نقل کند و ممیز هم همین مشکل را داشت. `ci.yml` اکنون خطوط `SMOKE_STEP`، `SMOKE_OUTCOME` و `SMOKE_ALL_HARD_CHECKS_PASSED` را به‌صورت annotation منتشر می‌کند.
