@@ -26,8 +26,8 @@
 
             <!-- Hub disconnected -->
             <Border Style="{StaticResource CardStyle}"
-                    BorderBrush="{StaticResource Review}"
-                    BorderThickness="2">
+                    Stroke="{StaticResource Review}"
+                    StrokeThickness="2">
                 <VerticalStackLayout Style="{StaticResource RowStackStyle}"
                                      HorizontalOptions="Center">
                     <Label Style="{StaticResource SectionTitleStyle}"
@@ -47,8 +47,8 @@
 
             <!-- Unexpected error -->
             <Border Style="{StaticResource CardStyle}"
-                    BorderBrush="{StaticResource Review}"
-                    BorderThickness="2">
+                    Stroke="{StaticResource Review}"
+                    StrokeThickness="2">
                 <VerticalStackLayout Style="{StaticResource RowStackStyle}"
                                      HorizontalOptions="Center">
                     <Label Style="{StaticResource SectionTitleStyle}"
