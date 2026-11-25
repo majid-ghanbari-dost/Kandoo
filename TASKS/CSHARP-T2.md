@@ -85,9 +85,9 @@ Execution order (M-009 §1):
 4. Then continue C-96 remaining groups, C-97, C-98 (Phase 3 / Queue unchanged).
 
 ---
-**Status:** PM-22 EXECUTED (2026-11-25) — integration PR open for PM merge.
+**Status:** PM-22 EXECUTED (2026-11-25) — integration PR **#21** open for PM merge, CI green on tip `657641c`.
 
-- **Merges:** all five MISSING heads (`c95` `c76046a`, `c90` `15aadc6`, `c91` `39bca96`, `c92` `992b0a0`, `c93-holoo-connector` `e73b1c9`) plus `pm/order21-selfcheck` `f4debb2` are ancestors of `arena/4bb6cd51-kandoo` @ `932b17c`. Conflict policy applied: branch wins for code/CI/tests; `Invoke-InstallerSmoke.ps1` + `KandooHub.Installer.iss` taken verbatim from `pm/order21-selfcheck` and verified identical to it. Smoke script not edited.
+- **Merges:** all five MISSING heads (`c95` `c76046a`, `c90` `15aadc6`, `c91` `39bca96`, `c92` `992b0a0`, `c93-holoo-connector` `e73b1c9`) plus `pm/order21-selfcheck` `f4debb2` are ancestors of `arena/4bb6cd51-kandoo` @ `657641c`. Conflict policy applied: branch wins for code/CI/tests; `Invoke-InstallerSmoke.ps1` + `KandooHub.Installer.iss` taken verbatim from `pm/order21-selfcheck` and verified identical to it. Smoke script not edited.
 - **Failed job fixed:** `App tests + Windows + Android` / `Publish self-contained Windows app and zip` was red from four compile errors (CS0017 duplicate Main, CS0103 `HubLocator`, CS0234 `StringContent`, CS0103 `hubDir`), then three further chained ones (MSB4025 XML comment, CS0029 lambda shadowing, CS1729 `ReturnsPage`, XFC0009 `BorderBrush`). Verbatim messages and fixes: `docs/reports/ORDER-16-PM22-INTEGRATION.md`.
 - **Also fixed:** `duplicate column name: server_key_issued_at` in the Windows Hub tests (concurrent `EnsureColumn`), and the branch's `ci.yml` had lost main's installer-smoke gate — restored as `main + C-93 Holoo steps`.
 - **CI:** `932b17c` green on both jobs, run [45571592358](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/45571592358). Gate met: `SMOKE_ALL_HARD_CHECKS_PASSED`, artifacts `kandoo-hub-c87-setup-exe` (89,838,429 B) and `kandoo-install-smoke` (22,918 B).
