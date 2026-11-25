@@ -21,6 +21,8 @@ PR #21 open, gate green (runs 45603452519 / 45603453470; gate runs 45600084428 /
 4. Green = CI green + headless steps proven in CI + honest list of what stays PO-run (Holoo read-only import on `HolooCopy`; capture folder -> review item). Tag `o17-C-98` on the green commit.
 
 ## Stage 3 — C-96 group 1 verify/fix (~T+8h–T+14h)
+**DONE — PARTIAL (green CI).** branch `arena/4bb6cd51-kandoo`, tag `o17-C-96-G1V`, run https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/45634326798 (CI ubuntu+windows success). Report: `docs/reports/ORDER-17-C-96-G1V.md`. **Role selection** now matches `Role-Select-v2.dc.html` on every text item (title, heading, three role names, footer line) — fixed. **Setup** does NOT match `Setup.dc.html`: the board's step 2 is manager name + mobile + SMS code, the built step 2 starts the local Hub, and real SMS is out of sprint — framing it as green would require relabelling a screen to describe work it does not do, so it is `docs/questions/Q-C98-02.md` (A/B/C/D). **Screenshots: 1/10 distinct** — the capture script has no UI automation, so it can only see the launch screen; the artifact states `SCREENS_DISTINCT=1/10` with a warning instead of shipping ten copies of one frame (which is what the first attempt did, all exactly 197,361 B).
+
 First-run Setup (`docs/design/Setup.dc.html`, 3 steps) + role selection (`docs/design/Role-Select-v2.dc.html`) vs boards. Read `docs/design/README.md` FIRST, then behaviour from `docs/product-ux-spec.md`. Screenshot artifact per screen next to its board + report line per screen (matches / differs and why). Fixes go on your own branch. Tag `o17-C-96-G1V` when CI green.
 
 ## Stage 4 — C-96 group 2 verify/fix (~T+14h–T+20h)
@@ -50,7 +52,7 @@ Android APK release build (C-97 APK), accounting, Holoo live, SMS real, hosting,
 - Hotfix cycles from the PO test reports outrank new work (M-010).
 
 ---
-**Status:** DISPATCHED (T0 2026-11-25) — ONE C# agent; stage 1 DONE-GREEN (PR #21, PO merges); start stage 2 immediately.
+**Status:** DISPATCHED (T0 2026-11-25) — ONE C# agent. Stage 1 DONE-GREEN (PR #21, PO merges). Stage 2 GREEN/PARTIAL (`o17-C-98`, run 45626612556) + stage 2b demo-SMS fix GREEN (`o17-C-98-SMS`, run 45629840285). Stage 3 PARTIAL (`o17-C-96-G1V`, run 45634326798). Two decisions owed by PM: `Q-C98-01` (who serves the customer link) and `Q-C98-02` (Setup board vs SMS verification).
 
 **Stage 2 — GREEN (framework) / PARTIAL (demo chain).** branch `arena/4bb6cd51-kandoo`, tag `o17-C-98`, run https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/45626612556 — `C98_RESULT PASS_WITH_GAPS passed=6 failed=0 gaps=1`, points 1-6 PASS in CI, artifact `kandoo-c98-demo-check`. PARTIAL because DoD-A point 3 is not demonstrable: point 7 `GAP(sms-outbox)` — `Kandoo.Hub` never calls `DemoSmsProvider.Send()`, so no outbox line and therefore no customer link (point 8 SKIP). Fixing that next, before Stage 3, per "a DoD-A fix ALWAYS outranks the next stage".
 
