@@ -420,6 +420,7 @@ jobs:
           $proc = Start-Process -FilePath $setup -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', "/DIR=$installDir", "/LOG=$setupLog" -Wait -PassThru
           if ($proc.ExitCode -ne 0) { throw "Installer exit code $($proc.ExitCode)" }
           Write-Host "SMOKE_STEP=1_installer PASS"
+          Write-Host "::notice::SMOKE_STEP=1_installer PASS"
 
           # 2. Layout assertions (C-95: no separate launcher; MAUI app is the entry point)
           # Each component (Hub, App) has its own self-contained runtime in its own folder.
@@ -430,6 +431,7 @@ jobs:
             if (Test-Path -LiteralPath $f -PathType Leaf) { throw "UNEXPECTED $f in the install root" }
           }
           Write-Host "SMOKE_STEP=2_layout PASS"
+          Write-Host "::notice::SMOKE_STEP=2_layout PASS"
 
           # 3. Hub smoke from INSTALLED folder (fixed port 5000 for smoke harness)
           $hubGuid = [guid]::NewGuid().ToString()
@@ -449,6 +451,7 @@ jobs:
           if (-not $hubOk) { throw "Hub /health did not return 200 within 40s" }
           Write-Host "SMOKE_HUB_PASS proof=$hubGuid"
           Write-Host "SMOKE_STEP=3_hub PASS"
+          Write-Host "::notice::SMOKE_STEP=3_hub PASS"
           if (-not $hubProc.WaitForExit(5000)) { $hubProc.Kill() }
 
           # 4. MAUI app smoke (SOFT)
@@ -461,11 +464,36 @@ jobs:
             Write-Host "::warning::SMOKE_MAUI_EXIT_CODE=$($mauiProc.ExitCode)"
           }
           Write-Host "SMOKE_STEP=4_maui PASS"
+          Write-Host "::notice::SMOKE_STEP=4_maui PASS"
 
           # 5. Copy smoke files into workspace for artifact upload
           Copy-Item -Path "$installDir\setup.log" -Destination "$env:GITHUB_WORKSPACE\artifacts\setup.log" -Force -ErrorAction SilentlyContinue
           Copy-Item -Path "$installDir\smoke.txt" -Destination "$env:GITHUB_WORKSPACE\artifacts\smoke.txt" -Force -ErrorAction SilentlyContinue
           "Installer smoke (C-95 layout): all hard checks passed" | Out-File -FilePath $outcomeFile -Encoding utf8
+          Get-Content -LiteralPath $outcomeFile | ForEach-Object { Write-Host "::notice::SMOKE_OUTCOME=$_" }
+
+      # PM-22 / M-009 §5: the PM and the manager audit this run from the GitHub API, where step
+      # logs and step summaries are not readable from a sandbox (blob-storage download is blocked).
+      # Re-emit the smoke lines as ::notice:: annotations, which ARE readable through
+      # /check-runs/{id}/annotations, so the verbatim SMOKE_STEP/SMOKE_ALL_HARD_CHECKS_PASSED lines
+      # can be quoted without a log pull. Reads the step's own output; nothing here changes the smoke.
+      - name: Publish smoke lines as annotations (M-009 §5)
+        if: always()
+        shell: pwsh
+        run: |
+          # The SMOKE_STEP=1..4 and SMOKE_OUTCOME= lines are already emitted as ::notice::
+          # annotations by the smoke step itself. Add the artifact/evidence pointers here.
+          $outcome = "$env:GITHUB_WORKSPACE\artifacts\smoke-outcome.txt"
+          Write-Host "::notice::SMOKE_OUTCOME_FILE_PRESENT=$(Test-Path -LiteralPath $outcome)"
+          # smoke-outcome.txt is written by the smoke step ONLY after every hard check passed
+          # (the script exits before that line on any failure), so its presence is the evidence.
+          if (Test-Path -LiteralPath $outcome) {
+            Write-Host "::notice::SMOKE_ALL_HARD_CHECKS_PASSED"
+          } else {
+            Write-Host "::error::SMOKE_ALL_HARD_CHECKS_PASSED not reported: no smoke-outcome.txt"
+          }
+          Write-Host "::notice::INSTALL_SMOKE_ARTIFACT=kandoo-install-smoke"
+          Write-Host "::notice::SETUP_EXE_ARTIFACT=kandoo-hub-c87-setup-exe"
 
       - name: Upload install smoke artifact (C-87-fix-12)
         if: always()
