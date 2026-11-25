@@ -52,4 +52,4 @@ Android APK release build (C-97 APK), accounting, Holoo live, SMS real, hosting,
 ---
 **Status:** DISPATCHED (T0 2026-11-25) — ONE C# agent; stage 1 DONE-GREEN (PR #21, PO merges); start stage 2 immediately.
 
-**Stage 2 — IN PROGRESS (not yet green).** `scripts/demo-check.ps1` + Persian `RUN-LOCAL.md` written, wired into CI; awaiting the CI run URL. Stage 2 is NOT green: two demo points are product gaps (SMS outbox, customer link), reported as GAP by the script.
+**Stage 2 — GREEN (framework) / PARTIAL (demo chain).** branch `arena/4bb6cd51-kandoo`, tag `o17-C-98`, run https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/45626612556 — `C98_RESULT PASS_WITH_GAPS passed=6 failed=0 gaps=1`, points 1-6 PASS in CI, artifact `kandoo-c98-demo-check`. PARTIAL because DoD-A point 3 is not demonstrable: point 7 `GAP(sms-outbox)` — `Kandoo.Hub` never calls `DemoSmsProvider.Send()`, so no outbox line and therefore no customer link (point 8 SKIP). Fixing that next, before Stage 3, per "a DoD-A fix ALWAYS outranks the next stage".
