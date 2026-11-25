@@ -106,6 +106,9 @@ public partial class SetupWizardPage : ContentPage
         // dev layout: .\hub\). Error lists every path checked.
         var appDir = Path.GetDirectoryName(Environment.ProcessPath) ?? string.Empty;
         var hubExe = HubLocator.ResolveHubExe(appDir);
+        // HOTFIX-1: the Hub must start in its OWN folder ({install}\hub or .\hub), not the app
+        // folder. Deriving it from the resolved exe keeps both layouts correct.
+        var hubDir = Path.GetDirectoryName(hubExe) ?? appDir;
 
         // C-95: Generate OwnerBootstrapProof so the First-Run Setup can configure
         // owner bootstrap without editing JSON or using PowerShell.
