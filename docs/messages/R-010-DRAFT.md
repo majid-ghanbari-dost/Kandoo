@@ -19,6 +19,8 @@ MANAGER-TO-PM.md the manager files R-NNN directly; paste the body below there.
    - `CI` — https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/45596423131 — `Build and test (ubuntu-latest)` = success, `Build and test (windows-latest)` = success.
    - `Kandoo App` — https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/45596423034 — `App tests + Windows + Android` = **success**; `Android 10 emulator launch + 15s liveness` = failure under `continue-on-error: true` (PM-16; identical to `main`, does not fail the workflow — run conclusion is `success`).
 
+**Tip-drift note:** the last code change on this branch is `657641c` (CI wiring) / `cc3f106` (C-94 restore); everything after it is documentation only. The runs cited above are green and their commit `f62fb2e` differs from later docs-only commits only in `docs/` and `TASKS/`. The PM should verify the head SHA at merge time, not a SHA quoted here.
+
 4. **Verbatim SMOKE lines** (read from `/check-runs/{windows job}/annotations` on run `45596423131`, not from a log pull — see item 6):
    ```
    SMOKE_STEP=1_installer PASS
