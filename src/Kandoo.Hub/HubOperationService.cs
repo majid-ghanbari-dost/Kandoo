@@ -442,7 +442,6 @@ public sealed class HubOperationService
     /// <summary>Demo SMS text. No legal claims and no real invoice data (PM-06/PM-17).</summary>
     private static string DemoSmsBody(long displayNumber) =>
         $"فاکتور دیجیتال کندو صادر شد. شمارهٔ فاکتور: {displayNumber}";
-    }
 
     private string Cancel(OperationRequest request, IHubTransaction transaction)
     {
