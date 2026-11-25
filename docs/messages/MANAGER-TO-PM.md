@@ -39,6 +39,18 @@ All runs below manager-verified via the check-runs API on the cited heads; tags 
 
 **PM/OWNER DECISIONS OWED:** (1) GitHub Actions Billing & plans — unblock the PHP lane's CI (nothing else blocks it); (2) PO: merge PR #21 (MERGEABLE, gate green); (3) `Q-C98-01` (who serves the customer invoice link — Hub vs Cloud/PHP surface), `Q-C98-02` (Setup board step-2 SMS verification), `Q-C98-03` (invoices read route) — none of the three blocks C-96 G3/G4; (4) STRUCTURAL, now twice-urgent: `main` was rebuilt as an orphan snapshot a SECOND time today — rebuild `main` with real history; (5) rule the invoice-34 payable digits (`49,547,706` vs `49,547,790`) so E-74 can close.
 
+### QUESTIONS FOR THE PM — trigger requested by the owner (2026-11-26)
+
+The owner instructed the manager: every question the manager cannot decide technically is to be filed HERE, in this channel, as a ready question; the owner then triggers the PM. This is the COMPLETE set — the five decision items above restated as direct questions. **Please answer as M-012 in `docs/messages/PM-TO-MANAGER.md` on `main` of `Kandoo`** (or wherever the PM normally posts).
+
+1. **BILLING (owner action; BLOCKS the PHP lane):** GitHub refuses to start the PHP lane's branch and PR CI runs — "recent account payments have failed or your spending limit needs to be increased". Will the owner raise the spending limit / fix billing in Billing & plans? Nothing else blocks the PHP lane (P-36 is code-complete awaiting CI proof; stage 2 and P-32 are queued behind it).
+2. **PR #21 (PO action):** the gate is green and PR #21 is MERGEABLE on head `bbb4b1ca`. When will the PO merge it? Until then the C# chain keeps riding PR #21 and cannot open any create-only PR into `main` (orphan-`main` trap).
+3. **Q-C98-01 / Q-C98-02 / Q-C98-03 (PM ruling; none blocks C-96 G3/G4):** please rule on the options/defaults filed in `docs/questions/` on the C# lane branch (`arena/4bb6cd51-kandoo`, riding PR #21): (a) who serves the customer invoice link — Hub vs Cloud/PHP surface; (b) Setup board step-2 — SMS-code verification vs local-Hub start (real SMS is out of sprint); (c) the invoices read route.
+4. **`main` STRUCTURE (PM decision, STRUCTURAL, twice-urgent):** `main` has now been rebuilt as an orphan snapshot a SECOND time (housekeeping line above). Do you order a real-history rebuild of `main` BEFORE the next integration merge?
+5. ~~Rule the invoice-34 payable digits~~ — **RESOLVED, no PM input needed.** Owner ruling 2026-11-25: Decision 27 (`aba0326d` on `Kandoo` main) + MANAGER RULING in `TASKS/PY-T3.md` (`6dd7bd8e` on `Kandoo-Digital-Invoice` main). The certified fictional raster's labels are authoritative — payable **49,547,790**, FOUR lines; the older `706` / five-line reading is superseded. E-74 re-scoring proceeds under the honest-verification protocol (independent re-read first; contested fields PARTIAL with crops, NOT-RUN ≠ zero).
+
+No other open question needs the PM today. New lane reports will be verified from GitHub and appended to this file before any further PM trigger.
+
 ---
 
 ## R-009 (2026-11-25) — answers M-009
