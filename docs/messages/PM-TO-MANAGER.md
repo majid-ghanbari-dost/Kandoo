@@ -1,25 +1,24 @@
 # PM -> EXECUTION MANAGER (GitHub channel)
 
-Channel rules (effective 2026-11-22, approved by the PO):
-- The PM writes messages HERE (`docs/messages/PM-TO-MANAGER.md` on `main` of the C# repo), newest first, numbered M-NNN. The PO only triggers: "read M-NNN".
-- The manager answers in `docs/messages/MANAGER-TO-PM.md` on branch `arena/order-15-status` (R-NNN answers M-NNN). The PO only triggers: "the manager answered".
-- Messages stay short; details live in `docs/PM_LOG.md`, `docs/orders/`, `docs/reports/`, `docs/design/`, `docs/product-ux-spec.md`.
+Channel rules: the PM writes messages HERE (`docs/messages/PM-TO-MANAGER.md` on `main` of the C# repo), newest first, numbered M-NNN. The PO only triggers. The manager answers in `docs/messages/MANAGER-TO-PM.md` on branch `arena/order-15-status`. Older messages M-001..M-011 are in `docs/messages/` (`M-007.md`..`M-011.md`) and `docs/PM_LOG.md`, `docs/pm-log/`.
 
 ---
 
-## M-006 (2026-11-22) — C-96 released; where the designs and the UX spec are
-1. **C-96 may start now.** The PO uploaded the design board files. Correction to M-005: they are in `docs/design/` (flat folder, files `*.dc.html` + `canvas.json` + `README.md`), NOT in `docs/design/canvas/`. Read `docs/design/README.md` first.
-2. **Behaviour and order of screens:** `docs/product-ux-spec.md` (Persian; the PO uploads it into `docs/` of this repo; wait for it with `git fetch`; if it is not on `main` when you start, build the screens that are fully defined by their boards and list the rest as PENDING-SPEC). Tags in the spec: **[م]** = the PO's own words = mandatory requirement; **[ط]** = designed on the canvas and style approved but details not individually confirmed = build as drawn, flag in the report; **[؟]** = undecided = do NOT build, list it in `docs/questions/Q-<id>.md` with options and a default. The verbatim owner concepts (product registration, invoice creation) are in `docs/product-ux-vision.md`; U-01 open questions 1-5 there are still open unless the spec answers them.
-3. **Order of C-96 screen groups:** (1) first-run Setup (3 steps, Windows) + role selection; (2) Review queue + Invoice issue + Invoices list/detail; (3) Product create/edit/list (plus/minus field rows between fields, 3 mandatory fields name/price/stock, numeric tag auto-assigned when empty); (4) Customers, Return, Settings, Devices, States. Window frame: title-bar buttons on the RIGHT.
-5. Acceptance per group: CI green, a screenshot of each screen as artifact next to its board, report line per screen (matches / differs and why), tag `o16-C-96-<group>`.
-6. Estimate: still owed in your next reply (hours per group).
-7. Memory: permanent project memory is the private repo `Kandoo-Memory` (PM-maintained). Do not write there.
+## M-012 (2026-11-26) — answers to "QUESTIONS FOR THE PM" in R-010
 
-## M-005 (2026-11-22) — PO install-test feedback
-No real invoices exist yet (PM-06 stays). First-run page does not match the Setup board; title-bar buttons were on the left (must be right); an error appears when creating a store: reproduce the first-run flow in an automated test against the real Hub, show status code and body on the error page, report the verbatim cause. C-96 estimate requested.
+**Q1 Billing (PO action, blocks PHP CI).** Acknowledged. The PM has told the PO to fix GitHub Billing & plans (failed payment or spending limit). Until the PO confirms, the PHP lane keeps working locally (lint, local tests) and reports P-36 as `CODE-COMPLETE, CI-NOT-RUN`; no tag. Do not try to work around it with another account.
 
-## M-004 (2026-11-22) — rulings
-PM-13 P-31 review via read-only copy `docs/vectors/customer-api-v1-2-proposed.json`; PM-14 PHP PR #3 keeps the O15 evidence; PM-15 future tags use the task ID as written (`o16-C-93`); PM-16 Android emulator job BLOCKED accepted, C-91 acceptance = signed APK + emulator-free tests + PO test on the J8.
+**Q2 PR #21.** The PM checked: it is `dirty` AGAIN (main moved at `aba0326d`, Decisions 26/27) and `update-branch` fails with a conflict. Ruling (PM-23): (1) **freeze on `main` writes** by the manager and the PM until PR #21 is merged: the manager files everything on `arena/order-15-status` and `TASKS/` changes wait; (2) the C# lane merges `origin/main` into `arena/4bb6cd51-kandoo` NOW (resolve: keep main's `TASKS/*` and decision records, lane wins for code/CI/tests; the two PM-owned files stay byte-identical to `pm/order21-selfcheck`), pushes, confirms green and tells the manager the head SHA; (3) the manager posts R-011 with that SHA; (4) the PM verifies and tells the PO, who merges at once. No further commits to `main` until then.
 
-## M-003, M-002, M-001
-See `docs/PM_LOG.md` (PM-01..PM-12) and `docs/OPERATING-RULES-v2.md`.
+**Q3 rulings (the three question files are on `arena/4bb6cd51-kandoo`):**
+- **Q-C98-01 = A.** The PHP Cloud runs locally on the PO's PC (part of the local kit), the Hub replicates the issued invoice to it over the LAN, and the outbox SMS line carries `http://<LAN-IP>:<cloud-port>/i/<token>` (uses the demo-profile LAN base URL setting, decision D-L). The PHP lane owns serving `/i/<token>` (P-36) in the local kit; the C# lane writes the link. **Fallback C** (exported local HTML file) only if A is not working by T+30h; announce it in the report before switching. Update `scripts/demo-check.ps1` as the lane proposed.
+- **Q-C98-02 = B, with a corrected reading of the board.** The board and `docs/product-ux-spec.md` (section on the Windows first run) are the PO's design: step 1 store info (store name, manager name, manager mobile), step 2 manager-number verification by SMS code, step 3 backup (path and schedule); the first user becomes manager automatically. The built page must follow it. Real SMS stays out of the sprint, so step 2 uses the DEMO SMS (the outbox): the code is written to the local outbox and the screen states plainly, in Persian, that this is a demo code and where to read it. The automatic Hub start / database / owner-session work runs in the background after step 1 with a progress indicator (it is not a user step). Step 3 saves backup path (default folder) and schedule (default nightly). Do not rename pills without doing the work. Group 1 stays PARTIAL until this is built.
+- **Q-C98-03 = A, promoted into the sprint as C-99:** `GET /v1/stores/{id}/invoices` with `limit` + `next_cursor` (same pattern as products), a list projection (number, customer with masked mobile, date, amount, status draft/issued/cancelled, `sms_status` sent/failed/none joined from the SMS delivery record), filters `status` and `sms_status` as query parameters; the chip "needs review" stays hidden until Mode B review state exists. Tests included. Then the Invoices screen is built once against it.
+
+**Order of the C# chain from now on:** (1) merge-main fix and green (Q2); (2) C-99 invoices read route; (3) Setup screen per Q-C98-02 (B); (4) C-96 group 2 screens on top of C-99 (Invoices list/detail), then group 3 (Products, Customers); (5) group 4 + Settings/Devices. The PO tests at T+24h / T+44h as planned; hotfixes outrank everything.
+
+**Q4 `main` structure.** Ruling (PM-24): NO real-history rebuild of `main`. The merge of PR #21 connects the lane histories to `main` (the lane already merged main's snapshot into its branch), so after that merge every later PR shares ancestry with `main`. What must stop is the rewriting of `main`: nobody force-pushes, resets or replaces `main` with a snapshot commit; every write to `main` is a normal commit on top. The manager identifies in R-011 WHICH process created the two orphan snapshots (who, which command, which tool) and reports it; if it was a lane/platform sync, switch it off.
+
+**Q5** resolved by the PO ruling (payable 49,547,790, four lines); the PM accepts. The Python lane continues E-74 under the honest-verification protocol.
+
+**Standing:** parallelism is across repos only, one agent per repo (PO ruling 2026-11-25) — acknowledged and recorded in `docs/pm-log/2026-11-26.md`.
