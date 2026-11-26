@@ -13,9 +13,16 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore, IHubRep
     private readonly SqliteConnection _connection;
     private readonly HubWriterIdentity? _replicationWriter;
     private readonly IClock _clock;
+    private readonly string? _demoSmsOutboxDirectory;
+    private readonly string? _demoStoreName;
     private bool _disposed;
 
-    public SqliteHubStore(string connectionString, HubWriterIdentity? replicationWriter = null, IClock? clock = null)
+    public SqliteHubStore(
+        string connectionString,
+        HubWriterIdentity? replicationWriter = null,
+        IClock? clock = null,
+        string? demoSmsOutboxDirectory = null,
+        string? demoStoreName = null)
     {
         if (string.IsNullOrWhiteSpace(connectionString))
         {
@@ -24,6 +31,10 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore, IHubRep
 
         _replicationWriter = replicationWriter?.Validate();
         _clock = clock ?? new SystemHubClock();
+        // Optional: when set, a successful invoice issue also writes the demo SMS line to this
+        // directory (C-98 / DoD-A point 3). Null keeps the previous behaviour exactly.
+        _demoSmsOutboxDirectory = string.IsNullOrWhiteSpace(demoSmsOutboxDirectory) ? null : demoSmsOutboxDirectory;
+        _demoStoreName = string.IsNullOrWhiteSpace(demoStoreName) ? null : demoStoreName;
         _connection = new SqliteConnection(connectionString);
         _connection.Open();
         using var command = _connection.CreateCommand();
@@ -256,6 +267,27 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore, IHubRep
             command.Parameters.AddWithValue("$store", storeId.ToString("D"));
             return Convert.ToInt32(command.ExecuteScalar(), System.Globalization.CultureInfo.InvariantCulture);
         }
+    }
+
+    /// <summary>
+    /// Appends one demo SMS line to the local outbox (C-98 / DoD-A point 3).
+    /// </summary>
+    /// <remarks>
+    /// The provider is created per call and dropped: <see cref="DemoSmsProvider"/> is stateless
+    /// apart from an in-memory log nothing reads here, and its file append is already
+    /// synchronised by the OS. A failed append is swallowed by the provider on purpose — the
+    /// invoice has already been committed at this point, so a demo-only side effect must never
+    /// turn a successful issue into an error for the shop owner.
+    /// </remarks>
+    public DemoSmsMessage SendDemoSms(Guid storeId, string recipientPhone, string body, long? displayNumber)
+    {
+        if (storeId == Guid.Empty)
+        {
+            throw new ArgumentException("A store is required.", nameof(storeId));
+        }
+
+        var provider = new DemoSmsProvider(_demoSmsOutboxDirectory);
+        return provider.Send(recipientPhone, body, _demoStoreName, displayNumber);
     }
 
     public ReplicationBatch? ReadBatch(Guid storeId, int maxEntries, int maxBytes)
@@ -799,8 +831,23 @@ public sealed partial class SqliteHubStore : IHubStore, IHubAccessStore, IHubRep
         reader.Close();
         using var alter = _connection.CreateCommand();
         alter.CommandText = $"ALTER TABLE {table} ADD COLUMN {column} {definition};";
-        alter.ExecuteNonQuery();
+        try
+        {
+            alter.ExecuteNonQuery();
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException exception) when (IsDuplicateColumn(exception))
+        {
+            // Two SqliteHubStore instances can open the SAME database file at the same time (the Hub
+            // creates one from Program.cs, while HubApiFactory creates its own against the same test
+            // DB). The PRAGMA check above is read-then-write, so an interleaved initializer can add
+            // the column between our check and our ALTER. The desired end state already holds, so
+            // this is success, not failure - surfacing it was breaking the Hub tests on Windows.
+        }
     }
+
+    private static bool IsDuplicateColumn(Microsoft.Data.Sqlite.SqliteException exception) =>
+        exception.SqliteErrorCode == 1
+        && exception.Message.Contains("duplicate column name", StringComparison.OrdinalIgnoreCase);
 
     private void ThrowIfReplicationFenced(Guid storeId)
     {

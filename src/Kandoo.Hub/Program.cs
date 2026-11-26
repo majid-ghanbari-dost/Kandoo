@@ -30,7 +30,21 @@ builder.Services.AddSwaggerGen(options =>
 });
 var sqliteConnection = builder.Configuration.GetConnectionString("HubSqlite")
     ?? "Data Source=kandoo-hub.db;Pooling=False";
-var hubStore = new SqliteHubStore(sqliteConnection);
+// C-98 / DoD-A point 3: where the demo SMS outbox lives. Default is the same path the Windows
+// app reads (SettingsPage.xaml.cs): %LOCALAPPDATA%\outbox\demo-sms.log. Override with
+// Hub__Demo__OutboxDirectory; empty string disables the demo SMS entirely.
+var demoSmsOutboxDirectory = builder.Configuration["Hub:Demo:OutboxDirectory"];
+if (demoSmsOutboxDirectory is null)
+{
+    demoSmsOutboxDirectory = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "outbox");
+}
+
+var hubStore = new SqliteHubStore(
+    sqliteConnection,
+    demoSmsOutboxDirectory: demoSmsOutboxDirectory,
+    demoStoreName: builder.Configuration["Hub:Demo:StoreName"]);
 builder.Services.AddSingleton<IHubStore>(hubStore);
 builder.Services.AddSingleton<SqliteHubStore>(hubStore);
 builder.Services.AddSingleton<IHubAccessStore>(hubStore);

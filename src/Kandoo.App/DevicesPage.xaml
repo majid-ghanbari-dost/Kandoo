@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Kandoo.App.DevicesPage"
+             Title="دستگاه‌ها و دسترسی"
+             Style="{StaticResource PageStyle}">
+    <ScrollView>
+        <VerticalStackLayout Style="{StaticResource RootStackStyle}">
+            <Label Style="{StaticResource TitleStyle}"
+                   Text="دستگاه‌ها و دسترسی" />
+            <Label Style="{StaticResource BodyStyle}"
+                   Text="مدیر سطح دسترسی را انتخاب و کد جفت‌سازی می‌سازد. فهرست دستگاه‌های متصل، تغییر مستوى و قطع دسترسی در این صفحه مدیریت می‌شود." />
+
+            <!-- Add device / pairing code -->
+            <Border Style="{StaticResource CardStyle}">
+                <VerticalStackLayout Style="{StaticResource RowStackStyle}">
+                    <Label Style="{StaticResource SectionTitleStyle}"
+                           Text="افزودن گوشی" />
+                    <HorizontalStackLayout Style="{StaticResource ButtonRowStyle}">
+                        <Label Style="{StaticResource BodyStyle}"
+                               Text="سطح دسترسی:"
+                               VerticalOptions="Center" />
+                        <Picker x:Name="RolePicker"
+                                Style="{StaticResource InputStyle}"
+                                WidthRequest="220">
+                            <Picker.ItemsSource>
+                                <x:Array Type="{x:Type x:String}">
+                                    <x:String>فروشنده: فقط فاکتور</x:String>
+                                    <x:String>اپراتور: فاکتور و تعریف کالا</x:String>
+                                    <x:String>مدیر: همه‌چیز</x:String>
+                                </x:Array>
+                            </Picker.ItemsSource>
+                        </Picker>
+                    </HorizontalStackLayout>
+                    <Button x:Name="GeneratePairingCodeButton"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Text="ساخت کد جفت‌سازی"
+                            Clicked="OnGeneratePairingCodeClicked"
+                            SemanticProperties.Description="ساخت کد جفت‌سازی کوتاه‌مدت برای دستگاه جدید" />
+                    <Label x:Name="PairingCodeLabel"
+                           Style="{StaticResource SectionTitleStyle}"
+                           HorizontalOptions="Center" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Connected devices list -->
+            <Border Style="{StaticResource CardStyle}">
+                <VerticalStackLayout Style="{StaticResource RowStackStyle}">
+                    <Label Style="{StaticResource SectionTitleStyle}"
+                           Text="دستگاه‌های متصل" />
+                    <VerticalStackLayout x:Name="DeviceItems"
+                                         Style="{StaticResource RowStackStyle}" />
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

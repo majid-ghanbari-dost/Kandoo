@@ -204,6 +204,18 @@
                         Clicked="OnInvoicesClicked"
                         IsEnabled="False"
                         SemanticProperties.Description="فهرست فاکتورها" />
+                <Button x:Name="DevicesButton"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Text="دستگاه‌ها"
+                        Clicked="OnDevicesClicked"
+                        IsEnabled="False"
+                        SemanticProperties.Description="مدیریت دستگاه‌ها و دسترسی" />
+                <Button x:Name="StatesButton"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Text="حالت‌ها و خطاها"
+                        Clicked="OnStatesClicked"
+                        IsEnabled="False"
+                        SemanticProperties.Description="نمایش حالت‌های خالی و خطا" />
                 </HorizontalStackLayout>
 
                 <Label Style="{StaticResource SectionTitleStyle}"

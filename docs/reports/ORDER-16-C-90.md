@@ -19,17 +19,17 @@
 | ویژگی | فایل | توضیح |
 |-------|-------|-------|
 | صفحه مشتریان | `src/Kandoo.App/CustomersPage.xaml.cs` | سبک v2، لیست مشتریان |
-| صفحه برگشت‌ها (placeholder) | `src/Kandoo.App/ReturnsPage.xaml.cs` |placeholder، پیام "از سمت هاب پشتیبانی نمی‌شود" |
+| صفحه برگشت‌ها (placeholder) | `src/Kandoo.App/ReturnsPage.xaml.cs` | placeholder، پیام "از سمت هاب پشتیبانی نمی‌شود" |
 | صفحه دستگاه‌ها | `src/Kandoo.App/MainPage.xaml.cs` | بخش DevicesSection، بارگذاری، تغییر سطح، لغو |
 | صفحه تنظیمات | `src/Kandoo.App/SettingsPage.xaml.cs` | سبک v2، وضعیت هاب |
 | صفحات فاکتور | `CreateInvoicePage`, `InvoiceDetailsPage` | موجود از ORDER 15 |
 | صفحه محصولات | `ProductsPage`, `ProductEditorPage` | موجود از ORDER 15 |
 | صف بررسی | `ReviewQueuePage` | موجود از ORDER 15 |
 
-## صف تکرار و تلاشגם
+## صف تکرار و تلاش مجدد
 
 صف تکرار با تلاش مجدد و exponential backoff در `src/Kandoo.Hub/HubCloudReplicationClient.cs` وجود دارد:
-- تلاش‌های tối đa قابل تنظیم (MaxAttempts)
+- تلاش‌های حداکثری قابل تنظیم (MaxAttempts)
 - لاج بکس استوانایی: Math.Min(60_000, 1_000 * (1 << (attempt - 1))) میلی‌ثانیه
 - مدیریت خطاهای شبکه (RETRY_REQUIRED)، تشدید (THROTTLED)، خطاهای سرور (5xx)
 - writer fencing برای جلوگیری از ارسال تکراری

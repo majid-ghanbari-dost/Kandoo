@@ -49,6 +49,18 @@ Report read from `AGENT_HANDOFF.md` (ORDER 16 section) on `arena/4bb6cd51-kandoo
 - Phase 3: commit `6aea923` + docs `7e55bf62`; tag `o16-C-96-1` manager-VERIFIED at `6aea923b3aa116e887d69768167472e6b2386a58`. WARNING: tagging BEFORE CI green is a recorded process violation — per-group acceptance (CI green + per-screen screenshot artifact + per-screen report line) is NOT met yet, and D2 requires one create-only PR per group from its own branch. No new tag before green; never move existing ones.
 - NEW cross-lane item (from the PY-T2 report on PR #16): review `tests/golden/e72/canonical-invoice-v1-2-draft-vector.json` (Kandoo-Digital-Invoice @ `1e620cc`) for compatibility and record the C# verdict in `docs/reports/` + AGENT_HANDOFF with a link.
 
+#### E-72 cross-lane review — DONE (second verdict INCOMPATIBLE; fix owned by the Python lane)
+
+Recorded on `arena/4bb6cd51-kandoo`. Two rounds completed: `1e620cc` (NOT compatible) and `o17-E-72` @ `1e029bd` (**INCOMPATIBLE**).
+
+C# is fail-fast, so it emits exactly ONE error, not a list: `SchemaValidationFailed | Unexpected field: base_invoice.` Three defect categories: (1) `base_invoice` wrapper instead of flat root; (2) all **16** `RootRequired` fields absent at root; (3) 4 unknown root fields. `v1_2_draft_addendum` carries v1.2-only content with no v0 home and needs a separate contract decision.
+
+PHP's objection is **UPHELD in part**: the round-1 duplication claim was wrong — `image_sha256`/`template_library_id` occur exactly once each (byte offsets 955/975) and only inside `provenance`. PHP's conclusion is **REJECTED**: C# is not wrong about field location; `provenance` must move from inside `base_invoice` to root.
+
+Decisive test: promoting `base_invoice` to root makes the vector pass every C# validation step.
+
+Reports: `docs/reports/E72-CANONICAL-INVOICE-V1-2-O17-CSHARP-COMPARISON-FA.md`, decision item 26 in `docs/decisions-made.md`, C# review 6039821259 on PR #16. **STANDBY for round 3** after the Python lane's new tag. Cross-repo comment blocked by HTTP 403 (read-only access on `Kandoo-Digital-Invoice`); text preserved at `docs/reports/E72-PY-PR16-CLOSING-COMMENT.md`.
+
 ## Manager addendum 2 (2026-11-25, Asia/Tehran) — PM-22: ONE integration PR (answers M-009 §1; supersedes the R-008 addendum points 1–2 and the Phase 2 dedicated-branch plan)
 
 Source: `docs/messages/M-009.md` on `main` @ `cb1730aa`. Manager pre-verification (read-only git + REST, 2026-11-25):
@@ -73,4 +85,10 @@ Execution order (M-009 §1):
 4. Then continue C-96 remaining groups, C-97, C-98 (Phase 3 / Queue unchanged).
 
 ---
-**Status:** IN PROGRESS (2026-11-25 — PM-22 dispatched, see Manager addendum 2: all five heads + `pm/order21-selfcheck` MISSING from `arena/4bb6cd51-kandoo` @ `dca2e1eb` and must be merged; CI on `207ebeb`/`6aea923` NOT fully green (`App tests + Windows + Android` failure) and must be fixed before the ONE integration PR opens; E-72 round-3 standby unchanged)
+**Status:** PM-22 EXECUTED (2026-11-25) — integration PR **#21** open for PM merge, CI green on tip `db19e75`.
+
+- **Merges:** all five MISSING heads (`c95` `c76046a`, `c90` `15aadc6`, `c91` `39bca96`, `c92` `992b0a0`, `c93-holoo-connector` `e73b1c9`) plus `pm/order21-selfcheck` `f4debb2` are ancestors of `arena/4bb6cd51-kandoo` @ `db19e75`. Conflict policy applied: branch wins for code/CI/tests; `Invoke-InstallerSmoke.ps1` + `KandooHub.Installer.iss` taken verbatim from `pm/order21-selfcheck` and verified identical to it. Smoke script not edited.
+- **Failed job fixed:** `App tests + Windows + Android` / `Publish self-contained Windows app and zip` was red from four compile errors (CS0017 duplicate Main, CS0103 `HubLocator`, CS0234 `StringContent`, CS0103 `hubDir`), then three further chained ones (MSB4025 XML comment, CS0029 lambda shadowing, CS1729 `ReturnsPage`, XFC0009 `BorderBrush`). Verbatim messages and fixes: `docs/reports/ORDER-16-PM22-INTEGRATION.md`.
+- **Also fixed:** `duplicate column name: server_key_issued_at` in the Windows Hub tests (concurrent `EnsureColumn`), and the branch's `ci.yml` had lost main's installer-smoke gate — restored as `main + C-93 Holoo steps`.
+- **CI:** `932b17c` green on both jobs, run [45571592358](https://github.com/majid-ghanbari-dost/Kandoo/actions/runs/45571592358). Gate met: `SMOKE_ALL_HARD_CHECKS_PASSED`, artifacts `kandoo-hub-c87-setup-exe` (89,838,429 B) and `kandoo-install-smoke` (22,918 B).
+- **Next:** PM merges the ONE integration PR, then closes #12/#13/#14/#15/#16/#18/#19. Lane does not merge or close. E-72 round-3 standby unchanged.

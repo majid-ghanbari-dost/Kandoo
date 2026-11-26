@@ -33,13 +33,23 @@ public sealed class HubApiFactory : WebApplicationFactory<Program>
 
     public HubApiFactory() : this(new HubReplicationOptions()) { }
 
-    internal HubApiFactory(HubReplicationOptions replicationOptions)
+    internal HubApiFactory(HubReplicationOptions replicationOptions, string? demoSmsOutboxDirectory = null)
     {
         ReplicationOptions = replicationOptions;
         Directory.CreateDirectory(_directory);
         ConnectionString = $"Data Source={Path.Combine(_directory, "hub.db")};Pooling=False";
-        TestStore = new SqliteHubStore(ConnectionString);
+        // Default stays null: only the C-98 tests opt into the demo SMS outbox, so no other
+        // vector starts writing files as a side effect.
+        TestStore = new SqliteHubStore(ConnectionString, demoSmsOutboxDirectory: demoSmsOutboxDirectory);
     }
+
+    /// <summary>Creates a factory whose store writes the demo SMS to the given directory (C-98).</summary>
+    /// <remarks>
+    /// Internal on purpose: xUnit uses <see cref="HubApiFactory"/> as a class fixture and requires
+    /// exactly one PUBLIC constructor ("Class fixture type ... may only define a single public
+    /// constructor"). Only the C-98 tests in this assembly need the outbox.
+    /// </remarks>
+    internal HubApiFactory(string demoSmsOutboxDirectory) : this(new HubReplicationOptions(), demoSmsOutboxDirectory) { }
 
     public string ConnectionString { get; }
     public ManualHubClock Clock { get; } = new();

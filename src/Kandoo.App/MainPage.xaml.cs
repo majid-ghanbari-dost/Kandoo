@@ -380,6 +380,30 @@ public partial class MainPage : ContentPage
         }
     }
 
+    private async void OnDevicesClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            await Navigation.PushAsync(new DevicesPage());
+        }
+        catch (Exception exception) when (IsExpected(exception))
+        {
+            StatusLabel.Text = exception.Message;
+        }
+    }
+
+    private async void OnStatesClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            await Navigation.PushAsync(new StatesPage());
+        }
+        catch (Exception exception) when (IsExpected(exception))
+        {
+            StatusLabel.Text = exception.Message;
+        }
+    }
+
     private async void OnCustomerOtpClicked(object? sender, EventArgs e)
     {
         await Navigation.PushModalAsync(new CustomerOtpPage());

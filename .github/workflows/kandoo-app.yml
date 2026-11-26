@@ -105,12 +105,6 @@ jobs:
     needs: test-and-build
     continue-on-error: true
     timeout-minutes: 35
-    continue-on-error: true
-    # NOTE: Android emulator requires KVM/hardware acceleration which is
-    # unavailable on GitHub-hosted ubuntu-latest runners. The test-and-build
-    # job (APK build + app tests + Windows publish + Release APK) passes
-    # independently. This smoke job is best-effort only; keep continue-on-error
-    # until a self-hosted runner with KVM is available.
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
