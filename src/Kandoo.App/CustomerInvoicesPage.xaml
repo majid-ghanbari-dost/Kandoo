@@ -1,38 +1,218 @@
 <?xml version="1.0" encoding="utf-8" ?>
+<!-- C-97 customer boards: Customer-Invoices-v2 (فاکتورهای من) + Customer-Empty +
+     Customer-New-Banner states. Bottom nav per Customer-Invoices-v2 (the v2 chrome
+     governs shared parts; v1 boards differ on the middle tab label — see the PR note).
+     Board texts/colors are verbatim from docs/design/Customer-*.dc.html. -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="Kandoo.App.CustomerInvoicesPage"
              Title="فاکتورهای من"
-             Style="{StaticResource PageStyle}">
-    <ScrollView>
-        <Border Style="{StaticResource CardStyle}">
-            <VerticalStackLayout Style="{StaticResource RootStackStyle}">
-                <Label Style="{StaticResource TitleStyle}" Text="فاکتورهای من" />
-                <Label Style="{StaticResource BodyStyle}" Text="فاکتورهای صادره گروه‌بندی شده برحسب فروشگاه." />
+             BackgroundColor="{StaticResource Wax}">
+    <ContentPage.Resources>
+        <Style x:Key="WhiteCardStyle" TargetType="Border">
+            <Setter Property="BackgroundColor" Value="White" />
+            <Setter Property="Padding" Value="16" />
+            <Setter Property="Stroke" Value="Transparent" />
+        </Style>
+        <Style x:Key="BoardInputStyle" TargetType="Entry">
+            <Setter Property="BackgroundColor" Value="White" />
+            <Setter Property="TextColor" Value="{StaticResource Ink}" />
+            <Setter Property="PlaceholderColor" Value="{StaticResource Ink}" />
+            <Setter Property="FontFamily" Value="{StaticResource FontFamilyRegular}" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="HeightRequest" Value="48" />
+        </Style>
+        <Style x:Key="StoreHeaderStyle" TargetType="Label">
+            <Setter Property="FontFamily" Value="{StaticResource FontFamilyBold}" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="TextColor" Value="{StaticResource Ink}" />
+        </Style>
+        <Style x:Key="CardTitleStyle" TargetType="Label">
+            <Setter Property="FontFamily" Value="{StaticResource FontFamilyBold}" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="TextColor" Value="{StaticResource Ink}" />
+        </Style>
+        <Style x:Key="CardDateStyle" TargetType="Label">
+            <Setter Property="FontFamily" Value="{StaticResource FontFamilyRegular}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="TextColor" Value="#5A4630" />
+        </Style>
+        <Style x:Key="BigAmountStyle" TargetType="Label">
+            <Setter Property="FontFamily" Value="{StaticResource FontFamilyBold}" />
+            <Setter Property="FontSize" Value="20" />
+            <Setter Property="TextColor" Value="{StaticResource Ink}" />
+        </Style>
+        <Style x:Key="NavLabelStyle" TargetType="Label">
+            <Setter Property="FontFamily" Value="{StaticResource FontFamilyRegular}" />
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="TextColor" Value="#8C7B5E" />
+            <Setter Property="HorizontalTextAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="NavLabelActiveStyle" TargetType="Label" BasedOn="{StaticResource NavLabelStyle}">
+            <Setter Property="FontFamily" Value="{StaticResource FontFamilyBold}" />
+            <Setter Property="TextColor" Value="{StaticResource Ink}" />
+        </Style>
+    </ContentPage.Resources>
 
-                <Button x:Name="LoadButton"
-                        Style="{StaticResource PrimaryButtonStyle}"
-                        Text="بارگذاری فاکتور‌ها"
-                        Clicked="OnLoadClicked"
-                        SemanticProperties.Description="بارگذاری فهرست فاکتورهای مشتری" />
-                <Label x:Name="StatusLabel" Style="{StaticResource CaptionStyle}" />
-
-                <VerticalStackLayout x:Name="InvoicesList" Style="{StaticResource RowStackStyle}" />
-
-                <!-- Empty state -->
-                <VerticalStackLayout x:Name="EmptyState"
-                                     IsVisible="False"
-                                     HorizontalOptions="Center"
-                                     VerticalOptions="Center"
-                                     Spacing="{StaticResource Space3}">
-                    <Label Style="{StaticResource SectionTitleStyle}"
-                           Text="هیچ فاکتور یافت نشد"
-                           HorizontalTextAlignment="Center" />
-                    <Label Style="{StaticResource BodyStyle}"
-                           Text="فهرست فاکتورهای شما خالی است."
-                           HorizontalTextAlignment="Center" />
-                </VerticalStackLayout>
+    <Grid RowDefinitions="Auto,*,Auto">
+        <!-- Header -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Padding="18,18,18,10">
+            <VerticalStackLayout Grid.Column="0" Spacing="2">
+                <Label Text="فاکتورهای من"
+                       FontFamily="{StaticResource FontFamilyBold}"
+                       FontSize="22"
+                       TextColor="{StaticResource Ink}" />
+                <Label Text="نقش: مشتری"
+                       FontFamily="{StaticResource FontFamilyRegular}"
+                       FontSize="13"
+                       TextColor="#5A4630" />
             </VerticalStackLayout>
-        </Border>
-    </ScrollView>
+            <Polygon Grid.Column="1"
+                     Points="26,2 46,13 46,37 26,48 6,37 6,13"
+                     Fill="{StaticResource Honey}"
+                     Stroke="{StaticResource Honey}"
+                     StrokeThickness="3"
+                     StrokeLineJoin="Round"
+                     HeightRequest="50"
+                     WidthRequest="52" />
+            <Path Grid.Column="1"
+                  Data="M17,27 L23,33 L35,19"
+                  Stroke="{StaticResource Ink}"
+                  StrokeThickness="4.5"
+                  StrokeLineCap="Round"
+                  StrokeLineJoin="Round"
+                  Fill="Transparent"
+                  HeightRequest="50"
+                  WidthRequest="52" />
+        </Grid>
+
+        <!-- Body -->
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="16,6,16,16" Spacing="12">
+                <!-- Customer-New-Banner -->
+                <Border x:Name="NewInvoiceBanner"
+                        IsVisible="False"
+                        BackgroundColor="{StaticResource Honey}"
+                        Stroke="Transparent"
+                        Padding="14,12">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="14" />
+                    </Border.StrokeShape>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnBannerTapped" />
+                    </Border.GestureRecognizers>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Grid.Column="0" TextColor="{StaticResource Ink}" FontSize="16">
+                            <Label.FormattedString>
+                                <FormattedString>
+                                    <Span Text="فاکتور جدید" FontAttributes="Bold" />
+                                    <Span Text=" از " />
+                                    <Span x:Name="BannerStoreName" Text="" />
+                                </FormattedString>
+                            </Label.FormattedString>
+                        </Label>
+                        <Label Grid.Column="1"
+                               Text="‹"
+                               FontSize="20"
+                               TextColor="{StaticResource Ink}" />
+                    </Grid>
+                </Border>
+
+                <!-- Search -->
+                <Border Padding="14,0" Stroke="#E2D5AE" StrokeThickness="1.5" BackgroundColor="White">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="12" />
+                    </Border.StrokeShape>
+                    <Entry x:Name="SearchEntry"
+                           Style="{StaticResource BoardInputStyle}"
+                           Placeholder="جست‌وجو در فروشگاه‌ها و فاکتورها"
+                           TextChanged="OnSearchChanged"
+                           SemanticProperties.Description="جست‌وجو در فروشگاه‌ها و فاکتورها" />
+                </Border>
+
+                <Label x:Name="StatusLabel"
+                       FontFamily="{StaticResource FontFamilyRegular}"
+                       FontSize="13"
+                       TextColor="#5A4630" />
+
+                <!-- Store-grouped invoice cards -->
+                <VerticalStackLayout x:Name="InvoicesList" Spacing="12" />
+
+                <!-- Customer-Empty state -->
+                <Border x:Name="EmptyState"
+                        IsVisible="False"
+                        Style="{StaticResource WhiteCardStyle}"
+                        Padding="16,32">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="16" />
+                    </Border.StrokeShape>
+                    <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
+                        <Polygon Points="26,2 46,13 46,37 26,48 6,37 6,13"
+                                 Fill="{StaticResource Honey}"
+                                 HeightRequest="50"
+                                 WidthRequest="52"
+                                 HorizontalOptions="Center" />
+                        <Label Text="هنوز فاکتوری ندارید"
+                               FontFamily="{StaticResource FontFamilyBold}"
+                               FontSize="18"
+                               HorizontalTextAlignment="Center" />
+                        <Label Text="وقتی از یک فروشگاه کندو خرید کنید و شماره‌ی شما را ثبت کنند، فاکتور همین‌جا ظاهر می‌شود."
+                               FontFamily="{StaticResource FontFamilyRegular}"
+                               FontSize="14"
+                               TextColor="#5A4630"
+                               LineHeight="1.9"
+                               HorizontalTextAlignment="Center" />
+                    </VerticalStackLayout>
+                </Border>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- Bottom nav (Customer-Invoices-v2): فاکتورها / فروشگاه‌ها (به‌زودی، غیرفعال) / نقش‌ها -->
+        <Grid Grid.Row="2" ColumnDefinitions="*,*,*" Padding="0,6,0,10" BackgroundColor="White">
+            <BoxView Grid.Row="0" Grid.ColumnSpan="3" Color="#E2D5AE" HeightRequest="1" VerticalOptions="Start" />
+
+            <VerticalStackLayout Grid.Column="0" Spacing="2" Padding="0,6,0,0">
+                <Path Data="M6 3h9l4 4v14H6z M14 3v5h5 M9 13h6 M9 17h6"
+                      Stroke="{StaticResource Honey}"
+                      StrokeThickness="1.9"
+                      StrokeLineCap="Round"
+                      StrokeLineJoin="Round"
+                      Fill="Transparent"
+                      HeightRequest="24"
+                      WidthRequest="24"
+                      HorizontalOptions="Center" />
+                <Label Text="فاکتورها" Style="{StaticResource NavLabelActiveStyle}" />
+            </VerticalStackLayout>
+
+            <!-- Disabled until after MVP («به‌زودی») -->
+            <VerticalStackLayout Grid.Column="1" Spacing="2" Padding="0,6,0,0" Opacity="0.6">
+                <Path Data="M4 9l1-5h14l1 5 M5 9v11h14V9 M4 9a3 3 0 006 0 3 3 0 006 0 3 3 0 004 0"
+                      Stroke="#8C7B5E"
+                      StrokeThickness="1.9"
+                      StrokeLineCap="Round"
+                      StrokeLineJoin="Round"
+                      Fill="Transparent"
+                      HeightRequest="24"
+                      WidthRequest="24"
+                      HorizontalOptions="Center" />
+                <Label Text="فروشگاه‌ها" Style="{StaticResource NavLabelStyle}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Grid.Column="2" Spacing="2" Padding="0,6,0,0">
+                <VerticalStackLayout.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnRolesTabTapped" />
+                </VerticalStackLayout.GestureRecognizers>
+                <Path Data="M12 4a4 4 0 100 8 4 4 0 000-8z M4 21c0-4 4-6 8-6s8 2 8 6"
+                      Stroke="#8C7B5E"
+                      StrokeThickness="1.9"
+                      StrokeLineCap="Round"
+                      StrokeLineJoin="Round"
+                      Fill="Transparent"
+                      HeightRequest="24"
+                      WidthRequest="24"
+                      HorizontalOptions="Center" />
+                <Label Text="نقش‌ها" Style="{StaticResource NavLabelStyle}" />
+            </VerticalStackLayout>
+        </Grid>
+    </Grid>
 </ContentPage>
