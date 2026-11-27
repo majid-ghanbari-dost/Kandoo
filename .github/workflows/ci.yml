@@ -841,6 +841,11 @@ jobs:
           Write-Host "::notice::SMOKE_STEP=4_maui PASS"
 
           # 5. Copy smoke files into workspace for artifact upload
+          # This directory used to exist because earlier steps in the single windows job wrote
+          # into it. As its own job nothing has created it yet, and Out-File below is the last
+          # thing the step does, so a missing directory failed the step after every hard check
+          # had already passed.
+          New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE\artifacts" | Out-Null
           Copy-Item -Path "$installDir\setup.log" -Destination "$env:GITHUB_WORKSPACE\artifacts\setup.log" -Force -ErrorAction SilentlyContinue
           Copy-Item -Path "$installDir\smoke.txt" -Destination "$env:GITHUB_WORKSPACE\artifacts\smoke.txt" -Force -ErrorAction SilentlyContinue
           "Installer smoke (C-95 layout): all hard checks passed" | Out-File -FilePath $outcomeFile -Encoding utf8
