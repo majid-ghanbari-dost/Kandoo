@@ -142,7 +142,11 @@ public sealed class P31VectorReplayTests
     [Fact]
     public void P31_Request_Body_Serialization_Keeps_Phone_Intact()
     {
-        var opts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
+        var opts = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        };
         var issue = JsonSerializer.Serialize(new OtpIssueRequest { Phone = "+989120000001" }, opts);
         var verify = JsonSerializer.Serialize(new OtpVerifyRequest { Code = "100001" }, opts);
         Assert.Equal("{\"phone\":\"+989120000001\"}", issue);

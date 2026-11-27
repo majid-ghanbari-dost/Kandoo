@@ -24,6 +24,12 @@ public sealed class CustomerApiClient : IDisposable
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+        // The default JavaScript encoder escapes '+' inside strings ("\\+"), which
+        // corrupts phone numbers like +989... on the wire and fails server-side phone
+        // validation. The API body is machine-consumed JSON, never embedded in HTML,
+        // so the relaxed encoder is the right choice (guarded by
+        // P31_Request_Body_Serialization_Keeps_Phone_Intact).
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
     private readonly HttpClient _http;
