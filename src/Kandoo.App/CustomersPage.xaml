@@ -2,37 +2,179 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="Kandoo.App.CustomersPage"
-             Title="مشتریان"
+             Title="مشتری‌ها"
              Style="{StaticResource PageStyle}">
-    <ScrollView>
-        <Border Style="{StaticResource CardStyle}">
-            <VerticalStackLayout Style="{StaticResource RootStackStyle}">
-                <Label Style="{StaticResource TitleStyle}" Text="فهرست مشتریان" />
-                <Label Style="{StaticResource BodyStyle}" Text="فهرست مشتریان ثبت‌شده در هاب." />
+    <Grid ColumnDefinitions="Auto,*">
+        <VerticalStackLayout x:Name="SidebarHost"
+                             Grid.Column="0" />
 
-                <Button x:Name="LoadButton"
-                        Style="{StaticResource PrimaryButtonStyle}"
-                        Text="بارگذاری مشتریان"
-                        Clicked="OnLoadClicked"
-                        SemanticProperties.Description="بارگذاری فهرست مشتریان از هاب" />
-                <Label x:Name="StatusLabel" Style="{StaticResource CaptionStyle}" />
+        <ScrollView Grid.Column="1">
+            <VerticalStackLayout Padding="32,28"
+                                 Spacing="16"
+                                 MaximumWidthRequest="1080"
+                                 HorizontalOptions="Fill">
+                <!-- Honest synthetic preview warning (Decision 30) -->
+                <Border x:Name="SyntheticBanner"
+                        IsVisible="False"
+                        Style="{StaticResource DemoBannerStyle}">
+                    <Label Style="{StaticResource DemoBannerTextStyle}"
+                           Text="داده نمایشی ساختگی — این اطلاعات واقعی نیست" />
+                </Border>
 
-                <VerticalStackLayout x:Name="CustomersList" Style="{StaticResource RowStackStyle}" />
+                <!-- Header -->
+                <Grid ColumnDefinitions="*,Auto,Auto"
+                      ColumnSpacing="10">
+                    <Label Grid.Column="0"
+                           Style="{StaticResource TitleStyle}"
+                           Text="مشتری‌ها"
+                           VerticalOptions="Center" />
+                    <Button Grid.Column="1"
+                            x:Name="ToggleSyntheticButton"
+                            IsVisible="False"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            BackgroundColor="{StaticResource Wax}"
+                            TextColor="{StaticResource Ink}"
+                            CornerRadius="10"
+                            Text="پیش‌نمایش ساختگی"
+                            Clicked="OnToggleSyntheticClicked"
+                            SemanticProperties.Description="نمایش نمونه داده ساختگی برای بررسی چیدمان" />
+                    <Button Grid.Column="2"
+                            x:Name="LoadButton"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            CornerRadius="10"
+                            Text="بروزرسانی"
+                            Clicked="OnLoadClicked"
+                            SemanticProperties.Description="بارگذاری فهرست مشتری‌ها از هاب" />
+                </Grid>
 
-                <!-- Empty state -->
-                <VerticalStackLayout x:Name="EmptyState"
-                                     IsVisible="False"
-                                     HorizontalOptions="Center"
-                                     VerticalOptions="Center"
-                                     Spacing="{StaticResource Space3}">
-                    <Label Style="{StaticResource SectionTitleStyle}"
-                           Text="هیچ مشتری یافت نشد"
-                           HorizontalTextAlignment="Center" />
-                    <Label Style="{StaticResource BodyStyle}"
-                           Text="فهرست مشتریان خالی است."
-                           HorizontalTextAlignment="Center" />
-                </VerticalStackLayout>
+                <Label x:Name="StatusLabel"
+                       Style="{StaticResource CaptionStyle}"
+                       TextColor="#5A4630" />
+
+                <!-- Two-column layout matching Customers.dc.html (master table + side detail card) -->
+                <Grid x:Name="MasterDetailGrid"
+                      ColumnDefinitions="2*,*"
+                      RowDefinitions="Auto,Auto"
+                      ColumnSpacing="20"
+                      RowSpacing="16">
+                    <!-- Master column -->
+                    <VerticalStackLayout x:Name="MasterColumn"
+                                         Grid.Column="0"
+                                         Grid.Row="0"
+                                         Spacing="14">
+                        <Border x:Name="SearchBorder"
+                                BackgroundColor="#FFFFFF"
+                                Stroke="#C9B88E"
+                                StrokeThickness="1"
+                                Padding="8,2">
+                            <Entry x:Name="SearchEntry"
+                                   BackgroundColor="#FFFFFF"
+                                   TextColor="{StaticResource Ink}"
+                                   PlaceholderColor="#5A4630"
+                                   FontFamily="{StaticResource FontFamilyRegular}"
+                                   FontSize="16"
+                                   MinimumHeightRequest="44"
+                                   Placeholder="جست‌وجو: نام یا شماره"
+                                   TextChanged="OnSearchTextChanged"
+                                   SemanticProperties.Description="جست‌وجوی نام یا شماره موبایل مشتری" />
+                        </Border>
+
+                        <Border x:Name="TableCard"
+                                BackgroundColor="#FFFFFF"
+                                Stroke="#F0E4C2"
+                                StrokeThickness="1"
+                                Padding="0">
+                            <VerticalStackLayout Spacing="0">
+                                <Grid ColumnDefinitions="2*,130,130,120"
+                                      Padding="16,12"
+                                      BackgroundColor="#FAF2DC">
+                                    <Label Grid.Column="0" Text="نام" FontFamily="{StaticResource FontFamilyBold}" FontSize="14" TextColor="#5A4630" />
+                                    <Label Grid.Column="1" Text="موبایل" FontFamily="{StaticResource FontFamilyBold}" FontSize="14" TextColor="#5A4630" />
+                                    <Label Grid.Column="2" Text="جمع خرید" FontFamily="{StaticResource FontFamilyBold}" FontSize="14" TextColor="#5A4630" />
+                                    <Label Grid.Column="3" Text="طلب" FontFamily="{StaticResource FontFamilyBold}" FontSize="14" TextColor="#5A4630" />
+                                </Grid>
+                                <VerticalStackLayout x:Name="CustomerItems" Spacing="0" />
+                            </VerticalStackLayout>
+                        </Border>
+
+                        <Border x:Name="EmptyState"
+                                IsVisible="False"
+                                BackgroundColor="#FFFFFF"
+                                Stroke="#F0E4C2"
+                                StrokeThickness="1"
+                                Padding="24">
+                            <VerticalStackLayout Spacing="10"
+                                                 HorizontalOptions="Center">
+                                <Label x:Name="EmptyTitleLabel"
+                                       Style="{StaticResource SectionTitleStyle}"
+                                       Text="هیچ مشتری ثبت نشده است"
+                                       HorizontalTextAlignment="Center" />
+                                <Label x:Name="EmptySubtitleLabel"
+                                       Style="{StaticResource BodyStyle}"
+                                       TextColor="#5A4630"
+                                       Text="با صدور فاکتور با شماره موبایل، مشتری به فهرست اضافه می‌شود."
+                                       HorizontalTextAlignment="Center" />
+                                <Label x:Name="EmptyStateErrorLabel"
+                                       Style="{StaticResource CaptionStyle}"
+                                       TextColor="{StaticResource Review}"
+                                       HorizontalTextAlignment="Center"
+                                       MaxLines="4" />
+                                <Button x:Name="CopyReportButton"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        BackgroundColor="{StaticResource Wax}"
+                                        TextColor="{StaticResource Ink}"
+                                        Text="کپی گزارش خطا"
+                                        Clicked="OnCopyReportClicked"
+                                        IsVisible="False"
+                                        HorizontalOptions="Center" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <!-- Detail side card matching Customers.dc.html -->
+                    <Border x:Name="DetailCard"
+                            Grid.Column="1"
+                            Grid.Row="0"
+                            BackgroundColor="#FFFFFF"
+                            Stroke="#F0E4C2"
+                            StrokeThickness="1"
+                            Padding="20"
+                            VerticalOptions="Start">
+                        <VerticalStackLayout Spacing="10">
+                            <Label x:Name="DetailCustomerNameLabel"
+                                   FontFamily="{StaticResource FontFamilyBold}"
+                                   FontSize="20"
+                                   TextColor="{StaticResource Ink}"
+                                   Text="[نام مشتری]" />
+
+                            <Grid ColumnDefinitions="*,Auto" Padding="0,6">
+                                <Label Grid.Column="0" Text="موبایل" FontFamily="{StaticResource FontFamilyRegular}" FontSize="15" TextColor="#5A4630" />
+                                <Label x:Name="DetailPhoneLabel" Grid.Column="1" Text="—" FontFamily="{StaticResource FontFamilyBold}" FontSize="15" TextColor="{StaticResource Ink}" />
+                            </Grid>
+                            <BoxView HeightRequest="1" Color="#F0E4C2" />
+
+                            <Grid ColumnDefinitions="*,Auto" Padding="0,6">
+                                <Label Grid.Column="0" Text="جمع خریدها" FontFamily="{StaticResource FontFamilyRegular}" FontSize="15" TextColor="#5A4630" />
+                                <Label x:Name="DetailTotalLabel" Grid.Column="1" Text="۰ ریال" FontFamily="{StaticResource FontFamilyBold}" FontSize="15" TextColor="{StaticResource Green}" />
+                            </Grid>
+                            <BoxView HeightRequest="1" Color="#F0E4C2" />
+
+                            <Grid ColumnDefinitions="*,Auto" Padding="0,6">
+                                <Label Grid.Column="0" Text="طلب باقی‌مانده" FontFamily="{StaticResource FontFamilyRegular}" FontSize="15" TextColor="#5A4630" />
+                                <Label x:Name="DetailOutstandingLabel" Grid.Column="1" Text="۰ ریال" FontFamily="{StaticResource FontFamilyBold}" FontSize="15" TextColor="{StaticResource Ink}" />
+                            </Grid>
+
+                            <Label Text="آخرین فاکتورها"
+                                   FontFamily="{StaticResource FontFamilyBold}"
+                                   FontSize="16"
+                                   TextColor="{StaticResource Ink}"
+                                   Margin="0,12,0,4" />
+                            <VerticalStackLayout x:Name="RecentInvoicesStack"
+                                                 Spacing="6" />
+                        </VerticalStackLayout>
+                    </Border>
+                </Grid>
             </VerticalStackLayout>
-        </Border>
-    </ScrollView>
+        </ScrollView>
+    </Grid>
 </ContentPage>
