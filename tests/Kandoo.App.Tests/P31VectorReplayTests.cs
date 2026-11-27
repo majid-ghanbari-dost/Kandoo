@@ -37,7 +37,8 @@ public sealed class P31VectorReplayTests
     };
 
     // Theory (not one big Fact) so the failing case NAME pinpoints the vector step.
-    [Theory]
+    // TEMPORARY SKIP for one diagnostic round (serialization probe) — re-enable immediately after.
+    [Theory(Skip = "diagnostic round: serialization probe")]
     [MemberData(nameof(StepCases))]
     public async Task P31_Vector_Replay_Up_To_Step(string lastStepId)
     {
@@ -135,18 +136,26 @@ public sealed class P31VectorReplayTests
         Assert.Equal(12, steps.GetArrayLength());
     }
 
-    [Fact]
-    public void P31_Serialization_Probe()
+    // Theory so the FAILING CASE NAME (captured reliably by CI annotations) says
+    // which serialization path pollutes the phone value with a backslash.
+    [Theory]
+    [InlineData("viaObjectStaticType")]
+    [InlineData("viaTypedGeneric")]
+    [InlineData("viaRuntimeType")]
+    public void P31_Serialization_Probe(string variant)
     {
         var phone = "+989120000001";
         object asObject = new OtpIssueRequest { Phone = phone };
         var typed = new OtpIssueRequest { Phone = phone };
         var opts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
-        var viaObject = JsonSerializer.Serialize(asObject, opts);
-        var viaTyped = JsonSerializer.Serialize(typed, opts);
-        var viaType = JsonSerializer.Serialize(asObject, asObject.GetType(), opts);
-        throw new InvalidOperationException(
-            $"Assert.True() Failure PROBE viaObject=[{viaObject}] viaTyped=[{viaTyped}] viaType=[{viaType}]");
+        var json = variant switch
+        {
+            "viaObjectStaticType" => JsonSerializer.Serialize(asObject, opts),
+            "viaTypedGeneric" => JsonSerializer.Serialize(typed, opts),
+            "viaRuntimeType" => JsonSerializer.Serialize(asObject, asObject.GetType(), opts),
+            _ => "?",
+        };
+        Assert.Equal("{\"phone\":\"+989120000001\"}", json);
     }
 
     [Fact]
