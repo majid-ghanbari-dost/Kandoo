@@ -1,0 +1,497 @@
+{
+  "result_version": "capture-folder-result-v1",
+  "status": "REVIEW",
+  "verdict": "REVIEW",
+  "verdict_source": "E-06",
+  "capture_folder": "docs/extraction-bridge/golden-pack/v1/fixtures/capture-folder",
+  "captured_at": null,
+  "artifacts": {
+    "spl": {
+      "file": "capture-job.spl",
+      "bytes": 34,
+      "sha256": "f8fb18e3587dcbe80c9187adf9a937d684f2b8eee0106216e8005908086c5b5c"
+    },
+    "report": {
+      "file": "Report.txt",
+      "bytes": 197,
+      "lines": 4,
+      "sha256": "b7ed08d464233205c769f1282441be9e9c5759e48bd500b7f35dde980835a0e6"
+    },
+    "pages": [
+      {
+        "page_index": 1,
+        "file": "page1.png",
+        "width": 576,
+        "height": 1296,
+        "sha256": "61d6d16594ca35d622099ad5c453292d0279127ee65744ce784952b3a781586a"
+      }
+    ],
+    "extra_files": [],
+    "page_order": "natural, case-insensitive filename order",
+    "probe_metadata": {
+      "spool_job_id": "e30-golden-job-29",
+      "captured_at": null,
+      "page_count": 1
+    }
+  },
+  "scoring_fields": [
+    "quantity",
+    "line_total",
+    "payable"
+  ],
+  "accuracy": {
+    "status": "NOT_SCORED",
+    "expected_values_available": false,
+    "fields": [
+      "quantity",
+      "line_total",
+      "payable"
+    ],
+    "reason": "capture folders do not carry expected-value labels"
+  },
+  "invoice_candidates": {
+    "line_items": [
+      {
+        "line_index": 0,
+        "source_page_index": 1,
+        "source_line_index": 0,
+        "quantity": {
+          "page_index": 1,
+          "kind": "quantity",
+          "field_name": "line.0.quantity",
+          "line_index": 0,
+          "raw_value": "۱",
+          "status": "EXTRACTED",
+          "confidence": 99.99714285714286,
+          "reason": null
+        },
+        "line_total": {
+          "page_index": 1,
+          "kind": "line_total",
+          "field_name": "line.0.total",
+          "line_index": 0,
+          "raw_value": "۱,۴۵۰,۰۰۰",
+          "status": "EXTRACTED",
+          "confidence": 99.98761904761905,
+          "reason": null
+        }
+      },
+      {
+        "line_index": 1,
+        "source_page_index": 1,
+        "source_line_index": 1,
+        "quantity": {
+          "page_index": 1,
+          "kind": "quantity",
+          "field_name": "line.1.quantity",
+          "line_index": 1,
+          "raw_value": "۱",
+          "status": "EXTRACTED",
+          "confidence": 99.99714285714286,
+          "reason": null
+        },
+        "line_total": {
+          "page_index": 1,
+          "kind": "line_total",
+          "field_name": "line.1.total",
+          "line_index": 1,
+          "raw_value": "۴,۸۷۰,۰۰۰",
+          "status": "EXTRACTED",
+          "confidence": 99.9847619047619,
+          "reason": null
+        }
+      },
+      {
+        "line_index": 2,
+        "source_page_index": 1,
+        "source_line_index": 2,
+        "quantity": {
+          "page_index": 1,
+          "kind": "quantity",
+          "field_name": "line.2.quantity",
+          "line_index": 2,
+          "raw_value": "۱",
+          "status": "EXTRACTED",
+          "confidence": 99.99714285714286,
+          "reason": null
+        },
+        "line_total": {
+          "page_index": 1,
+          "kind": "line_total",
+          "field_name": "line.2.total",
+          "line_index": 2,
+          "raw_value": "۵۷۰,۰۰۰",
+          "status": "EXTRACTED",
+          "confidence": 99.9847619047619,
+          "reason": null
+        }
+      },
+      {
+        "line_index": 3,
+        "source_page_index": 1,
+        "source_line_index": 3,
+        "quantity": {
+          "page_index": 1,
+          "kind": "quantity",
+          "field_name": "line.3.quantity",
+          "line_index": 3,
+          "raw_value": "۱",
+          "status": "EXTRACTED",
+          "confidence": 99.99714285714286,
+          "reason": null
+        },
+        "line_total": {
+          "page_index": 1,
+          "kind": "line_total",
+          "field_name": "line.3.total",
+          "line_index": 3,
+          "raw_value": "۵۷۰,۰۰۰",
+          "status": "EXTRACTED",
+          "confidence": 99.9847619047619,
+          "reason": null
+        }
+      }
+    ],
+    "payable_candidates": [
+      {
+        "page_index": 1,
+        "kind": "payable",
+        "field_name": "invoice.payable",
+        "line_index": null,
+        "raw_value": "۷,۴۶۰,۰۰۰",
+        "status": "EXTRACTED",
+        "confidence": 99.96,
+        "reason": null
+      }
+    ],
+    "note": "Page rows are concatenated in natural page order. Payable is not silently summed or selected across pages."
+  },
+  "numeric_candidates": {
+    "quantity": [
+      {
+        "page_index": 1,
+        "kind": "quantity",
+        "field_name": "line.0.quantity",
+        "line_index": 0,
+        "raw_value": "۱",
+        "status": "EXTRACTED",
+        "confidence": 99.99714285714286,
+        "reason": null
+      },
+      {
+        "page_index": 1,
+        "kind": "quantity",
+        "field_name": "line.1.quantity",
+        "line_index": 1,
+        "raw_value": "۱",
+        "status": "EXTRACTED",
+        "confidence": 99.99714285714286,
+        "reason": null
+      },
+      {
+        "page_index": 1,
+        "kind": "quantity",
+        "field_name": "line.2.quantity",
+        "line_index": 2,
+        "raw_value": "۱",
+        "status": "EXTRACTED",
+        "confidence": 99.99714285714286,
+        "reason": null
+      },
+      {
+        "page_index": 1,
+        "kind": "quantity",
+        "field_name": "line.3.quantity",
+        "line_index": 3,
+        "raw_value": "۱",
+        "status": "EXTRACTED",
+        "confidence": 99.99714285714286,
+        "reason": null
+      }
+    ],
+    "line_total": [
+      {
+        "page_index": 1,
+        "kind": "line_total",
+        "field_name": "line.0.total",
+        "line_index": 0,
+        "raw_value": "۱,۴۵۰,۰۰۰",
+        "status": "EXTRACTED",
+        "confidence": 99.98761904761905,
+        "reason": null
+      },
+      {
+        "page_index": 1,
+        "kind": "line_total",
+        "field_name": "line.1.total",
+        "line_index": 1,
+        "raw_value": "۴,۸۷۰,۰۰۰",
+        "status": "EXTRACTED",
+        "confidence": 99.9847619047619,
+        "reason": null
+      },
+      {
+        "page_index": 1,
+        "kind": "line_total",
+        "field_name": "line.2.total",
+        "line_index": 2,
+        "raw_value": "۵۷۰,۰۰۰",
+        "status": "EXTRACTED",
+        "confidence": 99.9847619047619,
+        "reason": null
+      },
+      {
+        "page_index": 1,
+        "kind": "line_total",
+        "field_name": "line.3.total",
+        "line_index": 3,
+        "raw_value": "۵۷۰,۰۰۰",
+        "status": "EXTRACTED",
+        "confidence": 99.9847619047619,
+        "reason": null
+      }
+    ],
+    "payable": [
+      {
+        "page_index": 1,
+        "kind": "payable",
+        "field_name": "invoice.payable",
+        "line_index": null,
+        "raw_value": "۷,۴۶۰,۰۰۰",
+        "status": "EXTRACTED",
+        "confidence": 99.96,
+        "reason": null
+      }
+    ]
+  },
+  "pages": [
+    {
+      "page_index": 1,
+      "file": "page1.png",
+      "width": 576,
+      "height": 1296,
+      "sha256": "61d6d16594ca35d622099ad5c453292d0279127ee65744ce784952b3a781586a",
+      "status": "AUTO_CANDIDATE",
+      "e02": {
+        "status": "AUTO_CANDIDATE",
+        "reason": "All emitted numeric cells are EXTRACTED and the arithmetic gate passed.",
+        "layout_status": "OK",
+        "layout_reason": "Complete table geometry detected.",
+        "row_count": 4,
+        "canonical_blockers": [
+          "Canonical Invoice v0 requires producer-supplied mode, platform identifiers, customer data, and a human-readable product-name mapping.",
+          "dHash cluster IDs are visual sidecar evidence, not product_name text and are not added to the frozen v0 schema."
+        ],
+        "glyph_drift": {
+          "status": "CLEAR",
+          "reason": null,
+          "baseline_id": "e28-5b3684f43b60a9936f2c",
+          "template_library_id": "b42688770113faaba9e4024e3af66fa4eed2cb039d184daff6429e0cef047931",
+          "mean_distance_by_symbol": {
+            ",": {
+              "mean_distance": 8.33e-06,
+              "glyph_count": 8,
+              "baseline_mean": 7.86e-06,
+              "bound": 0.00643404,
+              "absolute_delta": 4.7e-07
+            },
+            "۰": {
+              "mean_distance": 6.67e-06,
+              "glyph_count": 20,
+              "baseline_mean": 5.94e-06,
+              "bound": 1.55e-06,
+              "absolute_delta": 7.3e-07
+            },
+            "۱": {
+              "mean_distance": 9.52e-06,
+              "glyph_count": 5,
+              "baseline_mean": 9.42e-06,
+              "bound": 2.48e-06,
+              "absolute_delta": 1e-07
+            },
+            "۴": {
+              "mean_distance": 4.048e-05,
+              "glyph_count": 3,
+              "baseline_mean": 4.258e-05,
+              "bound": 0.00588463,
+              "absolute_delta": 2.1e-06
+            },
+            "۵": {
+              "mean_distance": 2.857e-05,
+              "glyph_count": 3,
+              "baseline_mean": 4.928e-05,
+              "bound": 0.00861828,
+              "absolute_delta": 2.071e-05
+            },
+            "۶": {
+              "mean_distance": 0.0001,
+              "glyph_count": 1,
+              "baseline_mean": 7.262e-05,
+              "bound": 2.738e-05,
+              "absolute_delta": 2.738e-05
+            },
+            "۷": {
+              "mean_distance": 4.107e-05,
+              "glyph_count": 4,
+              "baseline_mean": 4.001e-05,
+              "bound": 0.0037213,
+              "absolute_delta": 1.06e-06
+            },
+            "۸": {
+              "mean_distance": 2.857e-05,
+              "glyph_count": 1,
+              "baseline_mean": 3.218e-05,
+              "bound": 0.00357155,
+              "absolute_delta": 3.61e-06
+            }
+          },
+          "triggered_symbols": [],
+          "diagnostics": []
+        }
+      },
+      "e05": {
+        "status": "MATCH",
+        "confidence_score": 0.998543588085419,
+        "matched": true,
+        "template_id": "e05-layout-01",
+        "component_scores": {
+          "columns": 1.0,
+          "numeric_format": 1.0,
+          "payable_anchor": 1.0,
+          "row_count": 1.0,
+          "row_rhythm": 0.9919088226967722,
+          "table_anchor": 1.0
+        },
+        "reasons": [
+          "all supplied layout and numeric-format evidence is consistent"
+        ],
+        "numeric_evidence_present": true,
+        "resubstitution_source_fixture": "29",
+        "independent_evidence": false
+      },
+      "numeric_candidates": [
+        {
+          "page_index": 1,
+          "kind": "line_total",
+          "field_name": "line.0.total",
+          "line_index": 0,
+          "raw_value": "۱,۴۵۰,۰۰۰",
+          "status": "EXTRACTED",
+          "confidence": 99.98761904761905,
+          "reason": null
+        },
+        {
+          "page_index": 1,
+          "kind": "quantity",
+          "field_name": "line.0.quantity",
+          "line_index": 0,
+          "raw_value": "۱",
+          "status": "EXTRACTED",
+          "confidence": 99.99714285714286,
+          "reason": null
+        },
+        {
+          "page_index": 1,
+          "kind": "line_total",
+          "field_name": "line.1.total",
+          "line_index": 1,
+          "raw_value": "۴,۸۷۰,۰۰۰",
+          "status": "EXTRACTED",
+          "confidence": 99.9847619047619,
+          "reason": null
+        },
+        {
+          "page_index": 1,
+          "kind": "quantity",
+          "field_name": "line.1.quantity",
+          "line_index": 1,
+          "raw_value": "۱",
+          "status": "EXTRACTED",
+          "confidence": 99.99714285714286,
+          "reason": null
+        },
+        {
+          "page_index": 1,
+          "kind": "line_total",
+          "field_name": "line.2.total",
+          "line_index": 2,
+          "raw_value": "۵۷۰,۰۰۰",
+          "status": "EXTRACTED",
+          "confidence": 99.9847619047619,
+          "reason": null
+        },
+        {
+          "page_index": 1,
+          "kind": "quantity",
+          "field_name": "line.2.quantity",
+          "line_index": 2,
+          "raw_value": "۱",
+          "status": "EXTRACTED",
+          "confidence": 99.99714285714286,
+          "reason": null
+        },
+        {
+          "page_index": 1,
+          "kind": "line_total",
+          "field_name": "line.3.total",
+          "line_index": 3,
+          "raw_value": "۵۷۰,۰۰۰",
+          "status": "EXTRACTED",
+          "confidence": 99.9847619047619,
+          "reason": null
+        },
+        {
+          "page_index": 1,
+          "kind": "quantity",
+          "field_name": "line.3.quantity",
+          "line_index": 3,
+          "raw_value": "۱",
+          "status": "EXTRACTED",
+          "confidence": 99.99714285714286,
+          "reason": null
+        },
+        {
+          "page_index": 1,
+          "kind": "payable",
+          "field_name": "invoice.payable",
+          "line_index": null,
+          "raw_value": "۷,۴۶۰,۰۰۰",
+          "status": "EXTRACTED",
+          "confidence": 99.96,
+          "reason": null
+        }
+      ]
+    }
+  ],
+  "e05_bank": {
+    "status": "AVAILABLE",
+    "currency_unit": null,
+    "currency_unit_status": "UNCONFIRMED",
+    "template_count": 1,
+    "source_invoice_ids": [
+      "29",
+      "31",
+      "32",
+      "33"
+    ],
+    "error": null,
+    "independent_validation": null
+  },
+  "e06": {
+    "verdict": "REVIEW",
+    "reason_codes": [
+      "PARTIAL_MATCH",
+      "CURRENCY_UNIT_UNCONFIRMED"
+    ],
+    "confidence_score": null,
+    "template_match": null,
+    "details": [
+      "Missing fields: human-readable product-name mapping, producer-supplied Canonical Invoice identity and customer context",
+      "Template-bank currency_unit is missing or unsupported; E-06 never guesses or converts amounts."
+    ],
+    "audit_record": null,
+    "owner_acceptance_eligible": false
+  },
+  "blocked_pages": [],
+  "errors": []
+}

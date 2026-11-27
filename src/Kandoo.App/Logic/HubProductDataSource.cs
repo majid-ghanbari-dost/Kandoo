@@ -21,12 +21,37 @@ public sealed class HubProductDataSource : IProductDataSource
         }
     }
 
-    public async Task<IReadOnlyList<ProductRow>> LoadProductsAsync(string? groupId, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<ProductRow>> LoadProductsAsync(
+        string? groupId,
+        CancellationToken cancellationToken = default) =>
+        LoadProductsAsync(groupId, query: null, limit: null, cancellationToken);
+
+    public async Task<IReadOnlyList<ProductRow>> LoadProductsAsync(
+        string? groupId,
+        string? query,
+        int? limit = null,
+        CancellationToken cancellationToken = default)
     {
-        var url = $"{_baseUrl}/v1/stores/{_settings.StoreId:D}/products";
+        var queryParams = new List<string>(3);
         if (!string.IsNullOrWhiteSpace(groupId))
         {
-            url += $"?group_id={Uri.EscapeDataString(groupId.Trim())}";
+            queryParams.Add($"group_id={Uri.EscapeDataString(groupId.Trim())}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            queryParams.Add($"query={Uri.EscapeDataString(query.Trim())}");
+        }
+
+        if (limit is int pageLimit && pageLimit > 0)
+        {
+            queryParams.Add($"limit={pageLimit}");
+        }
+
+        var url = $"{_baseUrl}/v1/stores/{_settings.StoreId:D}/products";
+        if (queryParams.Count > 0)
+        {
+            url += "?" + string.Join("&", queryParams);
         }
 
         using var request = new HttpRequestMessage(HttpMethod.Get, url);

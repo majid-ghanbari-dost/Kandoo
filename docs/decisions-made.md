@@ -127,9 +127,16 @@ Autonomous technical decisions, one per line (what / why / rejected option), per
 34. **CI speed (C-PLAT first task, M-013 §4):** PR checks target under 8 minutes — NuGet + npm caching, Windows job split into parallel jobs (build / tests / installer / smoke), installer smoke gated to changes under `src/Kandoo.App`, `packaging/`, `scripts/` or on `main`, per-lane path filters, `concurrency` cancel of superseded runs; the Android 10 emulator job is REMOVED completely (it always fails; C-91 acceptance = signed-APK artifact + emulator-free tests + the PO's J8 test).
 35. **PM-33 reporting:** no per-task Persian report files; status lives in PR descriptions (task, SHA, run URL, one-line result), tags, and one auto-generated `docs/STATUS.md` (small script run by CI on `main`: open PRs, last green run, tags, installer artifact link); the manager files at most one short R per day with BLOCKED items and the team plan; questions to the PM only when a PM decision is genuinely needed.
 36. **PM-34 MVP-1 definition + countdown:** delivered when ALL are green on `main` — (1) DoD-A of M-010 items 1-4 (installer + first-run per the board, Windows v2 screens for Setup, Review, Invoice, Invoices, Products, Settings, Devices, local end-to-end with the SMS line in the outbox and the customer web page over the LAN, `demo-check.ps1`); (2) Android store app APK with pairing, products, invoice issue, review queue, invoices list (C-91 + C-97); (3) customer web page v2 (P-36) and customer mode (C-92 + P-31 vectors accepted); every merge to `main` publishes the installer artifact + signed APK; per-agent hour estimates and the three delivery dates in R-015, updated daily.
+## C-HOLOO (O17) — Holoo read-only connector + capture-to-review integration
+
+37. **Read-only `Microsoft.Data.SqlClient` 6.1.8 + `Microsoft.Data.Sqlite` 8.0.11 in `Kandoo.HolooConnector` (C-93 follow-ups):** implements D-M Tiers 1–3 (`SqlConnection` with `ApplicationIntent=ReadOnly`, fail-closed `HolooQueryGuard`, zero persisted admin passwords, automatic Tier 3 print-capture fallback), structural `structure.csv` + SQL `INFORMATION_SCHEMA` fingerprinting (`HolooSchemaVersion`), and durable SQLite shadow store + sync checkpoints while keeping `Kandoo.HolooDiscovery` strictly isolated per `Test-C52Boundaries.py`. Why: delivers real SQL Server + cross-platform synthetic SQLite verification without NU19xx warnings or breaking C-52 isolation. Rejected: persisting SQL admin secrets or skipping SQLite durability.
+38. **Real H1-6 schema mapping & `LastSoldPrice` chronological precedence:** `HolooMapper` maps real `bundle/structure.csv` columns (`C_Tel`/`C_Mobile`/`Zip_Code`/`National_Code`, `ARTICLE.Sel_Price`, `ArticlePrice.Sel_Price`, `FACTURE`/`FACTART`) alongside bundle aliases; `HolooPriceResolver` treats `Sel_Price <= 0` as absent, picks the newest non-deleted sale invoice by parsed date (avoiding lexical US-date misordering and Jalali `< 1900` confusion), never falls back to `Buy_Price`, and every Holoo upsert forces `StockUnverified=true`. Why: real bundle data (`P-0001`, `F-0001` vs `F-0010`) proves `0` sale prices and non-chronological invoice IDs occur in Holoo H1-6 exports. Rejected: lexical date sorting or promoting `Buy_Price`.
+39. **Fail-closed capture-folder -> review-item bridge inside `Kandoo.Capture` (`Kandoo.Core` reference):** adds `PersianNumberParser`, `CaptureFolderBuilder`, `CaptureIntakeValidator` (E-73 intake + batch duplicate/wrong-folder triage), `ICaptureFolderExtractor`/`CaptureFolderResultParser` (`capture-folder-result-v1`), `CaptureReviewItemAssembler` (self-verified through `CanonicalInvoiceConsumer.ConsumeForReview`), and `CaptureFolderSpoolSink`, while staging thin `src/Kandoo.Hub/` wiring via a Phase 2 PR against `C-PLAT`'s branch per PM-32. Why: delivers full end-to-end capture-to-canonical-review conversion strictly inside `C-HOLOO`-owned paths without circular project references or cross-owner merge conflicts. Rejected: modifying `C-PLAT`-owned `src/Kandoo.Hub/` files directly in Phase 1.
+
+
 ## C-PLAT CI-speed execution (M-013 §4, 2026-11-27)
 
-37. **CI speed decisions (M-013 §4):** the single 8-minute Windows job became six lanes on the
+40. **CI speed decisions (M-013 §4):** the single 8-minute Windows job became six lanes on the
     change-set graph (build / tests / Hub+smokes / app+screenshots / installer / installer-smoke)
     gated by one cheap ubuntu change-set job; NuGet is cached through a local composite action;
     `concurrency` cancels superseded pushes; docs-only pushes skip CI; the Android 10 emulator job
@@ -138,20 +145,20 @@ Autonomous technical decisions, one per line (what / why / rejected option), per
     Measured on run `45964666504`: **8m04s -> 6m03s wall**, sum of job time 841 s across 8 jobs
     (free of charge: this repository is public, so Actions minutes are not billed — the win is
     reviewer latency and per-push runner load).
-38. **Build artifacts are not shuttled between lanes:** each lane does its own restore+build
+41. **Build artifacts are not shuttled between lanes:** each lane does its own restore+build
     (~13 s warm, NuGet cached) instead of downloading a shared `bin/` artifact, which for this
     solution would be hundreds of MB and cost more to move than to rebuild. Only small outputs
     travel: the Hub publish, the setup.exe, the app publish, and evidence JSON/logs.
-39. **`Kandoo.App` is not in `Kandoo.sln` and references only `Kandoo.Core`**, so the MAUI lane
+42. **`Kandoo.App` is not in `Kandoo.sln` and references only `Kandoo.Core`**, so the MAUI lane
     does not wait for the solution build and does not repeat it (that alone was ~60 s of the old
     job and it sat on the critical path). Critical path is now app -> installer -> smoke.
-40. **Artifact layout is resolved, not memorised:** `upload-artifact` roots an artifact at the
+43. **Artifact layout is resolved, not memorised:** `upload-artifact` roots an artifact at the
     least-common-ancestor of its paths, so the Hub publish (folder + two C-14 evidence files)
     arrives one level deeper than the app publish. Each artifact is now downloaded into a private
     `.ci-downloads/<artifact>` root and normalised from there by
     `scripts/Resolve-CiArtifactLayout.ps1`; sharing one download root was a real bug (it swept Hub
     files into the app folder) and is rejected.
-41. **Installer + smoke gating:** both run only when `src/Kandoo.App`, `packaging/`, `scripts/` or
+44. **Installer + smoke gating:** both run only when `src/Kandoo.App`, `packaging/`, `scripts/` or
     a workflow changed, and always on `main`, so the D1 release kit keeps continuous evidence
     without taxing every PR. The change-set script fails SAFE: any doubt (API error, no base
     commit, truncated 300-file diff) runs every job, because a skipped job is invisible while a

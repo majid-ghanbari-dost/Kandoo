@@ -2,63 +2,314 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="Kandoo.App.ProductEditorPage"
-             Title="ویرایش محصول"
+             Title="ثبت کالای جدید"
              Style="{StaticResource PageStyle}">
-    <ScrollView>
-        <Border Style="{StaticResource CardStyle}">
-            <VerticalStackLayout Style="{StaticResource RootStackStyle}">
-                <Label Style="{StaticResource TitleStyle}" Text="ساخت یا ویرایش محصول" />
-                <Label Style="{StaticResource BodyStyle}"
-                       Text="محصول با گروه/زیرگروه و تعدیل موجودی به‌صورت رخداد." />
+    <Grid ColumnDefinitions="Auto,*">
+        <VerticalStackLayout x:Name="SidebarHost"
+                             Grid.Column="0" />
 
-                <Entry x:Name="ProductIdEntry"
-                       Style="{StaticResource InputStyle}"
-                       Placeholder="شناسه محصول (اختیاری برای ویرایش)"
-                       SemanticProperties.Description="شناسه محصول" />
-                <Entry x:Name="NameEntry"
-                       Style="{StaticResource InputStyle}"
-                       Placeholder="نام محصول"
-                       SemanticProperties.Description="نام محصول" />
-                <Entry x:Name="UnitPriceEntry"
-                       Style="{StaticResource InputStyle}"
-                       Placeholder="قیمت واحد (ریال)"
-                       Keyboard="Numeric"
-                       SemanticProperties.Description="قیمت واحد محصول" />
-                <Entry x:Name="PurchasePriceEntry"
-                       Style="{StaticResource InputStyle}"
-                       Placeholder="قیمت خرید (ریال، اختیاری)"
-                       Keyboard="Numeric"
-                       SemanticProperties.Description="قیمت خرید محصول" />
-                <Picker x:Name="GroupPicker"
-                        Title="گروه محصول"
-                        SemanticProperties.Description="گroupe محصول" />
+        <ScrollView Grid.Column="1">
+            <VerticalStackLayout Padding="32,28"
+                                 Spacing="18"
+                                 MaximumWidthRequest="880"
+                                 HorizontalOptions="Fill">
+                <Label x:Name="PageTitleLabel"
+                       Style="{StaticResource TitleStyle}"
+                       Text="ثبت کالای جدید" />
 
-                <Label Style="{StaticResource SectionTitleStyle}" Text="تعدیل موجودی (رخداد)" />
-                <Entry x:Name="StockAdjustmentEntry"
-                       Style="{StaticResource InputStyle}"
-                       Placeholder="تعدیل موجودی (عدد مثبت یا منفی)"
-                       Keyboard="Numeric"
-                       SemanticProperties.Description="تعدیل موجودی انبار" />
+                <Label x:Name="StatusLabel"
+                       Style="{StaticResource CaptionStyle}"
+                       TextColor="#5A4630"
+                       IsVisible="False" />
 
-                <Button x:Name="SaveButton"
-                        Style="{StaticResource PrimaryButtonStyle}"
-                        Text="ذخیره محصول"
-                        Clicked="OnSaveClicked"
-                        SemanticProperties.Description="ذخیره محصول در هاب" />
+                <!-- CREATE MODE: Product.dc.html -->
+                <VerticalStackLayout x:Name="CreateModeSection"
+                                     Spacing="16">
+                    <Border x:Name="HintCardBorder"
+                            BackgroundColor="{StaticResource Wax}"
+                            StrokeThickness="0"
+                            Padding="16,14">
+                        <Label FontFamily="{StaticResource FontFamilyRegular}"
+                               FontSize="15"
+                               LineHeight="1.5"
+                               TextColor="{StaticResource Ink}"
+                               Text="کالا را ریز کنید. مثال: «بادکنک کرومی سبز» را این‌طور بنویسید: نام: بادکنک، نوع: کرومی، رنگ: سبز. هر چه ریزتر، پیدا کردن کالا هنگام صدور فاکتور آسان‌تر است." />
+                    </Border>
 
-                <Label x:Name="StatusLabel" Style="{StaticResource BodyStyle}" />
-                <Button x:Name="CopyReportButton"
-                        Style="{StaticResource SecondaryButtonStyle}"
-                        Text="کپی گزارش خطا"
-                        Clicked="OnCopyReportClicked"
-                        IsVisible="False"
-                        SemanticProperties.Description="کپی گزارش خطا در حافظه موقت" />
-                <Label x:Name="CopyStatusLabel" Style="{StaticResource BodyStyle}" />
-                <Button Style="{StaticResource SecondaryButtonStyle}"
-                        Text="بازگشت"
-                        Clicked="OnBackClicked"
-                        SemanticProperties.Description="بازگشت به صفحه قبلی" />
+                    <Border x:Name="CreateFormCardBorder"
+                            BackgroundColor="#FFFFFF"
+                            Stroke="#F0E4C2"
+                            StrokeThickness="1"
+                            Padding="24">
+                        <VerticalStackLayout Spacing="12">
+                            <!-- Row 1: نام کالا (الزامی) -->
+                            <Grid ColumnDefinitions="130,*,44,44,140"
+                                  ColumnSpacing="10">
+                                <Label Grid.Column="0" Text="نام کالا" FontFamily="{StaticResource FontFamilyBold}" FontSize="15" TextColor="{StaticResource Ink}" VerticalOptions="Center" />
+                                <Border x:Name="CreateNameBorder" Grid.Column="1" BackgroundColor="#FFFFFF" Stroke="#C9B88E" StrokeThickness="1" Padding="8,0">
+                                    <Entry x:Name="CreateNameEntry" BackgroundColor="#FFFFFF" TextColor="{StaticResource Ink}" PlaceholderColor="#5A4630" FontFamily="{StaticResource FontFamilyRegular}" FontSize="16" MinimumHeightRequest="44" Placeholder="[مثلاً بادکنک]" SemanticProperties.Description="نام کالا الزامی" />
+                                </Border>
+                                <Button Grid.Column="2" Text="+" FontFamily="{StaticResource FontFamilyBold}" FontSize="18" BackgroundColor="{StaticResource Wax}" TextColor="{StaticResource Ink}" CornerRadius="8" MinimumWidthRequest="44" MinimumHeightRequest="44" Padding="0" Clicked="OnAddCustomFieldClicked" SemanticProperties.Description="افزودن فیلد سفارشی" />
+                                <Button Grid.Column="3" Text="−" FontFamily="{StaticResource FontFamilyBold}" FontSize="18" BackgroundColor="{StaticResource Wax}" TextColor="{StaticResource Ink}" CornerRadius="8" MinimumWidthRequest="44" MinimumHeightRequest="44" Padding="0" Clicked="OnRemoveMandatoryRowClicked" SemanticProperties.Description="فیلد الزامی بسته نمی‌شود" />
+                                <Label Grid.Column="4" Text="الزامی" FontFamily="{StaticResource FontFamilyRegular}" FontSize="13" TextColor="#5A4630" VerticalOptions="Center" />
+                            </Grid>
+
+                            <!-- Row 2: نوع کالا (اختیاری) -->
+                            <Grid x:Name="CreateTypeRow"
+                                  ColumnDefinitions="130,*,44,44,140"
+                                  ColumnSpacing="10">
+                                <Label Grid.Column="0" Text="نوع کالا" FontFamily="{StaticResource FontFamilyBold}" FontSize="15" TextColor="{StaticResource Ink}" VerticalOptions="Center" />
+                                <Border x:Name="CreateTypeBorder" Grid.Column="1" BackgroundColor="#FFFFFF" Stroke="#C9B88E" StrokeThickness="1" Padding="8,0">
+                                    <Entry x:Name="CreateTypeEntry" BackgroundColor="#FFFFFF" TextColor="{StaticResource Ink}" PlaceholderColor="#5A4630" FontFamily="{StaticResource FontFamilyRegular}" FontSize="16" MinimumHeightRequest="44" Placeholder="[مثلاً کرومی]" SemanticProperties.Description="نوع کالا اختیاری" />
+                                </Border>
+                                <Button Grid.Column="2" Text="+" FontFamily="{StaticResource FontFamilyBold}" FontSize="18" BackgroundColor="{StaticResource Wax}" TextColor="{StaticResource Ink}" CornerRadius="8" MinimumWidthRequest="44" MinimumHeightRequest="44" Padding="0" Clicked="OnAddCustomFieldClicked" />
+                                <Button Grid.Column="3" Text="−" FontFamily="{StaticResource FontFamilyBold}" FontSize="18" BackgroundColor="{StaticResource Wax}" TextColor="{StaticResource Ink}" CornerRadius="8" MinimumWidthRequest="44" MinimumHeightRequest="44" Padding="0" Clicked="OnHideTypeRowClicked" SemanticProperties.Description="بستن ردیف نوع کالا" />
+                                <Label Grid.Column="4" Text="اختیاری" FontFamily="{StaticResource FontFamilyRegular}" FontSize="13" TextColor="#5A4630" VerticalOptions="Center" />
+                            </Grid>
+
+                            <!-- Row 3: رنگ (اختیاری) -->
+                            <Grid x:Name="CreateColorRow"
+                                  ColumnDefinitions="130,*,44,44,140"
+                                  ColumnSpacing="10">
+                                <Label Grid.Column="0" Text="رنگ" FontFamily="{StaticResource FontFamilyBold}" FontSize="15" TextColor="{StaticResource Ink}" VerticalOptions="Center" />
+                                <Border x:Name="CreateColorBorder" Grid.Column="1" BackgroundColor="#FFFFFF" Stroke="#C9B88E" StrokeThickness="1" Padding="8,0">
+                                    <Entry x:Name="CreateColorEntry" BackgroundColor="#FFFFFF" TextColor="{StaticResource Ink}" PlaceholderColor="#5A4630" FontFamily="{StaticResource FontFamilyRegular}" FontSize="16" MinimumHeightRequest="44" Placeholder="[مثلاً سبز]" SemanticProperties.Description="رنگ کالا اختیاری" />
+                                </Border>
+                                <Button Grid.Column="2" Text="+" FontFamily="{StaticResource FontFamilyBold}" FontSize="18" BackgroundColor="{StaticResource Wax}" TextColor="{StaticResource Ink}" CornerRadius="8" MinimumWidthRequest="44" MinimumHeightRequest="44" Padding="0" Clicked="OnAddCustomFieldClicked" />
+                                <Button Grid.Column="3" Text="−" FontFamily="{StaticResource FontFamilyBold}" FontSize="18" BackgroundColor="{StaticResource Wax}" TextColor="{StaticResource Ink}" CornerRadius="8" MinimumWidthRequest="44" MinimumHeightRequest="44" Padding="0" Clicked="OnHideColorRowClicked" SemanticProperties.Description="بستن ردیف رنگ" />
+                                <Label Grid.Column="4" Text="اختیاری" FontFamily="{StaticResource FontFamilyRegular}" FontSize="13" TextColor="#5A4630" VerticalOptions="Center" />
+                            </Grid>
+
+                            <!-- Dynamic operator custom rows ([نام فیلد شما] / [مقدار]) -->
+                            <VerticalStackLayout x:Name="CustomFieldsContainer"
+                                                 Spacing="12" />
+
+                            <!-- Row 5: قیمت (الزامی) -->
+                            <Grid ColumnDefinitions="130,*,44,44,140"
+                                  ColumnSpacing="10">
+                                <Label Grid.Column="0" Text="قیمت" FontFamily="{StaticResource FontFamilyBold}" FontSize="15" TextColor="{StaticResource Ink}" VerticalOptions="Center" />
+                                <Border x:Name="CreatePriceBorder" Grid.Column="1" BackgroundColor="#FFFFFF" Stroke="#C9B88E" StrokeThickness="1" Padding="8,0">
+                                    <Entry x:Name="CreatePriceEntry" BackgroundColor="#FFFFFF" TextColor="{StaticResource Ink}" PlaceholderColor="#5A4630" FontFamily="{StaticResource FontFamilyRegular}" FontSize="16" MinimumHeightRequest="44" Keyboard="Numeric" Placeholder="[قیمت]" SemanticProperties.Description="قیمت فروش به ریال الزامی" />
+                                </Border>
+                                <Button Grid.Column="2" Text="+" FontFamily="{StaticResource FontFamilyBold}" FontSize="18" BackgroundColor="{StaticResource Wax}" TextColor="{StaticResource Ink}" CornerRadius="8" MinimumWidthRequest="44" MinimumHeightRequest="44" Padding="0" Clicked="OnAddCustomFieldClicked" />
+                                <Button Grid.Column="3" Text="−" FontFamily="{StaticResource FontFamilyBold}" FontSize="18" BackgroundColor="{StaticResource Wax}" TextColor="{StaticResource Ink}" CornerRadius="8" MinimumWidthRequest="44" MinimumHeightRequest="44" Padding="0" Clicked="OnRemoveMandatoryRowClicked" />
+                                <Label Grid.Column="4" Text="الزامی" FontFamily="{StaticResource FontFamilyRegular}" FontSize="13" TextColor="#5A4630" VerticalOptions="Center" />
+                            </Grid>
+
+                            <!-- Row 6: قیمت خرید (اختیاری، برای سود) -->
+                            <Grid x:Name="CreatePurchasePriceRow"
+                                  ColumnDefinitions="130,*,44,44,140"
+                                  ColumnSpacing="10">
+                                <Label Grid.Column="0" Text="قیمت خرید" FontFamily="{StaticResource FontFamilyBold}" FontSize="15" TextColor="{StaticResource Ink}" VerticalOptions="Center" />
+                                <Border x:Name="CreatePurchasePriceBorder" Grid.Column="1" BackgroundColor="#FFFFFF" Stroke="#C9B88E" StrokeThickness="1" Padding="8,0">
+                                    <Entry x:Name="CreatePurchasePriceEntry" BackgroundColor="#FFFFFF" TextColor="{StaticResource Ink}" PlaceholderColor="#5A4630" FontFamily="{StaticResource FontFamilyRegular}" FontSize="16" MinimumHeightRequest="44" Keyboard="Numeric" Placeholder="[برای محاسبه‌ی سود]" SemanticProperties.Description="قیمت خرید اختیاری برای سود" />
+                                </Border>
+                                <Button Grid.Column="2" Text="+" FontFamily="{StaticResource FontFamilyBold}" FontSize="18" BackgroundColor="{StaticResource Wax}" TextColor="{StaticResource Ink}" CornerRadius="8" MinimumWidthRequest="44" MinimumHeightRequest="44" Padding="0" Clicked="OnAddCustomFieldClicked" />
+                                <Button Grid.Column="3" Text="−" FontFamily="{StaticResource FontFamilyBold}" FontSize="18" BackgroundColor="{StaticResource Wax}" TextColor="{StaticResource Ink}" CornerRadius="8" MinimumWidthRequest="44" MinimumHeightRequest="44" Padding="0" Clicked="OnHidePurchasePriceRowClicked" SemanticProperties.Description="بستن ردیف قیمت خرید" />
+                                <Label Grid.Column="4" Text="اختیاری، برای سود" FontFamily="{StaticResource FontFamilyRegular}" FontSize="13" TextColor="#5A4630" VerticalOptions="Center" />
+                            </Grid>
+
+                            <!-- Row 7: تگ رقمی (اختیاری، خودکار) -->
+                            <Grid x:Name="CreateTagRow"
+                                  ColumnDefinitions="130,*,44,44,140"
+                                  ColumnSpacing="10">
+                                <Label Grid.Column="0" Text="تگ رقمی" FontFamily="{StaticResource FontFamilyBold}" FontSize="15" TextColor="{StaticResource Ink}" VerticalOptions="Center" />
+                                <Border x:Name="CreateTagBorder" Grid.Column="1" BackgroundColor="#FFFFFF" Stroke="#C9B88E" StrokeThickness="1" Padding="8,0">
+                                    <Entry x:Name="CreateTagEntry" BackgroundColor="#FFFFFF" TextColor="{StaticResource Ink}" PlaceholderColor="#5A4630" FontFamily="{StaticResource FontFamilyRegular}" FontSize="16" MinimumHeightRequest="44" Keyboard="Numeric" Placeholder="[خالی بماند، کندو شماره می‌دهد]" SemanticProperties.Description="تگ رقمی اختیاری خودکار" />
+                                </Border>
+                                <Button Grid.Column="2" Text="+" FontFamily="{StaticResource FontFamilyBold}" FontSize="18" BackgroundColor="{StaticResource Wax}" TextColor="{StaticResource Ink}" CornerRadius="8" MinimumWidthRequest="44" MinimumHeightRequest="44" Padding="0" Clicked="OnAddCustomFieldClicked" />
+                                <Button Grid.Column="3" Text="−" FontFamily="{StaticResource FontFamilyBold}" FontSize="18" BackgroundColor="{StaticResource Wax}" TextColor="{StaticResource Ink}" CornerRadius="8" MinimumWidthRequest="44" MinimumHeightRequest="44" Padding="0" Clicked="OnHideTagRowClicked" SemanticProperties.Description="بستن ردیف تگ رقمی" />
+                                <Label Grid.Column="4" Text="اختیاری، خودکار" FontFamily="{StaticResource FontFamilyRegular}" FontSize="13" TextColor="#5A4630" VerticalOptions="Center" />
+                            </Grid>
+
+                            <!-- Row 8: تعداد در انبار (الزامی) -->
+                            <Grid ColumnDefinitions="130,*,44,44,140"
+                                  ColumnSpacing="10">
+                                <Label Grid.Column="0" Text="تعداد در انبار" FontFamily="{StaticResource FontFamilyBold}" FontSize="15" TextColor="{StaticResource Ink}" VerticalOptions="Center" />
+                                <Border x:Name="CreateStockBorder" Grid.Column="1" BackgroundColor="#FFFFFF" Stroke="#C9B88E" StrokeThickness="1" Padding="8,0">
+                                    <Entry x:Name="CreateStockEntry" BackgroundColor="#FFFFFF" TextColor="{StaticResource Ink}" PlaceholderColor="#5A4630" FontFamily="{StaticResource FontFamilyRegular}" FontSize="16" MinimumHeightRequest="44" Keyboard="Numeric" Placeholder="[تعداد]" SemanticProperties.Description="تعداد اولیه در انبار الزامی" />
+                                </Border>
+                                <Button Grid.Column="2" Text="+" FontFamily="{StaticResource FontFamilyBold}" FontSize="18" BackgroundColor="{StaticResource Wax}" TextColor="{StaticResource Ink}" CornerRadius="8" MinimumWidthRequest="44" MinimumHeightRequest="44" Padding="0" Clicked="OnAddCustomFieldClicked" />
+                                <Button Grid.Column="3" Text="−" FontFamily="{StaticResource FontFamilyBold}" FontSize="18" BackgroundColor="{StaticResource Wax}" TextColor="{StaticResource Ink}" CornerRadius="8" MinimumWidthRequest="44" MinimumHeightRequest="44" Padding="0" Clicked="OnRemoveMandatoryRowClicked" />
+                                <Label Grid.Column="4" Text="الزامی" FontFamily="{StaticResource FontFamilyRegular}" FontSize="13" TextColor="#5A4630" VerticalOptions="Center" />
+                            </Grid>
+
+                            <!-- Optional Group / Legacy Code row -->
+                            <Grid x:Name="CreateGroupRow"
+                                  ColumnDefinitions="130,*,140"
+                                  ColumnSpacing="10">
+                                <Label Grid.Column="0" Text="گروه کالا" FontFamily="{StaticResource FontFamilyBold}" FontSize="15" TextColor="{StaticResource Ink}" VerticalOptions="Center" />
+                                <Border x:Name="CreateGroupBorder" Grid.Column="1" BackgroundColor="#FFFFFF" Stroke="#C9B88E" StrokeThickness="1" Padding="8,0">
+                                    <Picker x:Name="CreateGroupPicker" BackgroundColor="#FFFFFF" TextColor="{StaticResource Ink}" FontFamily="{StaticResource FontFamilyRegular}" FontSize="15" MinimumHeightRequest="44" Title="بدون گروه (اختیاری)" />
+                                </Border>
+                                <Label Grid.Column="2" Text="اختیاری" FontFamily="{StaticResource FontFamilyRegular}" FontSize="13" TextColor="#5A4630" VerticalOptions="Center" />
+                            </Grid>
+
+                            <Button x:Name="RestoreHiddenFieldsButton"
+                                    IsVisible="False"
+                                    Text="نمایش دوباره فیلدهای اختیاری بسته‌شده"
+                                    FontFamily="{StaticResource FontFamilyRegular}"
+                                    FontSize="13"
+                                    BackgroundColor="{StaticResource Wax}"
+                                    TextColor="{StaticResource Ink}"
+                                    CornerRadius="8"
+                                    MinimumHeightRequest="38"
+                                    HorizontalOptions="Start"
+                                    Clicked="OnRestoreHiddenFieldsClicked" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Action row from Product.dc.html -->
+                    <HorizontalStackLayout Spacing="12">
+                        <Button x:Name="CreateSaveButton"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                BackgroundColor="{StaticResource Green}"
+                                TextColor="#FFFFFF"
+                                CornerRadius="10"
+                                Text="ثبت کالا"
+                                Clicked="OnCreateSaveClicked"
+                                SemanticProperties.Description="ثبت کالای جدید در هاب" />
+                        <Label VerticalOptions="Center"
+                               FontFamily="{StaticResource FontFamilyRegular}"
+                               FontSize="14"
+                               TextColor="{StaticResource Review}"
+                               Text="اگر نام، قیمت یا تعداد خالی باشد، کالا ساخته نمی‌شود و خطا نشان داده می‌شود." />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+
+                <!-- EDIT MODE: Product-Edit.dc.html -->
+                <VerticalStackLayout x:Name="EditModeSection"
+                                     IsVisible="False"
+                                     Spacing="16">
+                    <!-- Card 1: Product core fields -->
+                    <Border x:Name="EditDetailsCardBorder"
+                            BackgroundColor="#FFFFFF"
+                            Stroke="#F0E4C2"
+                            StrokeThickness="1"
+                            Padding="24">
+                        <VerticalStackLayout Spacing="12">
+                            <Grid ColumnDefinitions="190,*" ColumnSpacing="10">
+                                <Label Grid.Column="0" Text="نام کالا" FontFamily="{StaticResource FontFamilyBold}" FontSize="15" TextColor="{StaticResource Ink}" VerticalOptions="Center" />
+                                <Border x:Name="EditNameBorder" Grid.Column="1" BackgroundColor="#FFFFFF" Stroke="#C9B88E" StrokeThickness="1" Padding="8,0">
+                                    <Entry x:Name="EditNameEntry" BackgroundColor="#FFFFFF" TextColor="{StaticResource Ink}" PlaceholderColor="#5A4630" FontFamily="{StaticResource FontFamilyRegular}" FontSize="16" MinimumHeightRequest="44" Placeholder="[نام]" />
+                                </Border>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="190,*" ColumnSpacing="10">
+                                <Label Grid.Column="0" Text="قیمت فروش" FontFamily="{StaticResource FontFamilyBold}" FontSize="15" TextColor="{StaticResource Ink}" VerticalOptions="Center" />
+                                <Border x:Name="EditPriceBorder" Grid.Column="1" BackgroundColor="#FFFFFF" Stroke="#C9B88E" StrokeThickness="1" Padding="8,0">
+                                    <Entry x:Name="EditPriceEntry" BackgroundColor="#FFFFFF" TextColor="{StaticResource Ink}" PlaceholderColor="#5A4630" FontFamily="{StaticResource FontFamilyRegular}" FontSize="16" MinimumHeightRequest="44" Keyboard="Numeric" Placeholder="[قیمت]" />
+                                </Border>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="190,*" ColumnSpacing="10">
+                                <Label Grid.Column="0" Text="قیمت خرید (اختیاری، برای سود)" FontFamily="{StaticResource FontFamilyBold}" FontSize="15" TextColor="{StaticResource Ink}" VerticalOptions="Center" />
+                                <Border x:Name="EditPurchasePriceBorder" Grid.Column="1" BackgroundColor="#FFFFFF" Stroke="#C9B88E" StrokeThickness="1" Padding="8,0">
+                                    <Entry x:Name="EditPurchasePriceEntry" BackgroundColor="#FFFFFF" TextColor="{StaticResource Ink}" PlaceholderColor="#5A4630" FontFamily="{StaticResource FontFamilyRegular}" FontSize="16" MinimumHeightRequest="44" Keyboard="Numeric" Placeholder="[قیمت خرید]" />
+                                </Border>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="190,*" ColumnSpacing="10">
+                                <Label Grid.Column="0" Text="تگ رقمی" FontFamily="{StaticResource FontFamilyBold}" FontSize="15" TextColor="{StaticResource Ink}" VerticalOptions="Center" />
+                                <Border x:Name="EditTagBorder" Grid.Column="1" BackgroundColor="#FAF5E6" Stroke="#C9B88E" StrokeThickness="1" Padding="8,0">
+                                    <Entry x:Name="EditTagEntry" IsReadOnly="True" BackgroundColor="#FAF5E6" TextColor="{StaticResource Ink}" PlaceholderColor="#5A4630" FontFamily="{StaticResource FontFamilyRegular}" FontSize="16" MinimumHeightRequest="44" Placeholder="[تگ]" />
+                                </Border>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="190,*" ColumnSpacing="10">
+                                <Label Grid.Column="0" Text="نوع کالا (اختیاری)" FontFamily="{StaticResource FontFamilyBold}" FontSize="15" TextColor="{StaticResource Ink}" VerticalOptions="Center" />
+                                <Border x:Name="EditTypeBorder" Grid.Column="1" BackgroundColor="#FFFFFF" Stroke="#C9B88E" StrokeThickness="1" Padding="8,0">
+                                    <Entry x:Name="EditTypeEntry" BackgroundColor="#FFFFFF" TextColor="{StaticResource Ink}" PlaceholderColor="#5A4630" FontFamily="{StaticResource FontFamilyRegular}" FontSize="16" MinimumHeightRequest="44" Placeholder="[نوع]" />
+                                </Border>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="190,*" ColumnSpacing="10">
+                                <Label Grid.Column="0" Text="رنگ (اختیاری)" FontFamily="{StaticResource FontFamilyBold}" FontSize="15" TextColor="{StaticResource Ink}" VerticalOptions="Center" />
+                                <Border x:Name="EditColorBorder" Grid.Column="1" BackgroundColor="#FFFFFF" Stroke="#C9B88E" StrokeThickness="1" Padding="8,0">
+                                    <Entry x:Name="EditColorEntry" BackgroundColor="#FFFFFF" TextColor="{StaticResource Ink}" PlaceholderColor="#5A4630" FontFamily="{StaticResource FontFamilyRegular}" FontSize="16" MinimumHeightRequest="44" Placeholder="[رنگ]" />
+                                </Border>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="190,*" ColumnSpacing="10">
+                                <Label Grid.Column="0" Text="گروه کالا" FontFamily="{StaticResource FontFamilyBold}" FontSize="15" TextColor="{StaticResource Ink}" VerticalOptions="Center" />
+                                <Border x:Name="EditGroupBorder" Grid.Column="1" BackgroundColor="#FFFFFF" Stroke="#C9B88E" StrokeThickness="1" Padding="8,0">
+                                    <Picker x:Name="EditGroupPicker" BackgroundColor="#FFFFFF" TextColor="{StaticResource Ink}" FontFamily="{StaticResource FontFamilyRegular}" FontSize="15" MinimumHeightRequest="44" Title="بدون گروه" />
+                                </Border>
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Card 2: Stock adjustment card from Product-Edit.dc.html -->
+                    <Border x:Name="EditStockCardBorder"
+                            BackgroundColor="#FFFFFF"
+                            Stroke="#F0E4C2"
+                            StrokeThickness="1"
+                            Padding="24">
+                        <VerticalStackLayout Spacing="12">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Grid.Column="0"
+                                       Text="تغییر موجودی"
+                                       FontFamily="{StaticResource FontFamilyBold}"
+                                       FontSize="17"
+                                       TextColor="{StaticResource Ink}" />
+                                <Label x:Name="CurrentStockBadgeLabel"
+                                       Grid.Column="1"
+                                       FontFamily="{StaticResource FontFamilyBold}"
+                                       FontSize="14"
+                                       TextColor="#5A4630" />
+                            </Grid>
+
+                            <Grid ColumnDefinitions="190,*" ColumnSpacing="10">
+                                <Label Grid.Column="0" Text="تعداد (مثبت یا منفی)" FontFamily="{StaticResource FontFamilyBold}" FontSize="15" TextColor="{StaticResource Ink}" VerticalOptions="Center" />
+                                <Border x:Name="StockDeltaBorder" Grid.Column="1" BackgroundColor="#FFFFFF" Stroke="#C9B88E" StrokeThickness="1" Padding="8,0">
+                                    <Entry x:Name="StockDeltaEntry" BackgroundColor="#FFFFFF" TextColor="{StaticResource Ink}" PlaceholderColor="#5A4630" FontFamily="{StaticResource FontFamilyRegular}" FontSize="16" MinimumHeightRequest="44" Placeholder="[مثلاً ۵ یا ‎−۲]" />
+                                </Border>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="190,*" ColumnSpacing="10">
+                                <Label Grid.Column="0" Text="دلیل (الزامی)" FontFamily="{StaticResource FontFamilyBold}" FontSize="15" TextColor="{StaticResource Ink}" VerticalOptions="Center" />
+                                <Border x:Name="StockReasonBorder" Grid.Column="1" BackgroundColor="#FFFFFF" Stroke="#C9B88E" StrokeThickness="1" Padding="8,0">
+                                    <Entry x:Name="StockReasonEntry" BackgroundColor="#FFFFFF" TextColor="{StaticResource Ink}" PlaceholderColor="#5A4630" FontFamily="{StaticResource FontFamilyRegular}" FontSize="16" MinimumHeightRequest="44" Placeholder="[شمارش انبار، ضایعات، …]" />
+                                </Border>
+                            </Grid>
+
+                            <Button x:Name="RecordStockAdjustmentButton"
+                                    Style="{StaticResource PrimaryButtonStyle}"
+                                    BackgroundColor="{StaticResource Honey}"
+                                    TextColor="{StaticResource Ink}"
+                                    CornerRadius="10"
+                                    HorizontalOptions="Start"
+                                    Text="ثبت تغییر"
+                                    Clicked="OnRecordStockAdjustmentClicked"
+                                    SemanticProperties.Description="ثبت رویداد تغییر موجودی" />
+
+                            <Label FontFamily="{StaticResource FontFamilyRegular}"
+                                   FontSize="13"
+                                   TextColor="#5A4630"
+                                   Text="تغییر موجودی یک رویداد جدید ثبت می‌کند و گذشته را پاک نمی‌کند." />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Save button from Product-Edit.dc.html -->
+                    <HorizontalStackLayout Spacing="12">
+                        <Button x:Name="EditSaveButton"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                BackgroundColor="{StaticResource Green}"
+                                TextColor="#FFFFFF"
+                                CornerRadius="10"
+                                Text="ذخیره"
+                                Clicked="OnEditSaveClicked"
+                                SemanticProperties.Description="ذخیره تغییرات کالا" />
+                        <Button x:Name="BackToCatalogButton"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                BackgroundColor="{StaticResource Wax}"
+                                TextColor="{StaticResource Ink}"
+                                CornerRadius="10"
+                                Text="بازگشت به کالاها"
+                                Clicked="OnBackToCatalogClicked" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
             </VerticalStackLayout>
-        </Border>
-    </ScrollView>
+        </ScrollView>
+    </Grid>
 </ContentPage>
