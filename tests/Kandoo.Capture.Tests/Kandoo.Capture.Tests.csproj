@@ -17,6 +17,10 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Fixtures/extract-capture-folder-29.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../../src/Kandoo.Capture/Kandoo.Capture.csproj" />
+    <ProjectReference Include="../../src/Kandoo.Core/Kandoo.Core.csproj" />
   </ItemGroup>
 </Project>
