@@ -1,0 +1,404 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Kandoo.App.AccountingPage"
+             Title="حسابداری"
+             Style="{StaticResource PageStyle}">
+    <Grid ColumnDefinitions="Auto,*">
+        <VerticalStackLayout x:Name="SidebarHost"
+                             Grid.Column="0" />
+
+        <ScrollView Grid.Column="1">
+            <VerticalStackLayout Padding="32,28"
+                                 Spacing="16"
+                                 MaximumWidthRequest="980"
+                                 HorizontalOptions="Fill">
+                <!-- Header row matching Accounting.dc.html + Pro-View.dc.html -->
+                <Grid ColumnDefinitions="*,Auto,Auto"
+                      ColumnSpacing="12">
+                    <Label x:Name="PageTitleLabel"
+                           Grid.Column="0"
+                           Style="{StaticResource TitleStyle}"
+                           Text="حسابداری"
+                           VerticalOptions="Center" />
+                    <HorizontalStackLayout Grid.Column="1"
+                                           Spacing="6"
+                                           VerticalOptions="Center">
+                        <CheckBox x:Name="ProViewCheckBox"
+                                  Color="{StaticResource Honey}"
+                                  CheckedChanged="OnProViewToggled" />
+                        <Label Text="نمای حرفه‌ای (برای حسابدار)"
+                               FontFamily="{StaticResource FontFamilyRegular}"
+                               FontSize="15"
+                               TextColor="{StaticResource Ink}"
+                               VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                    <Button Grid.Column="2"
+                            x:Name="RefreshButton"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            CornerRadius="10"
+                            Text="بروزرسانی"
+                            Clicked="OnRefreshClicked" />
+                </Grid>
+
+                <!-- Sub-view navigation chips (Overview / Sales-Report / Receivables / Inventory-Value) -->
+                <HorizontalStackLayout x:Name="SubViewChipsRow"
+                                       Spacing="8">
+                    <Button x:Name="TabOverviewChip"
+                            Text="خلاصه حسابداری"
+                            FontFamily="{StaticResource FontFamilyBold}"
+                            FontSize="14"
+                            BackgroundColor="{StaticResource Honey}"
+                            TextColor="{StaticResource Ink}"
+                            CornerRadius="20"
+                            MinimumHeightRequest="40"
+                            Padding="16,8"
+                            Clicked="OnTabOverviewClicked" />
+                    <Button x:Name="TabSalesReportChip"
+                            Text="گزارش فروش"
+                            FontFamily="{StaticResource FontFamilyRegular}"
+                            FontSize="14"
+                            BackgroundColor="{StaticResource Wax}"
+                            TextColor="{StaticResource Ink}"
+                            CornerRadius="20"
+                            MinimumHeightRequest="40"
+                            Padding="16,8"
+                            Clicked="OnTabSalesReportClicked" />
+                    <Button x:Name="TabReceivablesChip"
+                            Text="طلب از مشتری‌ها"
+                            FontFamily="{StaticResource FontFamilyRegular}"
+                            FontSize="14"
+                            BackgroundColor="{StaticResource Wax}"
+                            TextColor="{StaticResource Ink}"
+                            CornerRadius="20"
+                            MinimumHeightRequest="40"
+                            Padding="16,8"
+                            Clicked="OnTabReceivablesClicked" />
+                    <Button x:Name="TabInventoryValueChip"
+                            Text="ارزش موجودی انبار"
+                            FontFamily="{StaticResource FontFamilyRegular}"
+                            FontSize="14"
+                            BackgroundColor="{StaticResource Wax}"
+                            TextColor="{StaticResource Ink}"
+                            CornerRadius="20"
+                            MinimumHeightRequest="40"
+                            Padding="16,8"
+                            Clicked="OnTabInventoryValueClicked" />
+                </HorizontalStackLayout>
+
+                <Label x:Name="StatusLabel"
+                       Style="{StaticResource CaptionStyle}"
+                       TextColor="#5A4630" />
+
+                <!-- Period selector chips (امروز / این هفته / این ماه) -->
+                <HorizontalStackLayout x:Name="PeriodChipsRow"
+                                       Spacing="8">
+                    <Button x:Name="PeriodTodayChip"
+                            Text="امروز"
+                            FontFamily="{StaticResource FontFamilyBold}"
+                            FontSize="15"
+                            BackgroundColor="{StaticResource Honey}"
+                            TextColor="{StaticResource Ink}"
+                            CornerRadius="20"
+                            MinimumHeightRequest="40"
+                            Padding="18,8"
+                            Clicked="OnPeriodTodayClicked" />
+                    <Button x:Name="PeriodWeekChip"
+                            Text="این هفته"
+                            FontFamily="{StaticResource FontFamilyRegular}"
+                            FontSize="15"
+                            BackgroundColor="{StaticResource Wax}"
+                            TextColor="{StaticResource Ink}"
+                            CornerRadius="20"
+                            MinimumHeightRequest="40"
+                            Padding="18,8"
+                            Clicked="OnPeriodWeekClicked" />
+                    <Button x:Name="PeriodMonthChip"
+                            Text="این ماه"
+                            FontFamily="{StaticResource FontFamilyRegular}"
+                            FontSize="15"
+                            BackgroundColor="{StaticResource Wax}"
+                            TextColor="{StaticResource Ink}"
+                            CornerRadius="20"
+                            MinimumHeightRequest="40"
+                            Padding="18,8"
+                            Clicked="OnPeriodMonthClicked" />
+                </HorizontalStackLayout>
+
+                <!-- SECTION 1: Overview matching Accounting.dc.html -->
+                <VerticalStackLayout x:Name="OverviewSection"
+                                     Spacing="16">
+                    <Grid ColumnDefinitions="*,*"
+                          RowDefinitions="Auto,Auto"
+                          ColumnSpacing="16"
+                          RowSpacing="16">
+                        <Border x:Name="SalesKpiCard" Grid.Column="0" Grid.Row="0" BackgroundColor="#FFFFFF" Stroke="#F0E4C2" StrokeThickness="1" Padding="16">
+                            <VerticalStackLayout Spacing="6">
+                                <Label x:Name="SalesKpiTitleLabel" Text="فروش امروز" FontFamily="{StaticResource FontFamilyRegular}" FontSize="14" TextColor="#5A4630" />
+                                <Label x:Name="SalesKpiValueLabel" Text="۰ ریال" FontFamily="{StaticResource FontFamilyBold}" FontSize="26" TextColor="{StaticResource Ink}" />
+                                <Label x:Name="SalesKpiSubLabel" Text="جمع همه‌ی فاکتورهای امروز" FontFamily="{StaticResource FontFamilyRegular}" FontSize="13" TextColor="#5A4630" />
+                            </VerticalStackLayout>
+                        </Border>
+
+                        <Border x:Name="ProfitKpiCard" Grid.Column="1" Grid.Row="0" BackgroundColor="#FFFFFF" Stroke="#F0E4C2" StrokeThickness="1" Padding="16">
+                            <VerticalStackLayout Spacing="6">
+                                <Label Text="سود کالاهای دارای قیمت خرید" FontFamily="{StaticResource FontFamilyRegular}" FontSize="14" TextColor="#5A4630" />
+                                <Label x:Name="ProfitKpiValueLabel" Text="۰ ریال" FontFamily="{StaticResource FontFamilyBold}" FontSize="26" TextColor="{StaticResource Green}" />
+                                <Label Text="فروش منهای قیمت خرید" FontFamily="{StaticResource FontFamilyRegular}" FontSize="13" TextColor="#5A4630" />
+                            </VerticalStackLayout>
+                        </Border>
+
+                        <Border x:Name="ReceivablesKpiCard" Grid.Column="0" Grid.Row="1" BackgroundColor="#FFFFFF" Stroke="#F0E4C2" StrokeThickness="1" Padding="16">
+                            <VerticalStackLayout Spacing="6">
+                                <Label Text="طلب از مشتری‌ها" FontFamily="{StaticResource FontFamilyRegular}" FontSize="14" TextColor="#5A4630" />
+                                <Label x:Name="ReceivablesKpiValueLabel" Text="۰ ریال" FontFamily="{StaticResource FontFamilyBold}" FontSize="26" TextColor="{StaticResource Review}" />
+                                <Label x:Name="ReceivablesKpiSubLabel" Text="فاکتورهای پرداخت‌نشده" FontFamily="{StaticResource FontFamilyRegular}" FontSize="13" TextColor="#5A4630" />
+                            </VerticalStackLayout>
+                        </Border>
+
+                        <Border x:Name="StockValueKpiCard" Grid.Column="1" Grid.Row="1" BackgroundColor="#FFFFFF" Stroke="#F0E4C2" StrokeThickness="1" Padding="16">
+                            <VerticalStackLayout Spacing="6">
+                                <Label Text="ارزش موجودی انبار" FontFamily="{StaticResource FontFamilyRegular}" FontSize="14" TextColor="#5A4630" />
+                                <Label x:Name="StockValueKpiValueLabel" Text="۰ ریال" FontFamily="{StaticResource FontFamilyBold}" FontSize="26" TextColor="{StaticResource Ink}" />
+                                <Label Text="بر پایه‌ی قیمت خرید" FontFamily="{StaticResource FontFamilyRegular}" FontSize="13" TextColor="#5A4630" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </Grid>
+
+                    <!-- Sales by payment method card -->
+                    <Border x:Name="PaymentBreakdownCard"
+                            BackgroundColor="#FFFFFF"
+                            Stroke="#F0E4C2"
+                            StrokeThickness="1"
+                            Padding="18">
+                        <VerticalStackLayout Spacing="12">
+                            <Label x:Name="PaymentBreakdownTitleLabel"
+                                   Text="فروش امروز به تفکیک روش پرداخت"
+                                   FontFamily="{StaticResource FontFamilyBold}"
+                                   FontSize="16"
+                                   TextColor="{StaticResource Ink}" />
+                            <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="14">
+                                <VerticalStackLayout Grid.Column="0" Spacing="4">
+                                    <Label Text="کارت‌خوان" FontFamily="{StaticResource FontFamilyRegular}" FontSize="14" TextColor="#5A4630" />
+                                    <Label x:Name="OverviewCardReaderLabel" Text="۰ ریال" FontFamily="{StaticResource FontFamilyBold}" FontSize="15" TextColor="{StaticResource Ink}" />
+                                </VerticalStackLayout>
+                                <VerticalStackLayout Grid.Column="1" Spacing="4">
+                                    <Label Text="کارت‌به‌کارت" FontFamily="{StaticResource FontFamilyRegular}" FontSize="14" TextColor="#5A4630" />
+                                    <Label x:Name="OverviewCardToCardLabel" Text="۰ ریال" FontFamily="{StaticResource FontFamilyBold}" FontSize="15" TextColor="{StaticResource Ink}" />
+                                </VerticalStackLayout>
+                                <VerticalStackLayout Grid.Column="2" Spacing="4">
+                                    <Label Text="نقدی" FontFamily="{StaticResource FontFamilyRegular}" FontSize="14" TextColor="#5A4630" />
+                                    <Label x:Name="OverviewCashLabel" Text="۰ ریال" FontFamily="{StaticResource FontFamilyBold}" FontSize="15" TextColor="{StaticResource Ink}" />
+                                </VerticalStackLayout>
+                                <VerticalStackLayout Grid.Column="3" Spacing="4">
+                                    <Label Text="نسیه / ثبت‌نشده" FontFamily="{StaticResource FontFamilyRegular}" FontSize="14" TextColor="#5A4630" />
+                                    <Label x:Name="OverviewCreditOrUnknownLabel" Text="۰ ریال" FontFamily="{StaticResource FontFamilyBold}" FontSize="15" TextColor="{StaticResource Ink}" />
+                                </VerticalStackLayout>
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Wax notice from Accounting.dc.html -->
+                    <Border x:Name="UnpricedProfitBanner"
+                            BackgroundColor="{StaticResource Wax}"
+                            StrokeThickness="0"
+                            Padding="16,12">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <Label x:Name="UnpricedProfitLabel"
+                                   Grid.Column="0"
+                                   FontFamily="{StaticResource FontFamilyRegular}"
+                                   FontSize="14"
+                                   LineHeight="1.6"
+                                   TextColor="{StaticResource Ink}"
+                                   VerticalOptions="Center"
+                                   Text="سود فقط برای کالاهایی حساب می‌شود که قیمت خرید دارند." />
+                            <Button Grid.Column="1"
+                                    Text="ثبت قیمت خرید"
+                                    FontFamily="{StaticResource FontFamilyBold}"
+                                    FontSize="14"
+                                    BackgroundColor="{StaticResource Honey}"
+                                    TextColor="{StaticResource Ink}"
+                                    CornerRadius="8"
+                                    MinimumHeightRequest="40"
+                                    Clicked="OnOpenProductsClicked" />
+                        </Grid>
+                    </Border>
+
+                    <Button Text="این عدد از کجا آمده؟ (دیدن فاکتورها)"
+                            FontFamily="{StaticResource FontFamilyBold}"
+                            FontSize="14"
+                            BackgroundColor="Transparent"
+                            TextColor="{StaticResource Ink}"
+                            HorizontalOptions="Start"
+                            Padding="0"
+                            Clicked="OnOpenInvoicesClicked" />
+                </VerticalStackLayout>
+
+                <!-- SECTION 2: Professional Journal View matching Pro-View.dc.html -->
+                <VerticalStackLayout x:Name="ProViewSection"
+                                     IsVisible="False"
+                                     Spacing="14">
+                    <Border x:Name="ProViewBadgeBorder"
+                            BackgroundColor="{StaticResource Wax}"
+                            StrokeThickness="0"
+                            Padding="12,6"
+                            HorizontalOptions="Start">
+                        <Label Text="نمای حرفه‌ای روشن است"
+                               FontFamily="{StaticResource FontFamilyBold}"
+                               FontSize="14"
+                               TextColor="{StaticResource Ink}" />
+                    </Border>
+
+                    <Border x:Name="ProLedgerTableCard"
+                            BackgroundColor="#FFFFFF"
+                            Stroke="#F0E4C2"
+                            StrokeThickness="1"
+                            Padding="0">
+                        <VerticalStackLayout Spacing="0">
+                            <Grid ColumnDefinitions="70,2*,150,150,90"
+                                  Padding="16,12"
+                                  BackgroundColor="#FAF2DC">
+                                <Label Grid.Column="0" Text="سند" FontFamily="{StaticResource FontFamilyBold}" FontSize="14" TextColor="#5A4630" />
+                                <Label Grid.Column="1" Text="حساب / شرح" FontFamily="{StaticResource FontFamilyBold}" FontSize="14" TextColor="#5A4630" />
+                                <Label Grid.Column="2" Text="بدهکار" FontFamily="{StaticResource FontFamilyBold}" FontSize="14" TextColor="#5A4630" />
+                                <Label Grid.Column="3" Text="بستانکار" FontFamily="{StaticResource FontFamilyBold}" FontSize="14" TextColor="#5A4630" />
+                                <Label Grid.Column="4" Text="منبع" FontFamily="{StaticResource FontFamilyBold}" FontSize="14" TextColor="#5A4630" />
+                            </Grid>
+                            <VerticalStackLayout x:Name="ProLedgerRowsStack" Spacing="0" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Button x:Name="NewManualEntryButton"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            BackgroundColor="{StaticResource Wax}"
+                            TextColor="{StaticResource Ink}"
+                            CornerRadius="8"
+                            HorizontalOptions="Start"
+                            Text="سند دستی جدید"
+                            Clicked="OnNewManualEntryClicked" />
+
+                    <Label x:Name="ProNoteLabel"
+                           FontFamily="{StaticResource FontFamilyRegular}"
+                           FontSize="13"
+                           TextColor="#5A4630"
+                           Text="سندهای خودکار قابل ویرایش نیستند. اصلاح فقط با سند برگشت انجام می‌شود. سند دستی علامت «دستی» دارد و برگشت‌پذیر است." />
+                </VerticalStackLayout>
+
+                <!-- SECTION 3: Sales Report matching Sales-Report.dc.html -->
+                <VerticalStackLayout x:Name="SalesReportSection"
+                                     IsVisible="False"
+                                     Spacing="14">
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
+                        <Border x:Name="SrTotalSalesCard" Grid.Column="0" BackgroundColor="#FFFFFF" Stroke="#F0E4C2" StrokeThickness="1" Padding="16">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="فروش کل" FontFamily="{StaticResource FontFamilyRegular}" FontSize="14" TextColor="#5A4630" />
+                                <Label x:Name="SrTotalSalesValueLabel" Text="۰ ریال" FontFamily="{StaticResource FontFamilyBold}" FontSize="24" TextColor="{StaticResource Ink}" />
+                            </VerticalStackLayout>
+                        </Border>
+                        <Border x:Name="SrInvoiceCountCard" Grid.Column="1" BackgroundColor="#FFFFFF" Stroke="#F0E4C2" StrokeThickness="1" Padding="16">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="تعداد فاکتور" FontFamily="{StaticResource FontFamilyRegular}" FontSize="14" TextColor="#5A4630" />
+                                <Label x:Name="SrInvoiceCountValueLabel" Text="۰" FontFamily="{StaticResource FontFamilyBold}" FontSize="24" TextColor="{StaticResource Ink}" />
+                            </VerticalStackLayout>
+                        </Border>
+                        <Border x:Name="SrAverageInvoiceCard" Grid.Column="2" BackgroundColor="#FFFFFF" Stroke="#F0E4C2" StrokeThickness="1" Padding="16">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="میانگین هر فاکتور" FontFamily="{StaticResource FontFamilyRegular}" FontSize="14" TextColor="#5A4630" />
+                                <Label x:Name="SrAverageInvoiceValueLabel" Text="۰ ریال" FontFamily="{StaticResource FontFamilyBold}" FontSize="24" TextColor="{StaticResource Ink}" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </Grid>
+
+                    <Border x:Name="SrMethodsTableCard"
+                            BackgroundColor="#FFFFFF"
+                            Stroke="#F0E4C2"
+                            StrokeThickness="1"
+                            Padding="0">
+                        <VerticalStackLayout Spacing="0">
+                            <Grid ColumnDefinitions="*,180" Padding="16,12" BackgroundColor="#FAF2DC">
+                                <Label Grid.Column="0" Text="روش پرداخت" FontFamily="{StaticResource FontFamilyBold}" FontSize="14" TextColor="#5A4630" />
+                                <Label Grid.Column="1" Text="مبلغ" FontFamily="{StaticResource FontFamilyBold}" FontSize="14" TextColor="#5A4630" />
+                            </Grid>
+                            <VerticalStackLayout x:Name="SrMethodsRowsStack" Spacing="0" />
+                        </VerticalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
+
+                <!-- SECTION 4: Receivables matching Receivables.dc.html -->
+                <VerticalStackLayout x:Name="ReceivablesSection"
+                                     IsVisible="False"
+                                     Spacing="14">
+                    <Border x:Name="RecTotalCard"
+                            BackgroundColor="#FFFFFF"
+                            Stroke="#F0E4C2"
+                            StrokeThickness="1"
+                            Padding="18">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="جمع طلب" FontFamily="{StaticResource FontFamilyRegular}" FontSize="14" TextColor="#5A4630" />
+                            <Label x:Name="RecTotalValueLabel" Text="۰ ریال" FontFamily="{StaticResource FontFamilyBold}" FontSize="28" TextColor="{StaticResource Review}" />
+                            <Label x:Name="RecSubNoteLabel" FontFamily="{StaticResource FontFamilyRegular}" FontSize="13" TextColor="#5A4630" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border x:Name="RecTableCard"
+                            BackgroundColor="#FFFFFF"
+                            Stroke="#F0E4C2"
+                            StrokeThickness="1"
+                            Padding="0">
+                        <VerticalStackLayout Spacing="0">
+                            <Grid ColumnDefinitions="2*,140,140,120" Padding="16,12" BackgroundColor="#FAF2DC">
+                                <Label Grid.Column="0" Text="مشتری" FontFamily="{StaticResource FontFamilyBold}" FontSize="14" TextColor="#5A4630" />
+                                <Label Grid.Column="1" Text="موبایل" FontFamily="{StaticResource FontFamilyBold}" FontSize="14" TextColor="#5A4630" />
+                                <Label Grid.Column="2" Text="طلب" FontFamily="{StaticResource FontFamilyBold}" FontSize="14" TextColor="#5A4630" />
+                                <Label Grid.Column="3" Text="عملیات" FontFamily="{StaticResource FontFamilyBold}" FontSize="14" TextColor="#5A4630" />
+                            </Grid>
+                            <VerticalStackLayout x:Name="RecRowsStack" Spacing="0" />
+                        </VerticalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
+
+                <!-- SECTION 5: Inventory Value matching Inventory-Value.dc.html -->
+                <VerticalStackLayout x:Name="InventoryValueSection"
+                                     IsVisible="False"
+                                     Spacing="14">
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                        <Border x:Name="InvTotalValueCard" Grid.Column="0" BackgroundColor="#FFFFFF" Stroke="#F0E4C2" StrokeThickness="1" Padding="16">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="ارزش کل موجودی" FontFamily="{StaticResource FontFamilyRegular}" FontSize="14" TextColor="#5A4630" />
+                                <Label x:Name="InvTotalValueLabel" Text="۰ ریال" FontFamily="{StaticResource FontFamilyBold}" FontSize="26" TextColor="{StaticResource Ink}" />
+                                <Label Text="بر پایه‌ی قیمت خرید" FontFamily="{StaticResource FontFamilyRegular}" FontSize="13" TextColor="#5A4630" />
+                            </VerticalStackLayout>
+                        </Border>
+                        <Border x:Name="InvUnpricedCountCard" Grid.Column="1" BackgroundColor="#FFFFFF" Stroke="#F0E4C2" StrokeThickness="1" Padding="16">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="کالاهای بدون قیمت خرید" FontFamily="{StaticResource FontFamilyRegular}" FontSize="14" TextColor="#5A4630" />
+                                <Label x:Name="InvUnpricedCountLabel" Text="۰" FontFamily="{StaticResource FontFamilyBold}" FontSize="26" TextColor="{StaticResource Review}" />
+                                <Label Text="در ارزش نیامده‌اند" FontFamily="{StaticResource FontFamilyRegular}" FontSize="13" TextColor="#5A4630" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </Grid>
+
+                    <Border x:Name="InvGroupTableCard"
+                            BackgroundColor="#FFFFFF"
+                            Stroke="#F0E4C2"
+                            StrokeThickness="1"
+                            Padding="0">
+                        <VerticalStackLayout Spacing="0">
+                            <Grid ColumnDefinitions="2*,120,160" Padding="16,12" BackgroundColor="#FAF2DC">
+                                <Label Grid.Column="0" Text="گروه" FontFamily="{StaticResource FontFamilyBold}" FontSize="14" TextColor="#5A4630" />
+                                <Label Grid.Column="1" Text="تعداد کالا" FontFamily="{StaticResource FontFamilyBold}" FontSize="14" TextColor="#5A4630" />
+                                <Label Grid.Column="2" Text="ارزش" FontFamily="{StaticResource FontFamilyBold}" FontSize="14" TextColor="#5A4630" />
+                            </Grid>
+                            <VerticalStackLayout x:Name="InvGroupRowsStack" Spacing="0" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Label FontFamily="{StaticResource FontFamilyRegular}"
+                           FontSize="13"
+                           TextColor="#5A4630"
+                           Text="موجودی «تأییدنشده» (مثلاً واردشده از هلو) با علامت جدا نشان داده می‌شود و تا شمارش انبار در ارزش قطعی نمی‌آید." />
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

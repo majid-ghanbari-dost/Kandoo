@@ -2,73 +2,214 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="Kandoo.App.ReturnsPage"
-             Title="برگشت فاکتور"
+             Title="برگشت یا لغو فاکتور"
              Style="{StaticResource PageStyle}">
-    <ScrollView>
-        <Border Style="{StaticResource CardStyle}">
-            <VerticalStackLayout Style="{StaticResource RootStackStyle}">
+    <Grid ColumnDefinitions="Auto,*">
+        <VerticalStackLayout x:Name="SidebarHost"
+                             Grid.Column="0" />
+
+        <ScrollView Grid.Column="1">
+            <VerticalStackLayout Padding="32,28"
+                                 Spacing="16"
+                                 MaximumWidthRequest="980"
+                                 HorizontalOptions="Fill">
+                <!-- Header matching Return.dc.html -->
                 <Label Style="{StaticResource TitleStyle}"
-                       Text="برگشت فاکتور" />
-                <Label Style="{StaticResource BodyStyle}"
-                       Text="ثبت برگشت یک فاکتور صادرشده. فاکتور اصلی پاک نمی‌شود؛ یک رویداد «برگشت» ثبت می‌شود و موجودی و حساب‌ها خودکار اصلاح می‌شوند." />
+                       Text="برگشت یا لغو فاکتور" />
 
-                <VerticalStackLayout Style="{StaticResource RowStackStyle}">
-                    <Label Style="{StaticResource BodyStyle}"
-                           Text="شماره‌ی فاکتور" />
-                    <Entry x:Name="InvoiceNumberEntry"
-                           Style="{StaticResource InputStyle}"
-                           Placeholder="[شماره فاکتور]" />
-                </VerticalStackLayout>
+                <Label x:Name="StatusLabel"
+                       Style="{StaticResource CaptionStyle}"
+                       TextColor="#5A4630"
+                       IsVisible="False" />
 
-                <Label Style="{StaticResource SectionTitleStyle}"
-                       Text="کالاهای برگشتی" />
-                <VerticalStackLayout x:Name="ReturnedItems"
-                                     Style="{StaticResource RowStackStyle}" />
+                <!-- Main form card matching Return.dc.html -->
+                <Border x:Name="ReturnFormCard"
+                        BackgroundColor="#FFFFFF"
+                        Stroke="#F0E4C2"
+                        StrokeThickness="1"
+                        Padding="20">
+                    <VerticalStackLayout Spacing="12">
+                        <!-- Invoice number + Lookup -->
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="شماره‌ی فاکتور"
+                                   FontFamily="{StaticResource FontFamilyBold}"
+                                   FontSize="14"
+                                   TextColor="{StaticResource Ink}" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                <Border x:Name="InvoiceNumberBorder"
+                                        Grid.Column="0"
+                                        BackgroundColor="#FFFFFF"
+                                        Stroke="#C9B88E"
+                                        StrokeThickness="1"
+                                        Padding="8,0">
+                                    <Entry x:Name="InvoiceNumberEntry"
+                                           BackgroundColor="#FFFFFF"
+                                           TextColor="{StaticResource Ink}"
+                                           PlaceholderColor="#5A4630"
+                                           FontFamily="{StaticResource FontFamilyRegular}"
+                                           FontSize="16"
+                                           MinimumHeightRequest="44"
+                                           Placeholder="[شماره]"
+                                           Completed="OnLookupInvoiceClicked"
+                                           SemanticProperties.Description="شماره فاکتور صادرشده" />
+                                </Border>
+                                <Button Grid.Column="1"
+                                        x:Name="LookupInvoiceButton"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        BackgroundColor="{StaticResource Wax}"
+                                        TextColor="{StaticResource Ink}"
+                                        CornerRadius="8"
+                                        Text="بررسی فاکتور"
+                                        Clicked="OnLookupInvoiceClicked" />
+                            </Grid>
+                        </VerticalStackLayout>
 
-                <VerticalStackLayout Style="{StaticResource RowStackStyle}">
-                    <Label Style="{StaticResource BodyStyle}"
-                           Text="تعداد برگشتی" />
-                    <Entry x:Name="ReturnQuantityEntry"
-                           Style="{StaticResource InputStyle}"
-                           Placeholder="[تعداد]" />
-                </VerticalStackLayout>
+                        <!-- Returned items section matching Return.dc.html -->
+                        <Label Text="کالاهای برگشتی"
+                               FontFamily="{StaticResource FontFamilyBold}"
+                               FontSize="15"
+                               TextColor="{StaticResource Ink}" />
 
-                <VerticalStackLayout Style="{StaticResource RowStackStyle}">
-                    <Label Style="{StaticResource BodyStyle}"
-                           Text="دلیل (الزامی)" />
-                    <Entry x:Name="ReasonEntry"
-                           Style="{StaticResource InputStyle}"
-                           Placeholder="[دلیل]" />
-                </VerticalStackLayout>
+                        <VerticalStackLayout x:Name="ReturnedItems"
+                                             Spacing="6" />
 
-                <Label Style="{StaticResource SectionTitleStyle}"
-                       Text="بازپرداخت" />
-                <HorizontalStackLayout Style="{StaticResource ButtonRowStyle}">
-                    <RadioButton x:Name="RefundCash"
-                                 GroupName="RefundMethod"
-                                 IsChecked="True"
-                                 Style="{StaticResource CheckBoxStyle}" />
-                    <Label Text="نقدی" Style="{StaticResource BodyStyle}" />
-                    <RadioButton x:Name="RefundCard"
-                                 GroupName="RefundMethod"
-                                 Style="{StaticResource CheckBoxStyle}" />
-                    <Label Text="کارت" Style="{StaticResource BodyStyle}" />
-                    <RadioButton x:Name="RefundCredit"
-                                 GroupName="RefundMethod"
-                                 Style="{StaticResource CheckBoxStyle}" />
-                    <Label Text="کسر از طلب" Style="{StaticResource BodyStyle}" />
-                </HorizontalStackLayout>
+                        <Grid ColumnDefinitions="160,*"
+                              ColumnSpacing="10">
+                            <Label Grid.Column="0"
+                                   Text="کالای مرتبط در انبار"
+                                   FontFamily="{StaticResource FontFamilyRegular}"
+                                   FontSize="14"
+                                   TextColor="#5A4630"
+                                   VerticalOptions="Center" />
+                            <Border x:Name="ProductPickerBorder"
+                                    Grid.Column="1"
+                                    BackgroundColor="#FFFFFF"
+                                    Stroke="#C9B88E"
+                                    StrokeThickness="1"
+                                    Padding="8,0">
+                                <Picker x:Name="CatalogProductPicker"
+                                        BackgroundColor="#FFFFFF"
+                                        TextColor="{StaticResource Ink}"
+                                        FontFamily="{StaticResource FontFamilyRegular}"
+                                        FontSize="15"
+                                        MinimumHeightRequest="44"
+                                        Title="انتخاب کالا برای بازگشت به موجودی انبار (اختیاری)" />
+                            </Border>
+                        </Grid>
 
+                        <!-- Return quantity -->
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="تعداد برگشتی"
+                                   FontFamily="{StaticResource FontFamilyBold}"
+                                   FontSize="14"
+                                   TextColor="{StaticResource Ink}" />
+                            <Border x:Name="ReturnQuantityBorder"
+                                    BackgroundColor="#FFFFFF"
+                                    Stroke="#C9B88E"
+                                    StrokeThickness="1"
+                                    Padding="8,0">
+                                <Entry x:Name="ReturnQuantityEntry"
+                                       BackgroundColor="#FFFFFF"
+                                       TextColor="{StaticResource Ink}"
+                                       PlaceholderColor="#5A4630"
+                                       FontFamily="{StaticResource FontFamilyRegular}"
+                                       FontSize="16"
+                                       MinimumHeightRequest="44"
+                                       Keyboard="Numeric"
+                                       Placeholder="[تعداد]"
+                                       SemanticProperties.Description="تعداد برگشتی" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- Mandatory reason -->
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="دلیل (الزامی)"
+                                   FontFamily="{StaticResource FontFamilyBold}"
+                                   FontSize="14"
+                                   TextColor="{StaticResource Ink}" />
+                            <Border x:Name="ReasonBorder"
+                                    BackgroundColor="#FFFFFF"
+                                    Stroke="#C9B88E"
+                                    StrokeThickness="1"
+                                    Padding="8,0">
+                                <Entry x:Name="ReasonEntry"
+                                       BackgroundColor="#FFFFFF"
+                                       TextColor="{StaticResource Ink}"
+                                       PlaceholderColor="#5A4630"
+                                       FontFamily="{StaticResource FontFamilyRegular}"
+                                       FontSize="16"
+                                       MinimumHeightRequest="44"
+                                       Placeholder="[دلیل]"
+                                       SemanticProperties.Description="دلیل الزامی برگشت فاکتور" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- Refund method radios (without CheckBoxStyle TargetType crash!) -->
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="بازپرداخت"
+                                   FontFamily="{StaticResource FontFamilyBold}"
+                                   FontSize="15"
+                                   TextColor="{StaticResource Ink}" />
+                            <HorizontalStackLayout Spacing="20">
+                                <RadioButton x:Name="RefundCash"
+                                             GroupName="RefundMethod"
+                                             IsChecked="True"
+                                             Content="نقدی"
+                                             TextColor="{StaticResource Ink}"
+                                             FontFamily="{StaticResource FontFamilyRegular}"
+                                             FontSize="15" />
+                                <RadioButton x:Name="RefundCard"
+                                             GroupName="RefundMethod"
+                                             Content="کارت"
+                                             TextColor="{StaticResource Ink}"
+                                             FontFamily="{StaticResource FontFamilyRegular}"
+                                             FontSize="15" />
+                                <RadioButton x:Name="RefundCredit"
+                                             GroupName="RefundMethod"
+                                             Content="کسر از طلب"
+                                             TextColor="{StaticResource Ink}"
+                                             FontFamily="{StaticResource FontFamilyRegular}"
+                                             FontSize="15" />
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Action button matching Return.dc.html (#9A3B0A) -->
                 <Button x:Name="SubmitReturnButton"
                         Style="{StaticResource DangerButtonStyle}"
+                        BackgroundColor="{StaticResource Review}"
+                        TextColor="#FFFFFF"
+                        CornerRadius="8"
+                        HorizontalOptions="Start"
+                        MinimumWidthRequest="180"
                         Text="ثبت برگشت"
                         Clicked="OnSubmitReturnClicked"
                         SemanticProperties.Description="ثبت برگشت فاکتور و اصلاح موجودی" />
 
-                <Label x:Name="StatusLabel"
-                       Style="{StaticResource CaptionStyle}"
-                       HorizontalTextAlignment="Center" />
+                <!-- Footer rule from Return.dc.html -->
+                <Label FontFamily="{StaticResource FontFamilyRegular}"
+                       FontSize="13"
+                       TextColor="#5A4630"
+                       Text="فاکتور اصلی پاک نمی‌شود. یک رویداد «برگشت» ثبت می‌شود و موجودی و حساب‌ها خودکار اصلاح می‌شوند." />
+
+                <!-- Recent append-only return events -->
+                <Border x:Name="RecentEventsCard"
+                        IsVisible="False"
+                        BackgroundColor="#FFFFFF"
+                        Stroke="#F0E4C2"
+                        StrokeThickness="1"
+                        Padding="16">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="رویدادهای برگشت ثبت‌شده در این دستگاه"
+                               FontFamily="{StaticResource FontFamilyBold}"
+                               FontSize="15"
+                               TextColor="{StaticResource Ink}" />
+                        <VerticalStackLayout x:Name="RecentEventsStack"
+                                             Spacing="6" />
+                    </VerticalStackLayout>
+                </Border>
             </VerticalStackLayout>
-        </Border>
-    </ScrollView>
+        </ScrollView>
+    </Grid>
 </ContentPage>

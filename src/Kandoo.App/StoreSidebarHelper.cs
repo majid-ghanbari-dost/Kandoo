@@ -140,7 +140,7 @@ internal static class StoreSidebarHelper
             StoreSidebarSection.Invoices => new InvoicesListPage(settings),
             StoreSidebarSection.Products => new ProductsPage(settings),
             StoreSidebarSection.Customers => new CustomersPage(settings),
-            StoreSidebarSection.Accounting => AccountingPageFactory?.Invoke(settings),
+            StoreSidebarSection.Accounting => AccountingPageFactory?.Invoke(settings) ?? new AccountingPage(settings),
             StoreSidebarSection.Devices => new DevicesPage(),
             StoreSidebarSection.Settings => new SettingsPage(settings),
             _ => null
