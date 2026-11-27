@@ -617,28 +617,29 @@ jobs:
         uses: actions/checkout@v4
 
 
-      # Both artifacts are rooted at their least-common-ancestor, which for the Hub publish is
-      # `artifacts/` (it also carries c14-artifact-size.txt and c14-smoke-result.json). Downloading
-      # into `artifacts` therefore reproduces the original layout exactly. The assert step below
-      # turns any future change to these paths into one readable annotation.
+      # Each artifact is downloaded into its own private directory. Sharing one download root was
+      # a real bug: the Hub publish carries its folder plus two C-14 evidence files, so it lands
+      # one level deep and its own level is the shared `artifacts` folder. Normalising from a
+      # shared root then swept Hub files into the app folder. Private roots make any repair
+      # strictly local to one artifact.
       - name: Download published Hub
         uses: actions/download-artifact@v4
         with:
           name: kandoo-hub-c14-win-x64
-          path: artifacts
+          path: .ci-downloads/hub
 
       - name: Download Windows app publish
         uses: actions/download-artifact@v4
         with:
           name: kandoo-app-win-x64
-          path: artifacts
+          path: .ci-downloads/app
 
       - name: Put the downloaded publishes where staging expects them
         shell: pwsh
         run: |
-          scripts/Invoke-CiStep.ps1 -StepName 'Resolve Hub publish layout' -ScriptPath scripts/Resolve-CiArtifactLayout.ps1 -ScriptArguments @('-ExpectedDirectory', 'artifacts/Kandoo.Hub-win-x64', '-ProbeFile', 'Kandoo.Hub.exe', '-SearchRoot', 'artifacts')
+          scripts/Invoke-CiStep.ps1 -StepName 'Resolve Hub publish layout' -ScriptPath scripts/Resolve-CiArtifactLayout.ps1 -ScriptArguments @('-ExpectedDirectory', 'artifacts/Kandoo.Hub-win-x64', '-ProbeFile', 'Kandoo.Hub.exe', '-DownloadDirectory', '.ci-downloads/hub')
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          scripts/Invoke-CiStep.ps1 -StepName 'Resolve app publish layout' -ScriptPath scripts/Resolve-CiArtifactLayout.ps1 -ScriptArguments @('-ExpectedDirectory', 'artifacts/Kandoo.App-win-x64', '-ProbeFile', 'Kandoo.App.exe', '-SearchRoot', 'artifacts')
+          scripts/Invoke-CiStep.ps1 -StepName 'Resolve app publish layout' -ScriptPath scripts/Resolve-CiArtifactLayout.ps1 -ScriptArguments @('-ExpectedDirectory', 'artifacts/Kandoo.App-win-x64', '-ProbeFile', 'Kandoo.App.exe', '-DownloadDirectory', '.ci-downloads/app')
 
 
       - name: Install Inno Setup (C-87-fix-12)
@@ -769,12 +770,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: kandoo-hub-c87-setup-exe
-          path: packaging/HubPilot/Output
+          path: .ci-downloads/setup
 
       - name: Put the downloaded installer where the smoke expects it
         shell: pwsh
         run: |
-          scripts/Invoke-CiStep.ps1 -StepName 'Resolve installer layout' -ScriptPath scripts/Resolve-CiArtifactLayout.ps1 -ScriptArguments @('-ExpectedDirectory', 'packaging/HubPilot/Output', '-ProbeFile', 'Kandoo-Setup-x64.exe', '-SearchRoot', 'packaging')
+          scripts/Invoke-CiStep.ps1 -StepName 'Resolve installer layout' -ScriptPath scripts/Resolve-CiArtifactLayout.ps1 -ScriptArguments @('-ExpectedDirectory', 'packaging/HubPilot/Output', '-ProbeFile', 'Kandoo-Setup-x64.exe', '-DownloadDirectory', '.ci-downloads/setup')
 
 
       - name: Install and smoke-test the installer (C-87-fix-12)
