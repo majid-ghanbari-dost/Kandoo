@@ -118,8 +118,10 @@ public sealed class P31VectorReplayTests
             {
                 // One line: the CI problem matcher keeps only the first message line,
                 // so the case/step context has to live there to be visible in annotations.
+                var sentBody = server.Requests.Count > before ? server.Requests[^1].Body : "<no request>";
                 throw new InvalidOperationException(
                     $"Assert.True() Failure VECTOR-REPLAY case={lastStepId} step={id} :: " +
+                    $"sentBody=[{sentBody}] valuesPhone=[{values.GetValueOrDefault("phone", "<none>")}] :: " +
                     ex.Message.Replace("\r", " ").Replace("\n", " | "));
             }
 
