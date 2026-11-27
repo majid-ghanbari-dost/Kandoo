@@ -20,8 +20,26 @@ public sealed class P31VectorReplayTests
 {
     private const string VectorsRelativePath = "docs/vectors/customer-api-v1-2-proposed.json";
 
-    [Fact]
-    public async Task P31_AllAcceptedVectors_Replay_EndToEnd_Through_CustomerApiClient()
+    public static TheoryData<string> StepCases => new()
+    {
+        "missing-session",
+        "issue",
+        "issue-idempotent",
+        "verify-wrong-device",
+        "verify",
+        "verify-replay",
+        "list",
+        "detail",
+        "foreign-or-unknown",
+        "logout",
+        "revoked-session",
+        "logout-replay",
+    };
+
+    // Theory (not one big Fact) so the failing case NAME pinpoints the vector step.
+    [Theory]
+    [MemberData(nameof(StepCases))]
+    public async Task P31_Vector_Replay_Up_To_Step(string lastStepId)
     {
         var vectors = LoadVectors();
         var setup = vectors.GetProperty("setup");
@@ -92,6 +110,11 @@ public sealed class P31VectorReplayTests
                         $"{id}: capture source {sourceField} missing");
                     values[pair.Name] = captured.GetString()!;
                 }
+            }
+
+            if (id == lastStepId)
+            {
+                return;
             }
         }
 

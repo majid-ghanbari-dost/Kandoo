@@ -157,6 +157,7 @@ public sealed class CustomerViewStateTests
             {
                 new CustomerLineItem { ProductName = "بادکنک فویلی", QuantityMillis = 2000, LineTotalRials = 90000 },
             },
+            CustomerName = "خریدار آزمایشی",
             Payments = new List<CustomerPaymentRecord>
             {
                 new CustomerPaymentRecord { Type = "card-reader", Amount = 200000 },
