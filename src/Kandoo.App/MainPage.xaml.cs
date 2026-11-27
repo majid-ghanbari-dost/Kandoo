@@ -58,7 +58,7 @@ public partial class MainPage : ContentPage
         BindableLayout.SetItemsSource(QueueItems, Array.Empty<ReviewQueueRow>());
         ClearC41Views();
         UpdateModePresentation();
-        StatusLabel.Text = "تنظیمات Hub را وارد و صف را بارگذاری کنید.";
+        StatusLabel.Text = "برای اتصال، کد جفت‌سازی فروشگاه را وارد کنید یا تنظیمات Hub را دستی وارد کنید.";
     }
 
     private async void OnRoleSettingsClicked(object? sender, EventArgs e) =>
@@ -82,8 +82,15 @@ public partial class MainPage : ContentPage
             StoreIdEntry.Text = result.StoreId.ToString("D");
             SessionTokenEntry.Text = result.SessionToken;
             PairingCodeEntry.Text = string.Empty;
-            PairingStatusLabel.Text = $"جفت‌سازی انجام شد؛ سطح {result.OperatorLevel ?? "ثبت نشده"}.";
-            StatusLabel.Text = "جفت‌سازی انجام شد؛ اکنون صف را بارگذاری کنید.";
+            // A successful pairing replaces the demo session with the real store
+            // session. Clear demo rows immediately so synthetic records are never
+            // shown as if they came from the connected store.
+            _coordinator.UseReal();
+            BindableLayout.SetItemsSource(QueueItems, Array.Empty<ReviewQueueRow>());
+            UpdateModePresentation();
+            UpdateActionButtonState();
+            PairingStatusLabel.Text = $"به فروشگاه متصل شد؛ سطح {result.OperatorLevel ?? "ثبت نشده"}.";
+            StatusLabel.Text = "اتصال انجام شد؛ صف واقعی را برای بارگذاری انتخاب کنید.";
 
             // Persist the device/session token to the shared token file so all
             // Stage-A pages can access it without re-entering credentials.
@@ -161,7 +168,10 @@ public partial class MainPage : ContentPage
             ? "حالت نمایشی؛ بدون نیاز به تنظیمات"
             : "حالت واقعی؛ اتصال مستقیم به Hub";
 #if ANDROID
-        PairingSection.IsVisible = isReal;
+        // Pairing does not require a pre-existing Hub session: the one-use QR
+        // carries the endpoint and store identity. Keep this first-run action
+        // available even while the queue is in clearly-marked demo mode.
+        PairingSection.IsVisible = true;
         DevicesSection.IsVisible = false;
 #elif WINDOWS
         PairingSection.IsVisible = false;
