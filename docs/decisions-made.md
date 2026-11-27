@@ -127,3 +127,32 @@ Autonomous technical decisions, one per line (what / why / rejected option), per
 34. **CI speed (C-PLAT first task, M-013 §4):** PR checks target under 8 minutes — NuGet + npm caching, Windows job split into parallel jobs (build / tests / installer / smoke), installer smoke gated to changes under `src/Kandoo.App`, `packaging/`, `scripts/` or on `main`, per-lane path filters, `concurrency` cancel of superseded runs; the Android 10 emulator job is REMOVED completely (it always fails; C-91 acceptance = signed-APK artifact + emulator-free tests + the PO's J8 test).
 35. **PM-33 reporting:** no per-task Persian report files; status lives in PR descriptions (task, SHA, run URL, one-line result), tags, and one auto-generated `docs/STATUS.md` (small script run by CI on `main`: open PRs, last green run, tags, installer artifact link); the manager files at most one short R per day with BLOCKED items and the team plan; questions to the PM only when a PM decision is genuinely needed.
 36. **PM-34 MVP-1 definition + countdown:** delivered when ALL are green on `main` — (1) DoD-A of M-010 items 1-4 (installer + first-run per the board, Windows v2 screens for Setup, Review, Invoice, Invoices, Products, Settings, Devices, local end-to-end with the SMS line in the outbox and the customer web page over the LAN, `demo-check.ps1`); (2) Android store app APK with pairing, products, invoice issue, review queue, invoices list (C-91 + C-97); (3) customer web page v2 (P-36) and customer mode (C-92 + P-31 vectors accepted); every merge to `main` publishes the installer artifact + signed APK; per-agent hour estimates and the three delivery dates in R-015, updated daily.
+## C-PLAT CI-speed execution (M-013 §4, 2026-11-27)
+
+37. **CI speed decisions (M-013 §4):** the single 8-minute Windows job became six lanes on the
+    change-set graph (build / tests / Hub+smokes / app+screenshots / installer / installer-smoke)
+    gated by one cheap ubuntu change-set job; NuGet is cached through a local composite action;
+    `concurrency` cancels superseded pushes; docs-only pushes skip CI; the Android 10 emulator job
+    is DELETED (never booted within the runner budget — three fix attempts, all failed) with its
+    intent carried by the signed release APK artifact, `Kandoo.App.Tests` and the PO's J8 test.
+    Measured on run `45964666504`: **8m04s -> 6m03s wall**, sum of job time 841 s across 8 jobs
+    (free of charge: this repository is public, so Actions minutes are not billed — the win is
+    reviewer latency and per-push runner load).
+38. **Build artifacts are not shuttled between lanes:** each lane does its own restore+build
+    (~13 s warm, NuGet cached) instead of downloading a shared `bin/` artifact, which for this
+    solution would be hundreds of MB and cost more to move than to rebuild. Only small outputs
+    travel: the Hub publish, the setup.exe, the app publish, and evidence JSON/logs.
+39. **`Kandoo.App` is not in `Kandoo.sln` and references only `Kandoo.Core`**, so the MAUI lane
+    does not wait for the solution build and does not repeat it (that alone was ~60 s of the old
+    job and it sat on the critical path). Critical path is now app -> installer -> smoke.
+40. **Artifact layout is resolved, not memorised:** `upload-artifact` roots an artifact at the
+    least-common-ancestor of its paths, so the Hub publish (folder + two C-14 evidence files)
+    arrives one level deeper than the app publish. Each artifact is now downloaded into a private
+    `.ci-downloads/<artifact>` root and normalised from there by
+    `scripts/Resolve-CiArtifactLayout.ps1`; sharing one download root was a real bug (it swept Hub
+    files into the app folder) and is rejected.
+41. **Installer + smoke gating:** both run only when `src/Kandoo.App`, `packaging/`, `scripts/` or
+    a workflow changed, and always on `main`, so the D1 release kit keeps continuous evidence
+    without taxing every PR. The change-set script fails SAFE: any doubt (API error, no base
+    commit, truncated 300-file diff) runs every job, because a skipped job is invisible while a
+    needless one only costs time.
