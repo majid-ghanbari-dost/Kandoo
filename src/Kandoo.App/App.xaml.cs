@@ -10,9 +10,11 @@ public partial class App : Application
         InitializeComponent();
         IUserProfileStore profiles = new PreferencesUserProfileStore();
         var profile = profiles.Load();
+        // C-92 role switch: the remembered role decides the home screen
+        // (customer mode lands on فاکتورهای من; store/both on the store workspace).
         Page startPage = profile is null
             ? new SetupWizardPage(profiles)
-            : new MainPage(profile, profiles);
+            : RoleStartPages.HomeFor(profile, profiles);
         MainPage = new NavigationPage(startPage);
     }
 

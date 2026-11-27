@@ -1,177 +1,198 @@
-using System.Text;
-using System.Text.Json;
-
 namespace Kandoo.App;
 
-public sealed class OtpIssueResponse
-{
-    public string Status { get; set; } = string.Empty;
-    public Guid ChallengeId { get; set; }
-    public DateTimeOffset ExpiresAt { get; set; }
-}
-
-public sealed class OtpVerifyResponse
-{
-    public string Status { get; set; } = string.Empty;
-    public string AccessToken { get; set; } = string.Empty;
-    public DateTimeOffset ExpiresAt { get; set; }
-}
-
+/// <summary>
+/// Customer login (C-92/C-97: Customer-Login-v2 board + Customer-Locked state).
+/// OTP login against the PHP Cloud customer API (P-31 accepted contract):
+/// request code → verify code → remembered session (verified device). The mobile
+/// number is the identity. Board copy is verbatim; the short StatusLabel lines are
+/// operational feedback only (reported in the PR description).
+/// </summary>
 public partial class CustomerOtpPage : ContentPage
 {
-    private readonly HttpClient _httpClient = new();
+    private const int MaxWrongCodes = 3;
+
+    private readonly CustomerSessionStore _sessions = new();
+    private readonly CustomerLocalConfig _config = CustomerLocalConfig.Load();
+    private string? _sendIdempotencyKey;
+    private string? _sendKeyPhone;
     private string? _challengeId;
-    private string? _verifiedPhone;
     private string? _requestedPhone;
-    private string? _lastError;
+    private int _wrongCodes;
+    private bool _forwarding;
 
     public CustomerOtpPage()
     {
         InitializeComponent();
-        UpdateUIState();
     }
 
-    private async void OnRequestOtpClicked(object? sender, EventArgs e)
+    protected override async void OnAppearing()
     {
-            _requestedPhone = PhoneEntry.Text?.Trim();
-            if (string.IsNullOrWhiteSpace(_requestedPhone))
-            {
-                OtpStatusLabel.Text = "شماره موبایل را وارد کنید.";
-                return;
-            }
+        base.OnAppearing();
+        var session = _sessions.Load();
+        if (!_forwarding && session is { IsLoggedIn: true })
+        {
+            _forwarding = true;
+            await GoToInvoicesAsync();
+        }
+    }
 
-        RequestOtpButton.IsEnabled = false;
-        OtpStatusLabel.Text = "در حال ارسال کد تایید…";
-        _lastError = null;
+    private async void OnSendCodeClicked(object? sender, EventArgs e)
+    {
+        if (!CustomerPhone.TryNormalize(PhoneEntry.Text, out var phone))
+        {
+            StatusLabel.Text = "شماره موبایل را وارد کنید.";
+            return;
+        }
 
+        // One idempotency key per logical send (P-31): a new key only when the
+        // number changes or a login cycle finished — retries of the same send stay idempotent.
+        if (_sendKeyPhone != phone || _sendIdempotencyKey is null)
+        {
+            _sendKeyPhone = phone;
+            _sendIdempotencyKey = Guid.NewGuid().ToString("D");
+        }
+
+        SendCodeButton.IsEnabled = false;
+        StatusLabel.Text = "در حال ارسال کد تایید…";
         try
         {
-            var operationId = Guid.NewGuid().ToString("D");
-            var body = new { Phone = _requestedPhone };
-            var json = JsonSerializer.Serialize(body);
-            using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.kandoo.cloud/v1/customer/otp/challenges")
+            using var client = NewClient();
+            var result = await client.RequestOtpAsync(phone, _sendIdempotencyKey);
+            switch (result.Status)
             {
-                Content = new StringContent(json, Encoding.UTF8, "application/json")
-            };
-            request.Headers.Add("Idempotency-Key", operationId);
-
-            using var response = await _httpClient.SendAsync(request);
-            var content = await response.Content.ReadAsStringAsync();
-
-            if (!response.IsSuccessStatusCode)
-            {
-                OtpStatusLabel.Text = $"خطا: {(int)response.StatusCode}";
-                return;
-            }
-
-            using var document = JsonDocument.Parse(content);
-            var root = document.RootElement;
-            var status = root.TryGetProperty("status", out var s) ? s.GetString() : string.Empty;
-            _challengeId = root.TryGetProperty("challenge_id", out var cid) ? cid.GetString() : string.Empty;
-
-            if (status == "OTP_SENT" || status == "DUPLICATE")
-            {
-                VerifyOtpButton.IsEnabled = true;
-                OtpStatusLabel.Text = "کد تایید ارسال شد. کد را وارد کنید.";
-            }
-            else
-            {
-                OtpStatusLabel.Text = $"وضعیت: {status}";
+                case CustomerApiStatus.OtpSent:
+                case CustomerApiStatus.Duplicate:
+                    _requestedPhone = phone;
+                    _challengeId = result.Value?.ChallengeId;
+                    LoginButton.IsEnabled = _challengeId is not null;
+                    StatusLabel.Text = "کد تایید ارسال شد. کد را وارد کنید.";
+                    break;
+                case CustomerApiStatus.Telegram:
+                    ShowLockedState();
+                    break;
+                case CustomerApiStatus.RateLimited:
+                    StatusLabel.Text = "درخواست‌ها زیاد است؛ کمی بعد دوباره تلاش کنید.";
+                    break;
+                default:
+                    // The API deliberately gives one generic answer for «no invoice»
+                    // and malformed input — the board footer already explains the rule.
+                    StatusLabel.Text = "درخواست انجام نشد.";
+                    break;
             }
         }
-        catch (Exception exception)
+        catch (Exception)
         {
-            OtpStatusLabel.Text = $"خطا در ارتباط: {exception.Message}";
+            StatusLabel.Text = "در حال حاضر ارتباط با سرور ممکن نیست.";
         }
         finally
         {
-            RequestOtpButton.IsEnabled = true;
+            SendCodeButton.IsEnabled = true;
         }
     }
 
-    private async void OnVerifyOtpClicked(object? sender, EventArgs e)
+    private async void OnLoginClicked(object? sender, EventArgs e)
     {
-        var code = OtpCodeEntry.Text?.Trim();
-        if (string.IsNullOrWhiteSpace(code) || code.Length != 6)
+        var code = PersianDigits.ToAsciiDigits((CodeEntry.Text ?? string.Empty).Trim());
+        if (code.Length != 6 || code.Any(c => c is < '0' or > '9'))
         {
-            VerifyStatusLabel.Text = "کد ۶ رقمی را وارد کنید.";
+            StatusLabel.Text = "کد ۶ رقمی را وارد کنید.";
             return;
         }
+
         if (_challengeId is null)
         {
-            VerifyStatusLabel.Text = "ابتدا کد تایید را درخواست کنید.";
+            StatusLabel.Text = "ابتدا کد تایید را درخواست کنید.";
             return;
         }
 
-        VerifyOtpButton.IsEnabled = false;
-        VerifyStatusLabel.Text = "در حال تایید…";
-
+        LoginButton.IsEnabled = false;
+        StatusLabel.Text = "در حال تایید…";
         try
         {
-            var body = new { Code = code };
-            var json = JsonSerializer.Serialize(body);
-            using var request = new HttpRequestMessage(HttpMethod.Post, $"https://api.kandoo.cloud/v1/customer/otp/challenges/{_challengeId}/verify")
+            using var client = NewClient();
+            var result = await client.VerifyOtpAsync(_challengeId, code);
+            if (result.Status == CustomerApiStatus.Ok && result.Value?.Token is not null)
             {
-                Content = new StringContent(json, Encoding.UTF8, "application/json")
-            };
-
-            using var response = await _httpClient.SendAsync(request);
-            var content = await response.Content.ReadAsStringAsync();
-
-            if (!response.IsSuccessStatusCode)
-            {
-                VerifyStatusLabel.Text = $"خطا: {(int)response.StatusCode}";
-                return;
-            }
-
-            using var document = JsonDocument.Parse(content);
-            var root = document.RootElement;
-            var status = root.TryGetProperty("status", out var s) ? s.GetString() : string.Empty;
-
-            if (status == "VERIFIED")
-            {
-                _verifiedPhone = _requestedPhone;
-                var tokenProp = root.TryGetProperty("access_token", out var tok) ? tok.GetString() : string.Empty;
-                if (!string.IsNullOrEmpty(tokenProp))
-                {
-                    var record = new DeviceTokenRecord(tokenProp, Guid.Empty);
-                    var tokenFile = new SharedTokenFile();
-                    tokenFile.Save(record);
-                }
-                _verifiedPhone = _requestedPhone;
-                UpdateUIState();
-                VerifyStatusLabel.Text = "تأیید شد. به قسمت مشتری منتقل شدید.";
+                var device = _sessions.LoadOrCreateDevice();
+                _sessions.Save(new CustomerSessionRecord(device.DeviceId, result.Value.Token, _requestedPhone));
+                StatusLabel.Text = "تأیید شد.";
+                _forwarding = true;
+                await GoToInvoicesAsync();
             }
             else
             {
-                VerifyStatusLabel.Text = $"وضعیت: {status}";
+                _wrongCodes++;
+                if (_wrongCodes >= MaxWrongCodes)
+                {
+                    // Three wrong entries lock the challenge (OTP policy, UX spec §6).
+                    ShowLockedState();
+                }
+                else
+                {
+                    StatusLabel.Text = "کد نادرست یا منقضی شده است.";
+                }
             }
         }
-        catch (Exception exception)
+        catch (Exception)
         {
-            VerifyStatusLabel.Text = $"خطا در ارتباط: {exception.Message}";
+            StatusLabel.Text = "در حال حاضر ارتباط با سرور ممکن نیست.";
         }
         finally
         {
-            VerifyOtpButton.IsEnabled = true;
+            LoginButton.IsEnabled = true;
         }
     }
 
-    private void UpdateUIState()
+    private async void OnSupportClicked(object? sender, EventArgs e)
     {
-        var verified = _verifiedPhone is not null;
-        PhoneEntry.IsVisible = !verified;
-        RequestOtpButton.IsVisible = !verified;
-        OtpStatusLabel.IsVisible = !verified;
-        OtpCodeEntry.IsVisible = verified && _challengeId is not null;
-        VerifyOtpButton.IsVisible = verified && _challengeId is not null;
-        VerifyStatusLabel.IsVisible = verified && _challengeId is not null;
-        CustomerState.IsVisible = verified;
-        CustomerPhoneLabel.Text = _verifiedPhone ?? string.Empty;
-
-        if (verified)
+        if (_config.TelegramUrl is not null)
         {
-            OtpStatusLabel.Text = "ورود مشتری فعال است.";
+            try
+            {
+                await Launcher.Default.OpenAsync(_config.TelegramUrl);
+                return;
+            }
+            catch (Exception)
+            {
+                // fall through to the note below
+            }
+        }
+
+        StatusLabel.Text = "آدرس پشتیبانی هنوز در پیکربندی محلی ثبت نشده است.";
+    }
+
+    private void ShowLockedState()
+    {
+        LoginCard.IsVisible = false;
+        LockedCard.IsVisible = true;
+    }
+
+    private async Task GoToInvoicesAsync()
+    {
+        if (Navigation.ModalStack.Count > 0 && ReferenceEquals(Navigation.ModalStack[^1], this))
+        {
+            await Navigation.PopModalAsync();
+            if (Application.Current?.MainPage is NavigationPage navigationPage)
+            {
+                await navigationPage.CurrentPage.Navigation.PushAsync(new CustomerInvoicesPage());
+            }
+        }
+        else
+        {
+            await Navigation.PushAsync(new CustomerInvoicesPage());
+        }
+    }
+
+    private CustomerApiClient NewClient()
+    {
+        var device = _sessions.LoadOrCreateDevice();
+        try
+        {
+            return new CustomerApiClient(_config.ApiBaseUrl, device.DeviceId);
+        }
+        catch (ArgumentException)
+        {
+            return new CustomerApiClient(CustomerApiClient.DefaultBaseUrl, device.DeviceId);
         }
     }
 }

@@ -19,7 +19,7 @@ public partial class RoleSelectionPage : ContentPage
             : $"نقش فعلی: {AppRolePolicy.DemoDisplayName(current.Role)}";
         PlatformNoteLabel.Text = _isWindows
             ? "در Windows فقط نقش فروشگاه ارائه می‌شود؛ حالت مشتری MVP فعلاً Android-only است."
-            : "حالت مشتری فقط انتخاب پروفایل است؛ فهرست فاکتورها در این مرحله اضافه نشده است.";
+            : "حالت مشتری روی اندروید: ورود با شماره‌ی موبایل و کد پیامکی، بعد فهرست فاکتورها.";
         CustomerButton.IsVisible = !_isWindows;
         BothButton.IsVisible = !_isWindows;
         BackButton.IsVisible = current is not null;
@@ -44,6 +44,8 @@ public partial class RoleSelectionPage : ContentPage
 
         var profile = new LocalUserProfile(role);
         _profiles.Save(profile);
-        Application.Current!.MainPage = new NavigationPage(new MainPage(profile, _profiles));
+        // C-92 role switch: route to the chosen role's home (customer mode lands
+        // on فاکتورهای من — RoleStart is unit-tested; see RoleStartPages).
+        Application.Current!.MainPage = RoleStartPages.Create(profile, _profiles);
     }
 }

@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- usesCleartextTraffic=true: the accepted local demo kit serves the Cloud and
+         the Hub over plain http on the LAN (Q-C98-01=A, URL shape
+         http://<LAN-IP>:<cloud-port>/i/<token>). The production API base URL is
+         https://api.kandoo.cloud; see CustomerLocalConfig for the demo override. -->
     <application android:allowBackup="false"
                  android:supportsRtl="true"
-                 android:usesCleartextTraffic="false"
+                 android:usesCleartextTraffic="true"
                  android:debuggable="false"
                  android:label="فاکتور دیجیتال کندو"
                  android:icon="@mipmap/ic_launcher" />

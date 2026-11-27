@@ -1,59 +1,167 @@
 <?xml version="1.0" encoding="utf-8" ?>
+<!-- C-97 customer board: Customer-Login-v2 (ورود مشتری) + Customer-Locked state.
+     Board texts/colors/layout are the specification; see docs/design/Customer-Login-v2.dc.html
+     and docs/design/Customer-Locked.dc.html. -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="Kandoo.App.CustomerOtpPage"
-             Title="ورود مشتری"
-             Style="{StaticResource PageStyle}">
+             Title="ورود به کندو"
+             BackgroundColor="{StaticResource Wax}">
+    <ContentPage.Resources>
+        <Style x:Key="LoginCardStyle" TargetType="Border">
+            <Setter Property="BackgroundColor" Value="White" />
+            <Setter Property="Padding" Value="16" />
+            <Setter Property="Stroke" Value="Transparent" />
+        </Style>
+        <Style x:Key="LockedCardStyle" TargetType="Border">
+            <Setter Property="BackgroundColor" Value="White" />
+            <Setter Property="Padding" Value="16" />
+            <Setter Property="Stroke" Value="{StaticResource Review}" />
+            <Setter Property="StrokeThickness" Value="2" />
+        </Style>
+        <Style x:Key="BoardLabelStyle" TargetType="Label">
+            <Setter Property="FontFamily" Value="{StaticResource FontFamilyRegular}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="TextColor" Value="#5A4630" />
+            <Setter Property="FontAttributes" Value="Bold" />
+        </Style>
+        <Style x:Key="BoardInputStyle" TargetType="Entry">
+            <Setter Property="BackgroundColor" Value="White" />
+            <Setter Property="TextColor" Value="{StaticResource Ink}" />
+            <Setter Property="PlaceholderColor" Value="{StaticResource Ink}" />
+            <Setter Property="FontFamily" Value="{StaticResource FontFamilyRegular}" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="HeightRequest" Value="48" />
+        </Style>
+        <Style x:Key="HoneyButtonStyle" TargetType="Button">
+            <Setter Property="BackgroundColor" Value="{StaticResource Honey}" />
+            <Setter Property="TextColor" Value="{StaticResource Ink}" />
+            <Setter Property="FontFamily" Value="{StaticResource FontFamilyBold}" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="MinimumHeightRequest" Value="50" />
+        </Style>
+        <Style x:Key="InkButtonStyle" TargetType="Button">
+            <Setter Property="BackgroundColor" Value="{StaticResource Ink}" />
+            <Setter Property="TextColor" Value="{StaticResource Cream}" />
+            <Setter Property="FontFamily" Value="{StaticResource FontFamilyBold}" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="MinimumHeightRequest" Value="50" />
+        </Style>
+        <Style x:Key="FooterNoteStyle" TargetType="Label">
+            <Setter Property="FontFamily" Value="{StaticResource FontFamilyRegular}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="TextColor" Value="#5A4630" />
+            <Setter Property="HorizontalTextAlignment" Value="Center" />
+            <Setter Property="LineHeight" Value="1.9" />
+        </Style>
+    </ContentPage.Resources>
+
     <ScrollView>
-        <Border Style="{StaticResource CardStyle}">
-            <VerticalStackLayout Style="{StaticResource RootStackStyle}">
-                <Label Style="{StaticResource TitleStyle}" Text="ورود مشتری" />
-                <Label Style="{StaticResource BodyStyle}" Text="کد تایید را از طریق پیامک دریافت کنید و اینجا وارد نمایید." />
-
-                <Label Style="{StaticResource SectionTitleStyle}" Text="شماره موبایل" />
-                <Entry x:Name="PhoneEntry"
-                       Style="{StaticResource InputStyle}"
-                       Placeholder="۰۹۱۲۳۴۵۶۷۸۹"
-                       Keyboard="Telephone"
-                       SemanticProperties.Description="شماره موبایل مشتری" />
-
-                <Button x:Name="RequestOtpButton"
-                        Style="{StaticResource PrimaryButtonStyle}"
-                        Text="دریافت کد تایید"
-                        Clicked="OnRequestOtpClicked"
-                        SemanticProperties.Description="درخواست کد تایید از طریق پیامک" />
-                <Label x:Name="OtpStatusLabel" Style="{StaticResource CaptionStyle}" />
-
-                <Label Style="{StaticResource SectionTitleStyle}" Text="کد تایید (۶ عددی)" />
-                <Entry x:Name="OtpCodeEntry"
-                       Style="{StaticResource InputStyle}"
-                       Placeholder="۱۲۳۴۵۶"
-                       Keyboard="Numeric"
-                       MaxLength="6"
-                       SemanticProperties.Description="کد تایید ۶ رقمی" />
-
-                <Button x:Name="VerifyOtpButton"
-                        Style="{StaticResource SecondaryButtonStyle}"
-                        Text="تایید کد"
-                        Clicked="OnVerifyOtpClicked"
-                        IsEnabled="False"
-                        SemanticProperties.Description="تایید کد دریافت‌شده" />
-                <Label x:Name="VerifyStatusLabel" Style="{StaticResource CaptionStyle}" />
-
-                <!-- Empty/customer state -->
-                <VerticalStackLayout x:Name="CustomerState"
-                                     IsVisible="False"
-                                     HorizontalOptions="Center"
-                                     VerticalOptions="Center"
-                                     Spacing="{StaticResource Space3}">
-                    <Label Style="{StaticResource SectionTitleStyle}"
-                           Text="وارد سیستم شدید"
-                           HorizontalTextAlignment="Center" />
-                    <Label x:Name="CustomerPhoneLabel"
-                           Style="{StaticResource BodyStyle}"
-                           HorizontalTextAlignment="Center" />
+        <VerticalStackLayout Padding="16,18,16,10" Spacing="12">
+            <!-- Board header: title + subtitle on the right (RTL), Kandoo hex mark on the left. -->
+            <Grid ColumnDefinitions="*,Auto" Padding="2,8,2,0">
+                <VerticalStackLayout Grid.Column="0" Spacing="2">
+                    <Label Text="ورود به کندو"
+                           FontFamily="{StaticResource FontFamilyBold}"
+                           FontSize="22"
+                           TextColor="{StaticResource Ink}" />
+                    <Label Text="فاکتورهای خریدتان یک‌جا"
+                           FontFamily="{StaticResource FontFamilyRegular}"
+                           FontSize="13"
+                           TextColor="#5A4630" />
                 </VerticalStackLayout>
-            </VerticalStackLayout>
-        </Border>
+                <Polygon Grid.Column="1"
+                         Points="26,2 46,13 46,37 26,48 6,37 6,13"
+                         Fill="{StaticResource Honey}"
+                         Stroke="{StaticResource Honey}"
+                         StrokeThickness="3"
+                         StrokeLineJoin="Round"
+                         HeightRequest="50"
+                         WidthRequest="52" />
+                <Path Grid.Column="1"
+                      Data="M17,27 L23,33 L35,19"
+                      Stroke="{StaticResource Ink}"
+                      StrokeThickness="4.5"
+                      StrokeLineCap="Round"
+                      StrokeLineJoin="Round"
+                      Fill="Transparent"
+                      HeightRequest="50"
+                      WidthRequest="52" />
+            </Grid>
+
+            <!-- Login card (Customer-Login-v2) -->
+            <Border x:Name="LoginCard" Style="{StaticResource LoginCardStyle}">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="16" />
+                </Border.StrokeShape>
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="شماره‌ی موبایل" Style="{StaticResource BoardLabelStyle}" />
+                    <Border Padding="14,0" Stroke="#E2D5AE" StrokeThickness="1.5">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="12" />
+                        </Border.StrokeShape>
+                        <Entry x:Name="PhoneEntry"
+                               Style="{StaticResource BoardInputStyle}"
+                               Placeholder="۰۹۱۲…"
+                               Keyboard="Telephone"
+                               SemanticProperties.Description="شماره‌ی موبایل" />
+                    </Border>
+                    <Button x:Name="SendCodeButton"
+                            Style="{StaticResource HoneyButtonStyle}"
+                            Text="ارسال کد"
+                            Clicked="OnSendCodeClicked"
+                            SemanticProperties.Description="ارسال کد تأیید به شماره‌ی موبایل" />
+                    <Label Text="کد تأیید" Style="{StaticResource BoardLabelStyle}" />
+                    <Border Padding="14,0" Stroke="#E2D5AE" StrokeThickness="1.5">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="12" />
+                        </Border.StrokeShape>
+                        <Entry x:Name="CodeEntry"
+                               Style="{StaticResource BoardInputStyle}"
+                               Placeholder="• • • • • •"
+                               Keyboard="Numeric"
+                               MaxLength="6"
+                               HorizontalTextAlignment="Center"
+                               SemanticProperties.Description="کد تأیید" />
+                    </Border>
+                    <Button x:Name="LoginButton"
+                            Style="{StaticResource InkButtonStyle}"
+                            Text="ورود"
+                            Clicked="OnLoginClicked"
+                            SemanticProperties.Description="ورود با کد تأیید" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Customer-Locked state (code exhausted / attempts locked) -->
+            <Border x:Name="LockedCard" Style="{StaticResource LockedCardStyle}" IsVisible="False">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="16" />
+                </Border.StrokeShape>
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="تعداد دفعات دریافت کد تمام شد"
+                           FontFamily="{StaticResource FontFamilyBold}"
+                           FontSize="18"
+                           TextColor="{StaticResource Review}" />
+                    <Label Text="برای این شماره دو بار کد فرستاده شده است. برای ادامه، به پشتیبانی کندو در تلگرام پیام بدهید. نیازی نیست دوباره تلاش کنید."
+                           FontFamily="{StaticResource FontFamilyRegular}"
+                           FontSize="14"
+                           TextColor="{StaticResource Ink}"
+                           LineHeight="1.9" />
+                    <Button x:Name="SupportButton"
+                            Style="{StaticResource HoneyButtonStyle}"
+                            Text="پیام به پشتیبانی (تلگرام)"
+                            Clicked="OnSupportClicked"
+                            SemanticProperties.Description="پیام به پشتیبانی کندو در تلگرام" />
+                    <Label Text="شماره‌ی خود را در پیام بنویسید تا دسترسی‌تان بازگردانده شود."
+                           Style="{StaticResource BoardLabelStyle}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Label x:Name="StatusLabel" Style="{StaticResource FooterNoteStyle}" />
+            <Label Text="کد به همین شماره پیامک می‌شود. اگر فاکتوری برای این شماره ثبت نشده باشد، پیامکی نمی‌رود."
+                   Style="{StaticResource FooterNoteStyle}" />
+        </VerticalStackLayout>
     </ScrollView>
 </ContentPage>
