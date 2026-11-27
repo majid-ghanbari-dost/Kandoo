@@ -2,67 +2,180 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="Kandoo.App.ProductsPage"
-             Title="فهرست کالاها"
+             Title="کالاها"
              Style="{StaticResource PageStyle}">
-    <Grid RowDefinitions="Auto,*">
-        <Border Grid.Row="0" Style="{StaticResource CardStyle}">
-            <VerticalStackLayout Style="{StaticResource RootStackStyle}">
-                <Label Style="{StaticResource TitleStyle}" Text="فهرست کالاها" />
-                <Label Style="{StaticResource BodyStyle}" Text="لیست کالاها را از هاب واقعی بارگذاری می‌کند." />
-                <Entry x:Name="GroupIdEntry"
-                       Style="{StaticResource InputStyle}"
-                       Placeholder="فیلتر گروه (اختیاری)"
-                       SemanticProperties.Description="شناسه گروه برای فیلتر محصولات" />
-                <HorizontalStackLayout Style="{StaticResource ButtonRowStyle}">
-                    <Button x:Name="LoadButton"
+    <Grid ColumnDefinitions="Auto,*">
+        <VerticalStackLayout x:Name="SidebarHost"
+                             Grid.Column="0" />
+
+        <ScrollView Grid.Column="1">
+            <VerticalStackLayout Padding="32,28"
+                                 Spacing="16"
+                                 MaximumWidthRequest="1020"
+                                 HorizontalOptions="Fill">
+                <!-- Header row matching Products.dc.html -->
+                <Grid ColumnDefinitions="*,Auto,Auto,Auto"
+                      ColumnSpacing="10">
+                    <Label Grid.Column="0"
+                           Style="{StaticResource TitleStyle}"
+                           Text="کالاها"
+                           VerticalOptions="Center" />
+                    <Button Grid.Column="1"
+                            x:Name="NewProductButton"
                             Style="{StaticResource PrimaryButtonStyle}"
-                            Text="بارگذاری کالاها"
+                            BackgroundColor="{StaticResource Green}"
+                            TextColor="#FFFFFF"
+                            CornerRadius="10"
+                            Text="کالای جدید"
+                            Clicked="OnNewProductClicked"
+                            SemanticProperties.Description="ثبت کالای جدید" />
+                    <Button Grid.Column="2"
+                            x:Name="HolooImportButton"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            BackgroundColor="{StaticResource Wax}"
+                            TextColor="{StaticResource Ink}"
+                            CornerRadius="10"
+                            Text="ورود از هلو"
+                            Clicked="OnHolooImportClicked"
+                            SemanticProperties.Description="ورود کالا از هلو" />
+                    <Button Grid.Column="3"
+                            x:Name="LoadButton"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            CornerRadius="10"
+                            Text="بروزرسانی"
                             Clicked="OnLoadClicked"
-                            IsEnabled="False"
-                            SemanticProperties.Description="بارگذاری فهرست کالا از هاب" />
+                            SemanticProperties.Description="بارگذاری دوباره فهرست کالاها از هاب" />
+                </Grid>
+
+                <!-- Search input matching Products.dc.html -->
+                <Border x:Name="SearchBorder"
+                        BackgroundColor="#FFFFFF"
+                        Stroke="#C9B88E"
+                        StrokeThickness="1"
+                        Padding="8,2">
+                    <Entry x:Name="SearchEntry"
+                           BackgroundColor="#FFFFFF"
+                           TextColor="{StaticResource Ink}"
+                           PlaceholderColor="#5A4630"
+                           FontFamily="{StaticResource FontFamilyRegular}"
+                           FontSize="16"
+                           MinimumHeightRequest="44"
+                           Placeholder="جست‌وجو: نام یا کد کالا"
+                           TextChanged="OnSearchTextChanged"
+                           Completed="OnSearchCompleted"
+                           SemanticProperties.Description="جست‌وجوی نام یا کد رقمی کالا" />
+                </Border>
+
+                <!-- Filter chips matching Products.dc.html -->
+                <HorizontalStackLayout Spacing="8">
+                    <Button x:Name="FilterAllChip"
+                            Text="همه"
+                            FontFamily="{StaticResource FontFamilyBold}"
+                            FontSize="14"
+                            BackgroundColor="{StaticResource Honey}"
+                            TextColor="{StaticResource Ink}"
+                            CornerRadius="20"
+                            MinimumHeightRequest="40"
+                            Padding="16,8"
+                            Clicked="OnFilterAllClicked" />
+                    <Button x:Name="FilterIncompletePriceChip"
+                            Text="قیمت ناقص"
+                            FontFamily="{StaticResource FontFamilyRegular}"
+                            FontSize="14"
+                            BackgroundColor="{StaticResource Wax}"
+                            TextColor="{StaticResource Ink}"
+                            CornerRadius="20"
+                            MinimumHeightRequest="40"
+                            Padding="16,8"
+                            Clicked="OnFilterIncompletePriceClicked" />
+                    <Button x:Name="FilterUnconfirmedStockChip"
+                            Text="موجودی تأییدنشده"
+                            FontFamily="{StaticResource FontFamilyRegular}"
+                            FontSize="14"
+                            BackgroundColor="{StaticResource Wax}"
+                            TextColor="{StaticResource Ink}"
+                            CornerRadius="20"
+                            MinimumHeightRequest="40"
+                            Padding="16,8"
+                            Clicked="OnFilterUnconfirmedStockClicked" />
+                    <Button x:Name="FilterLowStockChip"
+                            Text="موجودی کم"
+                            FontFamily="{StaticResource FontFamilyRegular}"
+                            FontSize="14"
+                            BackgroundColor="{StaticResource Wax}"
+                            TextColor="{StaticResource Ink}"
+                            CornerRadius="20"
+                            MinimumHeightRequest="40"
+                            Padding="16,8"
+                            Clicked="OnFilterLowStockClicked" />
                 </HorizontalStackLayout>
-                <Label x:Name="StatusLabel" Style="{StaticResource CaptionStyle}" Text="تنظیمات Hub را وارد کنید." />
-            </VerticalStackLayout>
-        </Border>
-        <ScrollView Grid.Row="1">
-            <VerticalStackLayout x:Name="ProductItems" Style="{StaticResource RowStackStyle}">
-                <BindableLayout.ItemTemplate>
-                    <DataTemplate>
-                        <Border Style="{StaticResource CardStyle}">
-                            <VerticalStackLayout Style="{StaticResource RowStackStyle}">
-                                <Label Style="{StaticResource SectionTitleStyle}" Text="{Binding Name}" />
-                                <Label Style="{StaticResource BodyStyle}" Text="{Binding GroupDisplay}" />
-                                <Label Style="{StaticResource AmountStyle}" Text="{Binding PriceDisplay}" />
-                                <Label Style="{StaticResource CaptionStyle}" Text="{Binding ActiveDisplay}" />
-                            </VerticalStackLayout>
-                        </Border>
-                    </DataTemplate>
-                </BindableLayout.ItemTemplate>
+
+                <Label x:Name="StatusLabel"
+                       Style="{StaticResource CaptionStyle}"
+                       TextColor="#5A4630" />
+
+                <!-- Products table card matching Products.dc.html -->
+                <Border x:Name="TableCard"
+                        BackgroundColor="#FFFFFF"
+                        Stroke="#F0E4C2"
+                        StrokeThickness="1"
+                        Padding="0">
+                    <VerticalStackLayout Spacing="0">
+                        <Grid ColumnDefinitions="90,2*,140,100,140,90"
+                              Padding="16,12"
+                              BackgroundColor="#FAF2DC">
+                            <Label Grid.Column="0" Text="کد" FontFamily="{StaticResource FontFamilyBold}" FontSize="14" TextColor="#5A4630" />
+                            <Label Grid.Column="1" Text="نام" FontFamily="{StaticResource FontFamilyBold}" FontSize="14" TextColor="#5A4630" />
+                            <Label Grid.Column="2" Text="قیمت" FontFamily="{StaticResource FontFamilyBold}" FontSize="14" TextColor="#5A4630" />
+                            <Label Grid.Column="3" Text="موجودی" FontFamily="{StaticResource FontFamilyBold}" FontSize="14" TextColor="#5A4630" />
+                            <Label Grid.Column="4" Text="وضعیت" FontFamily="{StaticResource FontFamilyBold}" FontSize="14" TextColor="#5A4630" />
+                            <Label Grid.Column="5" Text="عملیات" FontFamily="{StaticResource FontFamilyBold}" FontSize="14" TextColor="#5A4630" HorizontalTextAlignment="Center" />
+                        </Grid>
+                        <VerticalStackLayout x:Name="ProductItems" Spacing="0" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Empty / Error state card -->
+                <Border x:Name="EmptyState"
+                        IsVisible="False"
+                        BackgroundColor="#FFFFFF"
+                        Stroke="#F0E4C2"
+                        StrokeThickness="1"
+                        Padding="28">
+                    <VerticalStackLayout HorizontalOptions="Center"
+                                         Spacing="10">
+                        <Label x:Name="EmptyStateTitleLabel"
+                               Style="{StaticResource SectionTitleStyle}"
+                               Text="هیچ کالایی یافت نشد"
+                               HorizontalTextAlignment="Center" />
+                        <Label x:Name="EmptyStateSubtitleLabel"
+                               Style="{StaticResource BodyStyle}"
+                               TextColor="#5A4630"
+                               Text="فهرست کالاها برای این فیلتر خالی است."
+                               HorizontalTextAlignment="Center" />
+                        <Label x:Name="EmptyStateErrorLabel"
+                               Style="{StaticResource CaptionStyle}"
+                               TextColor="{StaticResource Review}"
+                               HorizontalTextAlignment="Center"
+                               MaxLines="4" />
+                        <Button x:Name="CopyReportButton"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                BackgroundColor="{StaticResource Wax}"
+                                TextColor="{StaticResource Ink}"
+                                Text="کپی گزارش خطا"
+                                Clicked="OnCopyReportClicked"
+                                IsVisible="False"
+                                HorizontalOptions="Center"
+                                SemanticProperties.Description="کپی گزارش خطا در حافظه موقت" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Footer rule from Products.dc.html -->
+                <Label Text="کالای «قیمت ناقص» تا ثبت قیمت قابل فروش نیست."
+                       FontFamily="{StaticResource FontFamilyRegular}"
+                       FontSize="13"
+                       TextColor="#5A4630" />
             </VerticalStackLayout>
         </ScrollView>
-        <!-- Empty state shown when no products are loaded or an error occurs. -->
-        <VerticalStackLayout Grid.Row="1"
-                             x:Name="EmptyState"
-                             IsVisible="False"
-                             HorizontalOptions="Center"
-                             VerticalOptions="Center"
-                             Spacing="{StaticResource Space3}">
-            <Label Style="{StaticResource SectionTitleStyle}"
-                   Text="هیچ کالا یافت نشد"
-                   HorizontalTextAlignment="Center" />
-            <Label Style="{StaticResource BodyStyle}"
-                   Text="فهرست کالاها خالی است. بارگذاری را اجرا کنید یا تنظیمات Hub را بررسی کنید."
-                   HorizontalTextAlignment="Center" />
-            <Button x:Name="CopyReportButton"
-                    Style="{StaticResource SecondaryButtonStyle}"
-                    Text="کپی گزارش خطا"
-                    Clicked="OnCopyReportClicked"
-                    IsVisible="False"
-                    SemanticProperties.Description="کپی گزارش خطا در حافظه موقت" />
-            <Label x:Name="EmptyStateErrorLabel"
-                   Style="{StaticResource CaptionStyle}"
-                   HorizontalTextAlignment="Center"
-                   MaxLines="3" />
-        </VerticalStackLayout>
     </Grid>
 </ContentPage>
