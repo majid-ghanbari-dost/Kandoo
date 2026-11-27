@@ -102,7 +102,7 @@ public static class CustomerInvoicesViewBuilder
 
     private static CustomerInvoiceCard ToCard(
         CustomerStoreGroup store,
-        CustomerInvoiceSummary invoice,
+        CustomerListInvoice invoice,
         IReadOnlySet<string> seenInvoiceIds)
     {
         var isNew = !seenInvoiceIds.Contains(invoice.InvoiceId);
@@ -127,7 +127,7 @@ public static class CustomerInvoicesViewBuilder
     /// recorded remaining_balance == 0 → «پرداخت‌شده»; lifecycle REVOKED/SUPERSEDED → their labels.
     /// Seen invoices without recorded payment data show no badge — never invented.
     /// </summary>
-    private static (CustomerBadgeKind Badge, string? Text) BadgeFor(CustomerInvoiceSummary invoice, bool isNew)
+    private static (CustomerBadgeKind Badge, string? Text) BadgeFor(CustomerListInvoice invoice, bool isNew)
     {
         if (isNew)
         {

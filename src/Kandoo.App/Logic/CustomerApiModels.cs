@@ -71,7 +71,7 @@ public sealed class OtpVerifyResponse
 }
 
 /// <summary>GET /v1/customer/invoices — one invoice in the per-store grouping.</summary>
-public sealed class CustomerInvoiceSummary
+public sealed class CustomerListInvoice
 {
     [JsonPropertyName("invoice_id")]
     public string InvoiceId { get; set; } = string.Empty;
@@ -106,7 +106,7 @@ public sealed class CustomerStoreGroup
     public string StoreName { get; set; } = string.Empty;
 
     [JsonPropertyName("invoices")]
-    public List<CustomerInvoiceSummary> Invoices { get; set; } = new();
+    public List<CustomerListInvoice> Invoices { get; set; } = new();
 }
 
 /// <summary>GET /v1/customer/invoices — response body.</summary>

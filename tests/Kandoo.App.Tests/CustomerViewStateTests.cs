@@ -18,7 +18,7 @@ public sealed class CustomerViewStateTests
                 StoreName = "فروشگاه لوازم جشن نمونه",
                 Invoices =
                 {
-                    new CustomerInvoiceSummary
+                    new CustomerListInvoice
                     {
                         InvoiceId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
                         DisplayNumber = 14025,
@@ -26,7 +26,7 @@ public sealed class CustomerViewStateTests
                         PayableRials = 120000,
                         CurrencyUnit = "toman",
                     },
-                    new CustomerInvoiceSummary
+                    new CustomerListInvoice
                     {
                         InvoiceId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
                         DisplayNumber = 14026,
