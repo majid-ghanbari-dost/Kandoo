@@ -21,7 +21,7 @@ public sealed class P31VectorReplayTests
     private const string VectorsRelativePath = "docs/vectors/customer-api-v1-2-proposed.json";
 
     [Fact]
-    public void P31_AllAcceptedVectors_Replay_EndToEnd_Through_CustomerApiClient()
+    public async Task P31_AllAcceptedVectors_Replay_EndToEnd_Through_CustomerApiClient()
     {
         var vectors = LoadVectors();
         var setup = vectors.GetProperty("setup");
@@ -62,7 +62,7 @@ public sealed class P31VectorReplayTests
                 }
             }
 
-            var (httpStatus, rawBody) = ExecuteStepAsync(primary, other, step, values, server).GetAwaiter().GetResult();
+            var (httpStatus, rawBody) = await ExecuteStepAsync(primary, other, step, values, server);
 
             // Wire format: what the app sent must match the vector's declared request.
             Assert.Equal(before + 1, server.Requests.Count);
@@ -100,14 +100,14 @@ public sealed class P31VectorReplayTests
     }
 
     [Fact]
-    public void P31_WireFormat_Detail()
+    public async Task P31_WireFormat_Detail()
     {
         var vectors = LoadVectors();
         var setup = vectors.GetProperty("setup");
         var server = new P31ContractServer(setup.GetProperty("clock_unix").GetInt64());
         using var client = new CustomerApiClient("http://p31.synthetic.test", setup.GetProperty("device").GetString()!, server);
 
-        var issued = client.RequestOtpAsync("+989120000001", "TEST-wire").GetAwaiter().GetResult();
+        var issued = await client.RequestOtpAsync("+989120000001", "TEST-wire");
         Assert.Equal(201, issued.HttpStatus);
         var request = server.Requests[^1];
 
@@ -119,15 +119,15 @@ public sealed class P31VectorReplayTests
         Assert.StartsWith("application/json", request.Header("content-type"));
 
         // Session endpoints carry Bearer only — no device header (accepted vector headers).
-        var verified = client.VerifyOtpAsync(issued.Value!.ChallengeId!, server.Outbox[^1].Code).GetAwaiter().GetResult();
+        var verified = await client.VerifyOtpAsync(issued.Value!.ChallengeId!, server.Outbox[^1].Code);
         Assert.Equal(200, verified.HttpStatus);
         Assert.NotNull(verified.Value!.Token);
-        var list = client.ListInvoicesAsync(verified.Value!.Token).GetAwaiter().GetResult();
+        var list = await client.ListInvoicesAsync(verified.Value!.Token);
         Assert.Equal(200, list.HttpStatus);
         var listRequest = server.Requests[^1];
         Assert.Null(listRequest.Header(CustomerApiClient.DeviceHeaderName));
         Assert.StartsWith("Bearer ", listRequest.Header("authorization"));
-        Assert.Equal(200, client.LogoutAsync(verified.Value!.Token).GetAwaiter().GetResult().HttpStatus);
+        Assert.Equal(200, (await client.LogoutAsync(verified.Value!.Token)).HttpStatus);
     }
 
     private static async Task<(int HttpStatus, string RawBody)> ExecuteStepAsync(
@@ -295,8 +295,11 @@ public sealed class P31VectorReplayTests
         return resolved;
     }
 
-    private static JsonDocument LoadVectors() =>
-        JsonDocument.Parse(File.ReadAllText(FindRepositoryFile(VectorsRelativePath)));
+    private static JsonElement LoadVectors()
+    {
+        using var document = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile(VectorsRelativePath)));
+        return document.RootElement.Clone();
+    }
 
     /// <summary>Walk up from the test output directory until the repository file is found.</summary>
     internal static string FindRepositoryFile(string relativePath)

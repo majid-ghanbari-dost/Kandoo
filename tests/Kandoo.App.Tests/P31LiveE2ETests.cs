@@ -32,7 +32,7 @@ public sealed class P31LiveE2ETests
 
     [Fact]
     [Trait("Category", "LiveE2E")]
-    public void CustomerMode_EndToEnd_Against_RealPhpCloud()
+    public async Task CustomerMode_EndToEnd_Against_RealPhpCloud()
     {
         var baseUrl = Environment.GetEnvironmentVariable("KANDOO_CLOUD_BASE_URL");
         if (string.IsNullOrWhiteSpace(baseUrl))
@@ -52,11 +52,11 @@ public sealed class P31LiveE2ETests
         var failures = new List<string>();
 
         // 1) Unauthenticated probe — the accepted envelope.
-        var anonymous = client.ListInvoicesAsync(null).GetAwaiter().GetResult();
+        var anonymous = await client.ListInvoicesAsync(null);
         Check(failures, "missing-session", expectStatus: 401, expectBodyStatus: "UNAUTHENTICATED", anonymous, strict);
 
         // 2) OTP issue (device-bound + idempotent key on the wire).
-        var issued = client.RequestOtpAsync(phone, "LIVE-" + Guid.NewGuid().ToString("D")).GetAwaiter().GetResult();
+        var issued = await client.RequestOtpAsync(phone, "LIVE-" + Guid.NewGuid().ToString("D"));
         var issuedOk = issued.HttpStatus == 201 && issued.Status == "OTP_SENT" && issued.Value?.ChallengeId is not null
             || issued.HttpStatus == 200 && issued.Status == "DUPLICATE" && issued.Value?.ChallengeId is not null;
         if (!issuedOk)
@@ -74,7 +74,7 @@ public sealed class P31LiveE2ETests
             }
             else
             {
-                var verified = client.VerifyOtpAsync(issued.Value.ChallengeId, code).GetAwaiter().GetResult();
+                var verified = await client.VerifyOtpAsync(issued.Value.ChallengeId, code);
                 if (verified.Status != "OK" || verified.Value?.Token is null)
                 {
                     failures.Add($"verify: HTTP {verified.HttpStatus} status {verified.Status}");
@@ -84,7 +84,7 @@ public sealed class P31LiveE2ETests
                     var session = verified.Value.Token;
 
                     // 4) Invoices grouped per store.
-                    var list = client.ListInvoicesAsync(session).GetAwaiter().GetResult();
+                    var list = await client.ListInvoicesAsync(session);
                     if (list.HttpStatus == 200 && list.Value is not null)
                     {
                         _output.WriteLine($"list: PASS ({list.Value.Stores.Count} store group(s))");
@@ -93,7 +93,7 @@ public sealed class P31LiveE2ETests
                         {
                             // 5) Invoice detail.
                             var store = list.Value.Stores.First(s => s.Invoices.Contains(first));
-                            var detail = client.GetInvoiceAsync(session, store.StoreId, first.InvoiceId).GetAwaiter().GetResult();
+                            var detail = await client.GetInvoiceAsync(session, store.StoreId, first.InvoiceId);
                             Check(failures, "detail", expectStatus: 200, expectBodyStatus: null, detail, strict);
                         }
                     }
@@ -103,9 +103,9 @@ public sealed class P31LiveE2ETests
                     }
 
                     // 6) Logout + revoked-session proof.
-                    var logout = client.LogoutAsync(session).GetAwaiter().GetResult();
+                    var logout = await client.LogoutAsync(session);
                     Check(failures, "logout", expectStatus: 200, expectBodyStatus: "REVOKED", logout, strict);
-                    var revoked = client.ListInvoicesAsync(session).GetAwaiter().GetResult();
+                    var revoked = await client.ListInvoicesAsync(session);
                     Check(failures, "revoked-session", expectStatus: 401, expectBodyStatus: "UNAUTHENTICATED", revoked, strict);
                 }
             }
