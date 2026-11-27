@@ -380,7 +380,7 @@ public static class CaptureReviewItemAssembler
         long payable = subtotal;
         var payableProv = "unavailable";
         string? payableRawText = null;
-        if (extracted is { PayableCandidates.Count: == 1 } &&
+        if (extracted is { PayableCandidates.Count: 1 } &&
             extracted.PayableCandidates[0] is var payableCell &&
             PersianNumberParser.TryParseNonNegativeInt64(payableCell.RawValue, out var parsedPayable))
         {
