@@ -193,6 +193,8 @@ public class HolooC93FollowUpTests
     [InlineData("DROP TABLE FACTURE")]
     [InlineData("SELECT * FROM ARTICLE; DROP TABLE ARTICLE")]
     [InlineData("SELECT /* ok */ * INTO temp_tbl FROM ARTICLE")]
+    [InlineData("SELECT * FROM [ARTICLE; DROP TABLE ARTICLE")]
+    [InlineData("SELECT \"A_Code FROM ARTICLE")]
     [InlineData("EXEC sp_who2")]
     [InlineData("")]
     public void QueryGuard_Blocks_Writes_DDL_And_MultiStatements(string unsafeSql)
@@ -201,9 +203,9 @@ public class HolooC93FollowUpTests
     }
 
     [Fact]
-    public void QueryGuard_Allows_Valid_ReadOnly_Select_With_String_Literals()
+    public void QueryGuard_Allows_Valid_ReadOnly_Select_With_String_Literals_And_Delete_Column_Identifier()
     {
-        HolooQueryGuard.EnsureReadOnlySelect("SELECT A_Code, 'DELETE UPDATE' AS Label FROM ARTICLE WHERE Endeditdate > @since;");
+        HolooQueryGuard.EnsureReadOnlySelect("SELECT A_Code, \"Delete\", [Delete], 'DELETE UPDATE' AS Label FROM ARTICLE WHERE Endeditdate > @since;");
     }
 
     [Fact]

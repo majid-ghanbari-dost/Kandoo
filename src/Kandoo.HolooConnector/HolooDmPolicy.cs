@@ -138,26 +138,61 @@ public static partial class HolooQueryGuard
         var i = 0;
         while (i < sql.Length)
         {
-            if (sql[i] == '\'')
+            if (sql[i] == '\'' || sql[i] == '"')
             {
+                var quote = sql[i];
                 buffer[len++] = ' ';
                 i++;
+                var closed = false;
                 while (i < sql.Length)
                 {
-                    if (sql[i] == '\'' && i + 1 < sql.Length && sql[i + 1] == '\'')
+                    if (sql[i] == quote && i + 1 < sql.Length && sql[i + 1] == quote)
                     {
                         i += 2;
                         continue;
                     }
 
-                    if (sql[i] == '\'')
+                    if (sql[i] == quote)
                     {
                         i++;
+                        closed = true;
                         break;
                     }
 
                     i++;
                 }
+
+                if (!closed)
+                    throw new HolooReadOnlyViolationException("Unterminated SQL string or quoted identifier detected.");
+
+                continue;
+            }
+
+            if (sql[i] == '[')
+            {
+                buffer[len++] = ' ';
+                i++;
+                var closed = false;
+                while (i < sql.Length)
+                {
+                    if (sql[i] == ']' && i + 1 < sql.Length && sql[i + 1] == ']')
+                    {
+                        i += 2;
+                        continue;
+                    }
+
+                    if (sql[i] == ']')
+                    {
+                        i++;
+                        closed = true;
+                        break;
+                    }
+
+                    i++;
+                }
+
+                if (!closed)
+                    throw new HolooReadOnlyViolationException("Unterminated bracketed SQL identifier detected.");
 
                 continue;
             }
@@ -173,9 +208,22 @@ public static partial class HolooQueryGuard
             if (sql[i] == '/' && i + 1 < sql.Length && sql[i + 1] == '*')
             {
                 i += 2;
-                while (i + 1 < sql.Length && !(sql[i] == '*' && sql[i + 1] == '/'))
+                var closed = false;
+                while (i + 1 < sql.Length)
+                {
+                    if (sql[i] == '*' && sql[i + 1] == '/')
+                    {
+                        i += 2;
+                        closed = true;
+                        break;
+                    }
+
                     i++;
-                i += 2;
+                }
+
+                if (!closed)
+                    throw new HolooReadOnlyViolationException("Unterminated block SQL comment detected.");
+
                 buffer[len++] = ' ';
                 continue;
             }
