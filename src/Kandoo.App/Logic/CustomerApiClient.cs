@@ -172,7 +172,17 @@ public sealed class CustomerApiClient : IDisposable
 
         if (body is not null)
         {
-            var json = JsonSerializer.Serialize(body, JsonOptions);
+            // Serialize through the CONCRETE generic overload: the object/Type-based
+            // overloads of System.Text.Json escape '+' inside string values ("\\+"),
+            // which would corrupt phone numbers like +989... on the wire (verified by
+            // P31_Serialization_Probe against the P-31 vector replay).
+            var json = body switch
+            {
+                OtpIssueRequest issue => JsonSerializer.Serialize(issue, JsonOptions),
+                OtpVerifyRequest verify => JsonSerializer.Serialize(verify, JsonOptions),
+                _ => throw new NotSupportedException(
+                    $"No P-31 wire serializer for request body type {body.GetType().Name}."),
+            };
             request.Content = new StringContent(json, Encoding.UTF8, "application/json");
         }
 
