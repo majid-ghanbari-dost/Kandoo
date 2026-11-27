@@ -4,18 +4,54 @@ on:
   push:
     branches:
       - '**'
+    paths-ignore:
+      - 'docs/**'
+      - 'TASKS/**'
+      - '**/*.md'
   pull_request:
+
+# M-013 §4: a superseded run of the same ref is cancelled, so a second push does not leave a
+# Windows run burning minutes on a commit nobody will merge. Only for pushes; a pull_request
+# run is cancelled by the newer one for the same PR anyway.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
 
 permissions:
   contents: read
+  actions: read
+  pull-requests: read
 
 env:
   DOTNET_CLI_TELEMETRY_OPTOUT: '1'
   DOTNET_NOLOGO: 'true'
 
 jobs:
+  # Cheap ubuntu gate every heavier job depends on, so a docs-only push does not start four
+  # windows-latest runners. Defaults to "has work" whenever the change set cannot be trusted.
+  changes:
+    name: Changed paths
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.filter.outputs.build }}
+      installer: ${{ steps.filter.outputs.installer }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Decide which jobs have work
+        id: filter
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: scripts/Get-CiChangeSet.ps1 -BaseSha '${{ github.event.before }}'
+
   build-and-test-linux:
     name: Build and test (ubuntu-latest)
+    needs: changes
+    if: needs.changes.outputs.build == 'true'
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -34,8 +70,10 @@ jobs:
     env:
       ConnectionStrings__CloudPostgres: "Host=localhost;Port=5432;Database=kandoo;Username=postgres;Password=postgres;Pooling=false"
     steps:
+
       - name: Check out repository
         uses: actions/checkout@v4
+
 
       - name: Check out pinned E-30 contract read-only
         uses: actions/checkout@v4
@@ -46,29 +84,42 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+
       - name: Set up .NET 8
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
 
+
+      - name: Cache NuGet
+        uses: ./.github/actions/kandoo-nuget-cache
+        with:
+          suffix: linux
+
+
       - name: Log dotnet version
         shell: pwsh
         run: dotnet --info
+
 
       - name: Set up Python 3.11 for C-21
         uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
+
       - name: Restore
         run: dotnet restore Kandoo.sln
+
 
       - name: Build
         run: dotnet build Kandoo.sln --configuration Release --no-restore
 
+
       - name: Run C-21 pinned extraction bridge golden probe
         shell: pwsh
         run: scripts/Invoke-CiStep.ps1 -StepName 'Run C-21 pinned extraction bridge golden probe' -ScriptPath scripts/Invoke-C21ExtractionBridge.ps1 -ScriptArguments @('-PythonRepository', '.e30/Kandoo-Digital-Invoice', '-ArtifactPath', 'artifacts/c21-extraction-bridge-ubuntu-latest.json')
+
 
       - name: Upload C-21 extraction bridge evidence
         if: always()
@@ -79,10 +130,12 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+
       - name: Generate and validate C-23 OpenAPI
         env:
           KANDOO_OPENAPI_OUTPUT: ${{ github.workspace }}/artifacts/kandoo-hub-openapi.json
         run: dotnet test tests/Kandoo.Hub.Tests/Kandoo.Hub.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~OpenApiContractTests"
+
 
       - name: Upload C-23 generated OpenAPI
         uses: actions/upload-artifact@v4
@@ -92,14 +145,18 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+
       - name: Test Core and write TRX
         run: dotnet test tests/Kandoo.Core.Tests/Kandoo.Core.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Core.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
+
 
       - name: Test Cloud and write TRX
         run: dotnet test tests/Kandoo.Cloud.Tests/Kandoo.Cloud.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Cloud.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
 
+
       - name: Test Hub and write TRX
         run: dotnet test tests/Kandoo.Hub.Tests/Kandoo.Hub.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Hub.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
+
 
       - name: Publish failed test annotations
         if: always()
@@ -117,11 +174,14 @@ jobs:
             }
           }
 
+
       - name: Test Capture and write TRX
         run: dotnet test tests/Kandoo.Capture.Tests/Kandoo.Capture.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Capture.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
 
+
       - name: Test HolooConnector and write TRX
         run: dotnet test tests/Kandoo.HolooConnector.Tests/Kandoo.HolooConnector.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.HolooConnector.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
+
 
       - name: Upload test results
         if: always()
@@ -136,12 +196,17 @@ jobs:
             tests/Kandoo.HolooConnector.Tests/TestResults/*.trx
           if-no-files-found: error
 
-  build-and-test-windows:
-    name: Build and test (windows-latest)
+
+  windows-build:
+    name: Build (windows-latest)
+    needs: changes
+    if: needs.changes.outputs.build == 'true'
     runs-on: windows-latest
     steps:
+
       - name: Check out repository
         uses: actions/checkout@v4
+
 
       - name: Check out pinned E-30 contract read-only
         uses: actions/checkout@v4
@@ -152,15 +217,24 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+
       - name: Set up .NET 8
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
 
+
       - name: Set up Python 3.11 for C-21
         uses: actions/setup-python@v6
         with:
           python-version: '3.11'
+
+
+      - name: Cache NuGet
+        uses: ./.github/actions/kandoo-nuget-cache
+        with:
+          suffix: build
+
 
       - name: Restore
         run: dotnet restore Kandoo.sln
@@ -168,9 +242,11 @@ jobs:
       - name: Build
         run: dotnet build Kandoo.sln --configuration Release --no-restore
 
+
       - name: Run C-21 pinned extraction bridge golden probe
         shell: pwsh
         run: scripts/Invoke-CiStep.ps1 -StepName 'Run C-21 pinned extraction bridge golden probe' -ScriptPath scripts/Invoke-C21ExtractionBridge.ps1 -ScriptArguments @('-PythonRepository', '.e30/Kandoo-Digital-Invoice', '-ArtifactPath', 'artifacts/c21-extraction-bridge-windows-latest.json')
+
 
       - name: Upload C-21 extraction bridge evidence
         if: always()
@@ -181,14 +257,64 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+
+  windows-tests:
+    name: Tests (windows-latest)
+    needs: [changes, windows-build]
+    if: needs.changes.outputs.build == 'true'
+    runs-on: windows-latest
+    steps:
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+
+      - name: Check out pinned E-30 contract read-only
+        uses: actions/checkout@v4
+        with:
+          repository: majid-ghanbari-dost/Kandoo-Digital-Invoice
+          ref: 29d842178cd39d3f54f14f3716c44c585911467b
+          path: .e30/Kandoo-Digital-Invoice
+          fetch-depth: 1
+          persist-credentials: false
+
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+
+      - name: Set up Python 3.11 for C-21
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+
+      - name: Cache NuGet
+        uses: ./.github/actions/kandoo-nuget-cache
+        with:
+          suffix: tests
+
+
+      - name: Restore
+        run: dotnet restore Kandoo.sln
+
+      - name: Build
+        run: dotnet build Kandoo.sln --configuration Release --no-restore
+
+
       - name: Test Core and write TRX
         run: dotnet test tests/Kandoo.Core.Tests/Kandoo.Core.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Core.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
+
 
       - name: Test Cloud and write TRX
         run: dotnet test tests/Kandoo.Cloud.Tests/Kandoo.Cloud.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Cloud.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
 
+
       - name: Test Hub and write TRX
         run: dotnet test tests/Kandoo.Hub.Tests/Kandoo.Hub.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Hub.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
+
 
       - name: Publish failed test annotations
         if: always()
@@ -206,18 +332,75 @@ jobs:
             }
           }
 
+
       - name: Test Capture and write TRX
         run: dotnet test tests/Kandoo.Capture.Tests/Kandoo.Capture.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.Capture.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
+
 
       - name: Test HolooConnector and write TRX
         run: dotnet test tests/Kandoo.HolooConnector.Tests/Kandoo.HolooConnector.Tests.csproj --configuration Release --no-build --results-directory tests/Kandoo.HolooConnector.Tests/TestResults --logger "trx;LogFileName=test-results.trx"
 
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-windows-latest
+          path: |
+            tests/Kandoo.Core.Tests/TestResults/*.trx
+            tests/Kandoo.Cloud.Tests/TestResults/*.trx
+            tests/Kandoo.Hub.Tests/TestResults/*.trx
+          if-no-files-found: error
+
+
+  windows-hub:
+    name: Hub publish, C-14 and C-22 smokes (windows-latest)
+    needs: [changes, windows-build]
+    if: needs.changes.outputs.build == 'true'
+    runs-on: windows-latest
+    steps:
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+
+      - name: Check out pinned E-30 contract read-only
+        uses: actions/checkout@v4
+        with:
+          repository: majid-ghanbari-dost/Kandoo-Digital-Invoice
+          ref: 29d842178cd39d3f54f14f3716c44c585911467b
+          path: .e30/Kandoo-Digital-Invoice
+          fetch-depth: 1
+          persist-credentials: false
+
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+
+      - name: Cache NuGet
+        uses: ./.github/actions/kandoo-nuget-cache
+        with:
+          suffix: hub
+
+
+      - name: Restore
+        run: dotnet restore Kandoo.sln
+
+      - name: Build
+        run: dotnet build Kandoo.sln --configuration Release --no-restore
+
+
       - name: Publish self-contained win-x64 Hub host
         run: dotnet publish src/Kandoo.Hub/Kandoo.Hub.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts/Kandoo.Hub-win-x64
+
 
       - name: Start Hub, run C-14 smoke, stop it, and measure the publish
         shell: pwsh
         run: scripts/Invoke-HubSmoke.ps1 -PublishDirectory artifacts/Kandoo.Hub-win-x64 -ArtifactDirectory artifacts
+
 
       - name: Upload C-14 self-contained Hub artifact
         uses: actions/upload-artifact@v4
@@ -233,9 +416,12 @@ jobs:
       # C-98 / M-010 DoD-A point 4: the automatable subset of the demo chain, run against the
       # published Hub. Points whose feature does not exist yet report GAP (never PASS); the
       # step stays green so the hole is visible in the summary instead of being hidden.
+
+
       - name: C-98 demo-day acceptance check (automatable subset)
         shell: pwsh
         run: scripts/demo-check.ps1 -HubDirectory artifacts/Kandoo.Hub-win-x64 -ArtifactDirectory artifacts
+
 
       - name: Upload C-98 demo-check evidence
         if: always()
@@ -249,13 +435,16 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+
       - name: Assemble C-22 Windows pilot package
         shell: pwsh
         run: scripts/Invoke-CiStep.ps1 -StepName 'Assemble C-22 Windows pilot package' -ScriptPath scripts/New-HubPilotPackage.ps1 -ScriptArguments @('-PublishDirectory', 'artifacts/Kandoo.Hub-win-x64', '-PackageDirectory', 'artifacts/Kandoo.Hub-Pilot-win-x64')
 
+
       - name: Run C-22 replacement, pairing, and backup smoke
         shell: pwsh
         run: scripts/Invoke-CiStep.ps1 -StepName 'Run C-22 replacement, pairing, and backup smoke' -ScriptPath scripts/Invoke-HubPilotSmoke.ps1 -ScriptArguments @('-PackageDirectory', 'artifacts/Kandoo.Hub-Pilot-win-x64', '-ArtifactDirectory', 'artifacts')
+
 
       - name: Upload C-22 Windows pilot artifact
         id: c22_pilot_upload
@@ -267,6 +456,7 @@ jobs:
             artifacts/c22-pilot-smoke-result.json
           if-no-files-found: error
           retention-days: 7
+
 
       - name: Diagnose C-22 pilot artifact upload failure
         if: always() && steps.c22_pilot_upload.outcome == 'failure'
@@ -298,6 +488,36 @@ jobs:
           }
           exit $exitCode
 
+
+  windows-app:
+    name: Windows app and screenshots (windows-latest)
+    needs: changes
+    # Kandoo.App is not in Kandoo.sln and references only Kandoo.Core, so this lane does not
+    # wait for (or repeat) the solution build. That keeps it off the critical path, which is what
+    # puts the whole run under 8 minutes: changes -> app -> installer -> smoke is the long pole.
+    # It only runs when the app, the packaging or the scripts moved, and always on main so D1/D2
+    # never depend on a merge that happened to skip this lane.
+    if: needs.changes.outputs.installer == 'true' || github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    steps:
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+
+      - name: Cache NuGet
+        uses: ./.github/actions/kandoo-nuget-cache
+        with:
+          suffix: app
+
+
+
       - name: Install MAUI Windows workload (C-87-fix-6)
         working-directory: src/Kandoo.App
         shell: pwsh
@@ -307,6 +527,7 @@ jobs:
           dotnet workload install maui-windows
           if ($LASTEXITCODE -ne 0) { throw "maui-windows workload install failed." }
           dotnet workload list
+
 
       - name: Build Windows MAUI app (C-87-fix-6)
         working-directory: src/Kandoo.App
@@ -337,6 +558,7 @@ jobs:
             throw "MAUI Windows publish failed (exit $code)."
           }
 
+
       - name: Upload MAUI build log (C-87-fix-6)
         if: always()
         uses: actions/upload-artifact@v4
@@ -350,10 +572,13 @@ jobs:
 
       # T3 stage 3-6: one screenshot per Windows screen as a CI artifact, so a screen-vs-board
       # comparison is evidence and not a claim. Runs after the MAUI Windows publish above.
+
+
       - name: Capture Windows screen screenshots (C-96)
         continue-on-error: true
         shell: pwsh
         run: scripts/Capture-WindowsScreens.ps1 -AppDirectory artifacts/Kandoo.App-win-x64 -ArtifactDirectory artifacts
+
 
       - name: Upload Windows screen screenshots (C-96)
         if: always()
@@ -366,6 +591,57 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+
+      # The installer stages this publish. It travels as an artifact instead of the installer
+      # job republishing the app, so on main the MAUI publish runs once, not twice.
+      - name: Upload Windows app publish
+        uses: actions/upload-artifact@v4
+        with:
+          name: kandoo-app-win-x64
+          path: artifacts/Kandoo.App-win-x64/**
+          compression-level: 1
+          if-no-files-found: error
+          retention-days: 1
+
+
+  windows-installer:
+    name: Installer (windows-latest)
+    needs: [changes, windows-hub, windows-app]
+    # M-013 §4: the installer lane runs when the app, the packaging or the scripts moved, and
+    # always on main, so the release kit keeps continuous evidence without taxing every PR.
+    if: needs.changes.outputs.installer == 'true' || github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    steps:
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+
+      # Each artifact is downloaded into its own private directory. Sharing one download root was
+      # a real bug: the Hub publish carries its folder plus two C-14 evidence files, so it lands
+      # one level deep and its own level is the shared `artifacts` folder. Normalising from a
+      # shared root then swept Hub files into the app folder. Private roots make any repair
+      # strictly local to one artifact.
+      - name: Download published Hub
+        uses: actions/download-artifact@v4
+        with:
+          name: kandoo-hub-c14-win-x64
+          path: .ci-downloads/hub
+
+      - name: Download Windows app publish
+        uses: actions/download-artifact@v4
+        with:
+          name: kandoo-app-win-x64
+          path: .ci-downloads/app
+
+      - name: Put the downloaded publishes where staging expects them
+        shell: pwsh
+        run: |
+          scripts/Invoke-CiStep.ps1 -StepName 'Resolve Hub publish layout' -ScriptPath scripts/Resolve-CiArtifactLayout.ps1 -ScriptArguments @('-ExpectedDirectory', 'artifacts/Kandoo.Hub-win-x64', '-ProbeFile', 'Kandoo.Hub.exe', '-DownloadDirectory', '.ci-downloads/hub')
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          scripts/Invoke-CiStep.ps1 -StepName 'Resolve app publish layout' -ScriptPath scripts/Resolve-CiArtifactLayout.ps1 -ScriptArguments @('-ExpectedDirectory', 'artifacts/Kandoo.App-win-x64', '-ProbeFile', 'Kandoo.App.exe', '-DownloadDirectory', '.ci-downloads/app')
+
+
       - name: Install Inno Setup (C-87-fix-12)
         shell: pwsh
         run: |
@@ -377,6 +653,7 @@ jobs:
           if (-not (Test-Path -LiteralPath $iscc -PathType Leaf)) { throw "ISCC.exe not found at expected path: $iscc" }
           Write-Host "ISCC_PATH=$iscc"
           "ISCC_PATH=$iscc" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
 
       - name: Stage installer inputs (C-87-fix-12)
         shell: pwsh
@@ -399,6 +676,7 @@ jobs:
           Copy-Item -Path "packaging\HubPilot\Start-KandooHub.ps1" -Destination "$publishDir" -Force
           Copy-Item -Path "packaging\HubPilot\README.txt" -Destination "$publishDir" -Force
 
+
       - name: Diagnose staged runtimes (C-87-fix-12)
         shell: pwsh
         run: |
@@ -414,6 +692,7 @@ jobs:
             $line = "STAGE $folder hostfxr=$hostfxr hostpolicy=$hostpolicy coreclr=$coreclrVersion"
             Write-Host $line
           }
+
 
       - name: Build Kandoo-Setup-x64.exe with Inno Setup (C-87-fix-12)
         shell: pwsh
@@ -433,6 +712,7 @@ jobs:
           Write-Host "C87_SETUP_EXE_PATH=$($setupFile.FullName)"
           Write-Host "C87_SETUP_EXE_SIZE=$($setupFile.Length)"
 
+
       - name: Upload C-87 setup.exe (C-87-fix-12)
         uses: actions/upload-artifact@v4
         if: success()
@@ -441,6 +721,63 @@ jobs:
           path: packaging/HubPilot/Output/Kandoo-Setup-x64.exe
           if-no-files-found: error
           retention-days: 7
+
+
+      - name: Upload iscc log (C-87-fix-12)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kandoo-iscc-log
+          path: artifacts/iscc.log
+          if-no-files-found: warn
+          retention-days: 7
+
+
+      - name: Fallback zip (C-87)
+        if: always()
+        shell: pwsh
+        run: |
+          $setup = "packaging/HubPilot/Output/Kandoo-Setup-x64.exe"
+          if (-not (Test-Path $setup)) {
+            Compress-Archive -Path "artifacts/Kandoo.Hub-win-x64/*" -DestinationPath "artifacts/Kandoo.Hub-win-x64.zip" -Force
+            Write-Host "C87_FALLBACK_ZIP artifacts/Kandoo.Hub-win-x64.zip"
+          }
+
+
+      - name: Upload fallback zip (C-87)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kandoo-hub-c87-win-x64-zip
+          path: artifacts/Kandoo.Hub-win-x64.zip
+          if-no-files-found: warn
+          retention-days: 7
+
+
+  installer-smoke:
+    name: Installer smoke (windows-latest)
+    needs: [windows-installer]
+    runs-on: windows-latest
+    steps:
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+
+      # The installer artifact holds exactly one file, so its least-common-ancestor is the file
+      # itself and it lands at <path>/Kandoo-Setup-x64.exe.
+      - name: Download the built installer
+        uses: actions/download-artifact@v4
+        with:
+          name: kandoo-hub-c87-setup-exe
+          path: .ci-downloads/setup
+
+      - name: Put the downloaded installer where the smoke expects it
+        shell: pwsh
+        run: |
+          scripts/Invoke-CiStep.ps1 -StepName 'Resolve installer layout' -ScriptPath scripts/Resolve-CiArtifactLayout.ps1 -ScriptArguments @('-ExpectedDirectory', 'packaging/HubPilot/Output', '-ProbeFile', 'Kandoo-Setup-x64.exe', '-DownloadDirectory', '.ci-downloads/setup')
+
+
       - name: Install and smoke-test the installer (C-87-fix-12)
         shell: pwsh
         run: |
@@ -504,6 +841,11 @@ jobs:
           Write-Host "::notice::SMOKE_STEP=4_maui PASS"
 
           # 5. Copy smoke files into workspace for artifact upload
+          # This directory used to exist because earlier steps in the single windows job wrote
+          # into it. As its own job nothing has created it yet, and Out-File below is the last
+          # thing the step does, so a missing directory failed the step after every hard check
+          # had already passed.
+          New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE\artifacts" | Out-Null
           Copy-Item -Path "$installDir\setup.log" -Destination "$env:GITHUB_WORKSPACE\artifacts\setup.log" -Force -ErrorAction SilentlyContinue
           Copy-Item -Path "$installDir\smoke.txt" -Destination "$env:GITHUB_WORKSPACE\artifacts\smoke.txt" -Force -ErrorAction SilentlyContinue
           "Installer smoke (C-95 layout): all hard checks passed" | Out-File -FilePath $outcomeFile -Encoding utf8
@@ -514,6 +856,8 @@ jobs:
       # Re-emit the smoke lines as ::notice:: annotations, which ARE readable through
       # /check-runs/{id}/annotations, so the verbatim SMOKE_STEP/SMOKE_ALL_HARD_CHECKS_PASSED lines
       # can be quoted without a log pull. Reads the step's own output; nothing here changes the smoke.
+
+
       - name: Publish smoke lines as annotations (M-009 §5)
         if: always()
         shell: pwsh
@@ -535,6 +879,7 @@ jobs:
           Write-Host "::notice::INSTALL_SMOKE_ARTIFACT=kandoo-install-smoke"
           Write-Host "::notice::SETUP_EXE_ARTIFACT=kandoo-hub-c87-setup-exe"
 
+
       - name: Upload install smoke artifact (C-87-fix-12)
         if: always()
         uses: actions/upload-artifact@v4
@@ -546,41 +891,3 @@ jobs:
             artifacts/smoke-outcome.txt
           if-no-files-found: warn
           retention-days: 7
-
-      - name: Upload iscc log (C-87-fix-12)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: kandoo-iscc-log
-          path: artifacts/iscc.log
-          if-no-files-found: warn
-          retention-days: 7
-
-      - name: Fallback zip (C-87)
-        if: always()
-        shell: pwsh
-        run: |
-          $setup = "packaging/HubPilot/Output/Kandoo-Setup-x64.exe"
-          if (-not (Test-Path $setup)) {
-            Compress-Archive -Path "artifacts/Kandoo.Hub-win-x64/*" -DestinationPath "artifacts/Kandoo.Hub-win-x64.zip" -Force
-            Write-Host "C87_FALLBACK_ZIP artifacts/Kandoo.Hub-win-x64.zip"
-          }
-
-      - name: Upload fallback zip (C-87)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: kandoo-hub-c87-win-x64-zip
-          path: artifacts/Kandoo.Hub-win-x64.zip
-          if-no-files-found: warn
-          retention-days: 7
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-windows-latest
-          path: |
-            tests/Kandoo.Core.Tests/TestResults/*.trx
-            tests/Kandoo.Cloud.Tests/TestResults/*.trx
-            tests/Kandoo.Hub.Tests/TestResults/*.trx
-          if-no-files-found: error

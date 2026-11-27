@@ -1,0 +1,25 @@
+name: Cache
+description: >-
+  Restore and save the NuGet package cache for this repo. Kept in one local action so
+  every job uses the same key scheme: a restore takes ~50 s cold and a few seconds warm,
+  and on windows-latest that was the second-largest single cost in the workflow.
+inputs:
+  dotnet-version:
+    description: SDK version used to seed the cache key (a change invalidates the cache).
+    required: false
+    default: 8.0.x
+  suffix:
+    description: Extra key component so jobs on different OSes do not share a cache.
+    required: false
+    default: default
+runs:
+  using: composite
+  steps:
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-${{ inputs.suffix }}-nuget-${{ inputs.dotnet-version }}-${{ hashFiles('**/Directory.Packages.props', '**/*.csproj', '**/packages.lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ inputs.suffix }}-nuget-${{ inputs.dotnet-version }}-
+          ${{ runner.os }}-nuget-${{ inputs.dotnet-version }}-
