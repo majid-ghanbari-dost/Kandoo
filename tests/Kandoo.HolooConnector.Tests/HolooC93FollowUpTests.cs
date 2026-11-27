@@ -325,7 +325,11 @@ public class HolooC93FollowUpTests
             HolooReadOnlyProvisioningScriptBuilder.BuildCreateReadOnlyLoginSql("HolooCopy", "bad'login"));
 
         var ro = HolooSqlConnectionStringFactory.BuildReadOnlyIntegrated(@".\HOLOO", "HolooCopy");
-        Assert.Contains("ApplicationIntent=ReadOnly", ro, StringComparison.OrdinalIgnoreCase);
+        var parsedRo = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(ro);
+        Assert.Equal(Microsoft.Data.SqlClient.ApplicationIntent.ReadOnly, parsedRo.ApplicationIntent);
+        Assert.True(parsedRo.IntegratedSecurity);
+        Assert.False(parsedRo.PersistSecurityInfo);
+        Assert.Contains("Application Intent=ReadOnly", ro, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Integrated Security=True", ro, StringComparison.OrdinalIgnoreCase);
     }
 
