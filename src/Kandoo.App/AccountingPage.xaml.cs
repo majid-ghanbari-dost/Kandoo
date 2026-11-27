@@ -190,7 +190,7 @@ public sealed partial class AccountingPage : ContentPage
             try
             {
                 var productSource = new HubProductDataSource(_httpClient, _settings!);
-                _products = await productSource.LoadProductsAsync(limit: 200);
+                _products = await productSource.LoadProductsAsync(groupId: null, query: null, limit: 200);
             }
             catch (Exception ex) when (IsExpected(ex))
             {

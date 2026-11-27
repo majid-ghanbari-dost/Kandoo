@@ -48,7 +48,7 @@ public sealed partial class ReturnsPage : ContentPage
         try
         {
             var productSource = new HubProductDataSource(_httpClient, _settings!);
-            _catalogProducts = await productSource.LoadProductsAsync(limit: 200);
+            _catalogProducts = await productSource.LoadProductsAsync(groupId: null, query: null, limit: 200);
             PopulateCatalogPicker();
         }
         catch (Exception exception) when (IsExpected(exception))

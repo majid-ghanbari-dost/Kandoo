@@ -17,19 +17,19 @@ public sealed class C96Group4AndAccountingTests
     {
         Assert.False(HubReturnsDataSource.TryValidateReturnForm(
             "", "1", "خرابی", null, out _, out _, out var missingInvoice));
-        Assert.Contains("شماره", missingInvoice);
+        Assert.Contains("شماره", missingInvoice, StringComparison.Ordinal);
 
         Assert.False(HubReturnsDataSource.TryValidateReturnForm(
             "105", "0", "خرابی", null, out _, out _, out var zeroQty));
-        Assert.Contains("بزرگ‌تر از صفر", zeroQty);
+        Assert.Contains("بزرگ‌تر از صفر", zeroQty, StringComparison.Ordinal);
 
         Assert.False(HubReturnsDataSource.TryValidateReturnForm(
             "105", "4", "خرابی", maxSoldQuantityMillis: 3_000, out _, out _, out var overQty));
-        Assert.Contains("فروخته‌شده", overQty);
+        Assert.Contains("فروخته‌شده", overQty, StringComparison.Ordinal);
 
         Assert.False(HubReturnsDataSource.TryValidateReturnForm(
             "105", "2", "   ", null, out _, out _, out var missingReason));
-        Assert.Contains("دلیل", missingReason);
+        Assert.Contains("دلیل", missingReason, StringComparison.Ordinal);
 
         Assert.True(HubReturnsDataSource.TryValidateReturnForm(
             "۱۰۵", "۲", "مرجوعی مشتری", maxSoldQuantityMillis: 3_000,
