@@ -491,9 +491,11 @@ jobs:
 
   windows-app:
     name: Windows app and screenshots (windows-latest)
-    needs: [changes, windows-build]
-    # The MAUI workload install + publish was ~78 s of the old single windows job. It is only
-    # meaningful when the app, the packaging or the scripts moved, and always on main so D1/D2
+    needs: changes
+    # Kandoo.App is not in Kandoo.sln and references only Kandoo.Core, so this lane does not
+    # wait for (or repeat) the solution build. That keeps it off the critical path, which is what
+    # puts the whole run under 8 minutes: changes -> app -> installer -> smoke is the long pole.
+    # It only runs when the app, the packaging or the scripts moved, and always on main so D1/D2
     # never depend on a merge that happened to skip this lane.
     if: needs.changes.outputs.installer == 'true' || github.ref == 'refs/heads/main'
     runs-on: windows-latest
@@ -514,12 +516,6 @@ jobs:
         with:
           suffix: app
 
-
-      - name: Restore
-        run: dotnet restore Kandoo.sln
-
-      - name: Build
-        run: dotnet build Kandoo.sln --configuration Release --no-restore
 
 
       - name: Install MAUI Windows workload (C-87-fix-6)
@@ -637,21 +633,11 @@ jobs:
           name: kandoo-app-win-x64
           path: artifacts
 
-      - name: Assert the staged layout matches what the old single-job build produced
+      - name: Put the downloaded publishes where staging expects them
         shell: pwsh
         run: |
-          $expected = @(
-            'artifacts/Kandoo.Hub-win-x64/Kandoo.Hub.exe',
-            'artifacts/Kandoo.App-win-x64/Kandoo.App.exe'
-          )
-          foreach ($path in $expected) {
-            if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
-              Write-Host 'ACTUAL ARTIFACT TREE:'
-              Get-ChildItem -LiteralPath artifacts -Directory | ForEach-Object { Write-Host "DIR $($_.Name)" }
-              throw "STAGING_LAYOUT_WRONG missing $path (artifact nesting changed?)"
-            }
-          }
-          Write-Host 'STAGING_LAYOUT_OK'
+          scripts/Resolve-CiArtifactLayout.ps1 -ExpectedDirectory 'artifacts/Kandoo.Hub-win-x64' -ProbeFile 'Kandoo.Hub.exe' -SearchRoot artifacts
+          scripts/Resolve-CiArtifactLayout.ps1 -ExpectedDirectory 'artifacts/Kandoo.App-win-x64' -ProbeFile 'Kandoo.App.exe' -SearchRoot artifacts
 
 
       - name: Install Inno Setup (C-87-fix-12)
@@ -784,16 +770,10 @@ jobs:
           name: kandoo-hub-c87-setup-exe
           path: packaging/HubPilot/Output
 
-      - name: Assert the installer is where the smoke expects it
+      - name: Put the downloaded installer where the smoke expects it
         shell: pwsh
         run: |
-          $setup = 'packaging/HubPilot/Output/Kandoo-Setup-x64.exe'
-          if (-not (Test-Path -LiteralPath $setup -PathType Leaf)) {
-            Get-ChildItem -LiteralPath packaging/HubPilot/Output -Recurse -File -ErrorAction SilentlyContinue |
-              ForEach-Object { Write-Host "FOUND $($_.FullName)" }
-            throw "MISSING $setup"
-          }
-          Write-Host "SETUP_EXE_PRESENT size=$((Get-Item -LiteralPath $setup).Length)"
+          scripts/Resolve-CiArtifactLayout.ps1 -ExpectedDirectory 'packaging/HubPilot/Output' -ProbeFile 'Kandoo-Setup-x64.exe' -SearchRoot packaging
 
 
       - name: Install and smoke-test the installer (C-87-fix-12)
