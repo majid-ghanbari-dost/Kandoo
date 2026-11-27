@@ -35,7 +35,8 @@ public static class ProductMapper
             var specification = OptionalString(item, "specification");
             var barcode = OptionalString(item, "barcode");
             var operatorFields = ReadOperatorFields(item);
-            var stockUnconfirmed = IsStockUnconfirmed(specification, operatorFields);
+            var stockUnconfirmed = OptionalBoolean(item, "stock_unconfirmed") == true ||
+                                   IsStockUnconfirmed(specification, operatorFields);
 
             rows.Add(new ProductRow(
                 productId,
@@ -193,6 +194,21 @@ public static class ProductMapper
         }
 
         return result;
+    }
+
+    private static bool? OptionalBoolean(JsonElement parent, string name)
+    {
+        if (!parent.TryGetProperty(name, out var value) || value.ValueKind == JsonValueKind.Null)
+        {
+            return null;
+        }
+
+        if (value.ValueKind != JsonValueKind.True && value.ValueKind != JsonValueKind.False)
+        {
+            throw new JsonException($"Product field {name} must be a boolean when present.");
+        }
+
+        return value.GetBoolean();
     }
 
     private static bool RequiredBoolean(JsonElement parent, string name)

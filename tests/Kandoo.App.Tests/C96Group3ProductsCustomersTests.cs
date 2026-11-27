@@ -29,6 +29,7 @@ public sealed class C96Group3ProductsCustomersTests
                   "product_tag_number": 101,
                   "stock_millis": 12000,
                   "version": 3,
+                  "is_active": true,
                   "operator_fields": [
                     { "key": "جنس", "value": "لاتکس" }
                   ]
@@ -39,7 +40,8 @@ public sealed class C96Group3ProductsCustomersTests
                   "unit_price_rials": 0,
                   "product_tag_number": 102,
                   "stock_millis": 4000,
-                  "version": 1
+                  "version": 1,
+                  "is_active": true
                 },
                 {
                   "product_id": "prod-103",
@@ -47,6 +49,7 @@ public sealed class C96Group3ProductsCustomersTests
                   "unit_price_rials": 180000,
                   "product_tag_number": 103,
                   "stock_millis": 3000,
+                  "is_active": true,
                   "stock_unconfirmed": true
                 }
               ]
