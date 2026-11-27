@@ -621,17 +621,37 @@ jobs:
         uses: actions/checkout@v4
 
 
+      # Both artifacts are rooted at their least-common-ancestor, which for the Hub publish is
+      # `artifacts/` (it also carries c14-artifact-size.txt and c14-smoke-result.json). Downloading
+      # into `artifacts` therefore reproduces the original layout exactly. The assert step below
+      # turns any future change to these paths into one readable annotation.
       - name: Download published Hub
         uses: actions/download-artifact@v4
         with:
           name: kandoo-hub-c14-win-x64
-          path: artifacts/Kandoo.Hub-win-x64
+          path: artifacts
 
       - name: Download Windows app publish
         uses: actions/download-artifact@v4
         with:
           name: kandoo-app-win-x64
-          path: artifacts/Kandoo.App-win-x64
+          path: artifacts
+
+      - name: Assert the staged layout matches what the old single-job build produced
+        shell: pwsh
+        run: |
+          $expected = @(
+            'artifacts/Kandoo.Hub-win-x64/Kandoo.Hub.exe',
+            'artifacts/Kandoo.App-win-x64/Kandoo.App.exe'
+          )
+          foreach ($path in $expected) {
+            if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+              Write-Host 'ACTUAL ARTIFACT TREE:'
+              Get-ChildItem -LiteralPath artifacts -Directory | ForEach-Object { Write-Host "DIR $($_.Name)" }
+              throw "STAGING_LAYOUT_WRONG missing $path (artifact nesting changed?)"
+            }
+          }
+          Write-Host 'STAGING_LAYOUT_OK'
 
 
       - name: Install Inno Setup (C-87-fix-12)
@@ -756,11 +776,24 @@ jobs:
         uses: actions/checkout@v4
 
 
+      # The installer artifact holds exactly one file, so its least-common-ancestor is the file
+      # itself and it lands at <path>/Kandoo-Setup-x64.exe.
       - name: Download the built installer
         uses: actions/download-artifact@v4
         with:
           name: kandoo-hub-c87-setup-exe
           path: packaging/HubPilot/Output
+
+      - name: Assert the installer is where the smoke expects it
+        shell: pwsh
+        run: |
+          $setup = 'packaging/HubPilot/Output/Kandoo-Setup-x64.exe'
+          if (-not (Test-Path -LiteralPath $setup -PathType Leaf)) {
+            Get-ChildItem -LiteralPath packaging/HubPilot/Output -Recurse -File -ErrorAction SilentlyContinue |
+              ForEach-Object { Write-Host "FOUND $($_.FullName)" }
+            throw "MISSING $setup"
+          }
+          Write-Host "SETUP_EXE_PRESENT size=$((Get-Item -LiteralPath $setup).Length)"
 
 
       - name: Install and smoke-test the installer (C-87-fix-12)
