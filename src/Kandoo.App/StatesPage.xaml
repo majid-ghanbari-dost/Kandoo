@@ -4,67 +4,99 @@
              x:Class="Kandoo.App.StatesPage"
              Title="حالت‌های خالی و خطا"
              Style="{StaticResource PageStyle}">
-    <ScrollView>
-        <VerticalStackLayout Style="{StaticResource RootStackStyle}">
-            <Label Style="{StaticResource TitleStyle}"
-                   Text="حالت‌های خالی و خطا" />
-            <Label Style="{StaticResource BodyStyle}"
-                   Text="نمونه‌ی حالت‌های خالی، قطع ارتباط با هاب و خطای غیرمنتظره. هر کدام پیام مناسبی برای کاربر نمایش می‌دهند." />
+    <Grid ColumnDefinitions="Auto,*">
+        <VerticalStackLayout x:Name="SidebarHost"
+                             Grid.Column="0" />
 
-            <!-- Empty state -->
-            <Border Style="{StaticResource CardStyle}">
-                <VerticalStackLayout Style="{StaticResource RowStackStyle}"
-                                     HorizontalOptions="Center">
-                    <Label Style="{StaticResource SectionTitleStyle}"
-                           Text="همه‌چیز بررسی شده است"
-                           HorizontalTextAlignment="Center" />
-                    <Label Style="{StaticResource BodyStyle}"
-                           Text="فاکتوری منتظر تأیید نیست."
-                           HorizontalTextAlignment="Center" />
-                </VerticalStackLayout>
-            </Border>
+        <ScrollView Grid.Column="1">
+            <VerticalStackLayout Padding="32,28"
+                                 Spacing="16"
+                                 MaximumWidthRequest="980"
+                                 HorizontalOptions="Fill">
+                <!-- Header matching States.dc.html -->
+                <Label Style="{StaticResource TitleStyle}"
+                       Text="حالت‌های خالی و خطا" />
 
-            <!-- Hub disconnected -->
-            <Border Style="{StaticResource CardStyle}"
-                    Stroke="{StaticResource Review}"
-                    StrokeThickness="2">
-                <VerticalStackLayout Style="{StaticResource RowStackStyle}"
-                                     HorizontalOptions="Center">
-                    <Label Style="{StaticResource SectionTitleStyle}"
-                           Text="ارتباط با هاب قطع است"
-                           TextColor="{StaticResource Review}"
-                           HorizontalTextAlignment="Center" />
-                    <Label Style="{StaticResource BodyStyle}"
-                           Text="فاکتورهای جدید در صف می‌مانند و پس از اتصال دوباره ارسال می‌شوند. چیزی از دست نمی‌رود."
-                           HorizontalTextAlignment="Center" />
-                    <Button x:Name="RetryButton"
-                            Style="{StaticResource SecondaryButtonStyle}"
-                            Text="تلاش دوباره"
-                            Clicked="OnRetryClicked"
-                            SemanticProperties.Description="تلاش دوباره برای اتصال به هاب" />
-                </VerticalStackLayout>
-            </Border>
+                <Label x:Name="ProbeStatusLabel"
+                       Style="{StaticResource CaptionStyle}"
+                       TextColor="#5A4630"
+                       IsVisible="False" />
 
-            <!-- Unexpected error -->
-            <Border Style="{StaticResource CardStyle}"
-                    Stroke="{StaticResource Review}"
-                    StrokeThickness="2">
-                <VerticalStackLayout Style="{StaticResource RowStackStyle}"
-                                     HorizontalOptions="Center">
-                    <Label Style="{StaticResource SectionTitleStyle}"
-                           Text="خطای غیرمنتظره"
-                           TextColor="{StaticResource Review}"
-                           HorizontalTextAlignment="Center" />
-                    <Label Style="{StaticResource BodyStyle}"
-                           Text="برنامه با مشکل مواجه شد. گزارش خطا را کپی و برای پشتیبانی بفرستید."
-                           HorizontalTextAlignment="Center" />
-                    <Button x:Name="CopyReportButton"
-                            Style="{StaticResource PrimaryButtonStyle}"
-                            Text="کپی گزارش خطا"
-                            Clicked="OnCopyReportClicked"
-                            SemanticProperties.Description="کپی گزارش خطا در حافظه موقت" />
-                </VerticalStackLayout>
-            </Border>
-        </VerticalStackLayout>
-    </ScrollView>
+                <!-- Card 1: Empty state matching States.dc.html -->
+                <Border x:Name="EmptyCard"
+                        BackgroundColor="#FFFFFF"
+                        Stroke="#F0E4C2"
+                        StrokeThickness="1"
+                        Padding="32">
+                    <VerticalStackLayout Spacing="8"
+                                         HorizontalOptions="Center">
+                        <Label FontFamily="{StaticResource FontFamilyBold}"
+                               FontSize="18"
+                               TextColor="{StaticResource Ink}"
+                               Text="همه‌چیز بررسی شده است"
+                               HorizontalTextAlignment="Center" />
+                        <Label FontFamily="{StaticResource FontFamilyRegular}"
+                               FontSize="15"
+                               TextColor="#5A4630"
+                               Text="فاکتوری منتظر تأیید نیست."
+                               HorizontalTextAlignment="Center" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Card 2: Hub disconnected matching States.dc.html -->
+                <Border x:Name="HubDownCard"
+                        BackgroundColor="#FFFFFF"
+                        Stroke="{StaticResource Review}"
+                        StrokeThickness="2"
+                        Padding="20">
+                    <VerticalStackLayout Spacing="10">
+                        <Label FontFamily="{StaticResource FontFamilyBold}"
+                               FontSize="16"
+                               TextColor="{StaticResource Review}"
+                               Text="ارتباط با هاب قطع است" />
+                        <Label FontFamily="{StaticResource FontFamilyRegular}"
+                               FontSize="14"
+                               TextColor="{StaticResource Ink}"
+                               Text="فاکتورهای جدید در صف می‌مانند و پس از اتصال دوباره ارسال می‌شوند. چیزی از دست نمی‌رود." />
+                        <Button x:Name="RetryButton"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                BackgroundColor="{StaticResource Honey}"
+                                TextColor="{StaticResource Ink}"
+                                CornerRadius="8"
+                                HorizontalOptions="Start"
+                                Text="تلاش دوباره"
+                                Clicked="OnRetryClicked"
+                                SemanticProperties.Description="تلاش دوباره برای اتصال به هاب" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Card 3: Unexpected error matching States.dc.html -->
+                <Border x:Name="CrashErrorCard"
+                        BackgroundColor="#FFFFFF"
+                        Stroke="{StaticResource Review}"
+                        StrokeThickness="2"
+                        Padding="20">
+                    <VerticalStackLayout Spacing="10">
+                        <Label FontFamily="{StaticResource FontFamilyBold}"
+                               FontSize="16"
+                               TextColor="{StaticResource Review}"
+                               Text="خطای غیرمنتظره" />
+                        <Label FontFamily="{StaticResource FontFamilyRegular}"
+                               FontSize="14"
+                               TextColor="{StaticResource Ink}"
+                               Text="برنامه با مشکل مواجه شد. گزارش خطا را کپی و برای پشتیبانی بفرستید." />
+                        <Button x:Name="CopyReportButton"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                BackgroundColor="{StaticResource Wax}"
+                                TextColor="{StaticResource Ink}"
+                                CornerRadius="8"
+                                HorizontalOptions="Start"
+                                Text="کپی گزارش خطا"
+                                Clicked="OnCopyReportClicked"
+                                SemanticProperties.Description="کپی گزارش خطا در حافظه موقت" />
+                    </VerticalStackLayout>
+                </Border>
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
 </ContentPage>
