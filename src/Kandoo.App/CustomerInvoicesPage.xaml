@@ -102,15 +102,10 @@
                         <TapGestureRecognizer Tapped="OnBannerTapped" />
                     </Border.GestureRecognizers>
                     <Grid ColumnDefinitions="*,Auto">
-                        <Label Grid.Column="0" TextColor="{StaticResource Ink}" FontSize="16">
-                            <Label.FormattedString>
-                                <FormattedString>
-                                    <Span Text="فاکتور جدید" FontAttributes="Bold" />
-                                    <Span Text=" از " />
-                                    <Span x:Name="BannerStoreName" Text="" />
-                                </FormattedString>
-                            </Label.FormattedString>
-                        </Label>
+                        <StackLayout Grid.Column="0" Orientation="Horizontal" Spacing="0">
+                            <Label Text="فاکتور جدید" FontAttributes="Bold" FontSize="16" TextColor="{StaticResource Ink}" />
+                            <Label x:Name="BannerStoreName" Text="" FontSize="16" TextColor="{StaticResource Ink}" />
+                        </StackLayout>
                         <Label Grid.Column="1"
                                Text="‹"
                                FontSize="20"

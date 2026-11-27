@@ -90,7 +90,7 @@ public partial class CustomerInvoicesPage : ContentPage
         // Customer-New-Banner
         if (state.NewInvoiceBanner is not null)
         {
-            BannerStoreName.Text = state.NewInvoiceBanner.StoreName;
+            BannerStoreName.Text = $" از {state.NewInvoiceBanner.StoreName}";
             NewInvoiceBanner.BindingContext = state.NewInvoiceBanner;
             NewInvoiceBanner.IsVisible = true;
         }
