@@ -201,10 +201,9 @@ public static class CaptureReviewItemAssembler
                 }
 
                 // Quantity millis
-                long qtyMillis;
                 string qtyProv;
                 var qtyCell = li.Quantity;
-                var qtyParsed = qtyCell is not null && PersianNumberParser.TryParsePositiveQuantityMillis(qtyCell.RawValue, out qtyMillis);
+                var qtyParsed = PersianNumberParser.TryParsePositiveQuantityMillis(qtyCell?.RawValue, out var qtyMillis);
                 if (!qtyParsed)
                     qtyMillis = 1000L;
 
@@ -232,10 +231,9 @@ public static class CaptureReviewItemAssembler
                 }
 
                 // Line total
-                long lineTotal;
                 string lineTotalProv;
                 var totalCell = li.LineTotal;
-                var totalParsed = totalCell is not null && PersianNumberParser.TryParseNonNegativeInt64(totalCell.RawValue, out lineTotal);
+                var totalParsed = PersianNumberParser.TryParseNonNegativeInt64(totalCell?.RawValue, out var lineTotal);
                 if (!totalParsed)
                     lineTotal = 0L;
 
