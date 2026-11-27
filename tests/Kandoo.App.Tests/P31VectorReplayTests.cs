@@ -136,6 +136,20 @@ public sealed class P31VectorReplayTests
     }
 
     [Fact]
+    public void P31_Serialization_Probe()
+    {
+        var phone = "+989120000001";
+        object asObject = new OtpIssueRequest { Phone = phone };
+        var typed = new OtpIssueRequest { Phone = phone };
+        var opts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
+        var viaObject = JsonSerializer.Serialize(asObject, opts);
+        var viaTyped = JsonSerializer.Serialize(typed, opts);
+        var viaType = JsonSerializer.Serialize(asObject, asObject.GetType(), opts);
+        throw new InvalidOperationException(
+            $"Assert.True() Failure PROBE viaObject=[{viaObject}] viaTyped=[{viaTyped}] viaType=[{viaType}]");
+    }
+
+    [Fact]
     public async Task P31_WireFormat_Detail()
     {
         var vectors = LoadVectors();
