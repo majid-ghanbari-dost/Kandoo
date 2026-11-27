@@ -636,8 +636,9 @@ jobs:
       - name: Put the downloaded publishes where staging expects them
         shell: pwsh
         run: |
-          scripts/Resolve-CiArtifactLayout.ps1 -ExpectedDirectory 'artifacts/Kandoo.Hub-win-x64' -ProbeFile 'Kandoo.Hub.exe' -SearchRoot artifacts
-          scripts/Resolve-CiArtifactLayout.ps1 -ExpectedDirectory 'artifacts/Kandoo.App-win-x64' -ProbeFile 'Kandoo.App.exe' -SearchRoot artifacts
+          scripts/Invoke-CiStep.ps1 -StepName 'Resolve Hub publish layout' -ScriptPath scripts/Resolve-CiArtifactLayout.ps1 -ScriptArguments @('-ExpectedDirectory', 'artifacts/Kandoo.Hub-win-x64', '-ProbeFile', 'Kandoo.Hub.exe', '-SearchRoot', 'artifacts')
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          scripts/Invoke-CiStep.ps1 -StepName 'Resolve app publish layout' -ScriptPath scripts/Resolve-CiArtifactLayout.ps1 -ScriptArguments @('-ExpectedDirectory', 'artifacts/Kandoo.App-win-x64', '-ProbeFile', 'Kandoo.App.exe', '-SearchRoot', 'artifacts')
 
 
       - name: Install Inno Setup (C-87-fix-12)
@@ -773,7 +774,7 @@ jobs:
       - name: Put the downloaded installer where the smoke expects it
         shell: pwsh
         run: |
-          scripts/Resolve-CiArtifactLayout.ps1 -ExpectedDirectory 'packaging/HubPilot/Output' -ProbeFile 'Kandoo-Setup-x64.exe' -SearchRoot packaging
+          scripts/Invoke-CiStep.ps1 -StepName 'Resolve installer layout' -ScriptPath scripts/Resolve-CiArtifactLayout.ps1 -ScriptArguments @('-ExpectedDirectory', 'packaging/HubPilot/Output', '-ProbeFile', 'Kandoo-Setup-x64.exe', '-SearchRoot', 'packaging')
 
 
       - name: Install and smoke-test the installer (C-87-fix-12)

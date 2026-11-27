@@ -28,10 +28,12 @@ if (Test-Path -LiteralPath $expected -PathType Leaf) {
 Write-Host "LAYOUT_MISMATCH expected $expected - searching for $ProbeFile under $SearchRoot"
 $matches = @(Get-ChildItem -LiteralPath $SearchRoot -Filter $ProbeFile -Recurse -File -ErrorAction SilentlyContinue)
 if ($matches.Count -eq 0) {
-    Write-Host 'ACTUAL TREE:'
+    # Emitted as ::error:: annotations on purpose: workflow step logs are not readable from the
+    # sandbox this repo is audited from, while check-run annotations are.
+    Write-Host "::error::LAYOUT_FAILED $ProbeFile not found under $SearchRoot"
     Get-ChildItem -LiteralPath $SearchRoot -Recurse -Directory -ErrorAction SilentlyContinue |
         Select-Object -First 40 |
-        ForEach-Object { Write-Host "DIR $($_.FullName)" }
+        ForEach-Object { Write-Host "::error::LAYOUT_DIR $($_.FullName)" }
     throw "LAYOUT_FAILED $ProbeFile was not found anywhere under $SearchRoot"
 }
 
