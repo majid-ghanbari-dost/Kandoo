@@ -17,15 +17,15 @@ on:
       - 'scripts/Inspect-C58Evidence.py'
       - '.github/workflows/kandoo-app.yml'
   pull_request:
+    # M-013 §4, per-lane path filters. A pull_request run is diffed against the base branch, so
+    # any path listed here makes the PR pay a full Windows MAUI build and Android APK build.
+    # The app-touching set is what actually changes the output; the docs entries were only ever
+    # needed to publish evidence on push and stay on the push trigger below. Without this, every
+    # PR in the repo (including docs-only and Hub-only ones) ran this workflow.
     paths:
       - 'src/Kandoo.App/**'
       - 'src/Kandoo.Core/JalaliDateConverter.cs'
       - 'tests/Kandoo.App.Tests/**'
-      - 'docs/DECISIONS.md'
-      - 'docs/reports/C-40.md'
-      - 'docs/reports/C-41.md'
-      - 'docs/reports/C-50.md'
-      - 'docs/reports/C-58.md'
       - 'scripts/Invoke-KandooApp.ps1'
       - 'scripts/Inspect-KandooApk.py'
       - 'scripts/Invoke-C50AndroidSmoke.sh'
