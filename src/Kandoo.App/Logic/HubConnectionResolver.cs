@@ -174,6 +174,11 @@ public static class HubConnectionResolver
             return "—";
         }
 
+        return FormatStockMillis(millis);
+    }
+
+    public static string FormatStockMillis(long millis)
+    {
         if (millis % 1000 == 0)
         {
             return (millis / 1000).ToString("N0", CultureInfo.InvariantCulture);
@@ -181,6 +186,27 @@ public static class HubConnectionResolver
 
         var exact = millis / 1000m;
         return exact.ToString("0.###", CultureInfo.InvariantCulture);
+    }
+
+    public static string FormatSignedStockDelta(long deltaMillis)
+    {
+        var prefix = deltaMillis > 0 ? "+" : string.Empty;
+        return prefix + FormatStockMillis(deltaMillis);
+    }
+
+    public static void SaveHubBaseUrl(string baseUrl, string? localAppDataFolder = null)
+    {
+        if (!Uri.TryCreate(baseUrl?.Trim(), UriKind.Absolute, out var uri) ||
+            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+        {
+            throw new ArgumentException("A valid http/https Hub URL is required.", nameof(baseUrl));
+        }
+
+        var folder = string.IsNullOrWhiteSpace(localAppDataFolder)
+            ? Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)
+            : localAppDataFolder;
+        Directory.CreateDirectory(folder);
+        File.WriteAllText(Path.Combine(folder, HubUrlFileName), uri.AbsoluteUri.TrimEnd('/'));
     }
 
     private static DeviceTokenRecord? TryLoadToken(string? folder)

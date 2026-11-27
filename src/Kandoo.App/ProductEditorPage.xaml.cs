@@ -7,6 +7,7 @@ namespace Kandoo.App;
 
 public partial class ProductEditorPage : ContentPage
 {
+    private const int MaxCustomFieldCount = 32;
     private readonly HttpClient _httpClient = new();
     private readonly List<CustomFieldRowBinding> _customFieldRows = new();
     private HubConnectionSettings? _settings;
@@ -73,7 +74,7 @@ public partial class ProductEditorPage : ContentPage
         EditModeSection.IsVisible = true;
 
         _currentVersion = Math.Max(1, product.Version);
-        _currentStockMillis = product.StockMillis;
+        _currentStockMillis = product.StockMillis ?? 0;
 
         EditNameEntry.Text = product.Name;
         EditPriceEntry.Text = product.UnitPriceRials.ToString(CultureInfo.InvariantCulture);
@@ -110,18 +111,18 @@ public partial class ProductEditorPage : ContentPage
         {
             var source = new HubProductEditorDataSource(_httpClient, _settings!);
             _groupOptions = await source.LoadGroupOptionsAsync();
-            PopulateGroupPicker(CreateGroupPicker, selectedGroupName: null);
-            PopulateGroupPicker(EditGroupPicker, _editingProduct?.GroupName);
+            PopulateGroupPicker(CreateGroupPicker, selectedGroupKey: null);
+            PopulateGroupPicker(EditGroupPicker, _editingProduct?.GroupId);
         }
         catch (Exception exception) when (IsExpected(exception))
         {
             // Group loading is non-blocking; product registration still works without groups.
-            PopulateGroupPicker(CreateGroupPicker, selectedGroupName: null);
-            PopulateGroupPicker(EditGroupPicker, _editingProduct?.GroupName);
+            PopulateGroupPicker(CreateGroupPicker, selectedGroupKey: null);
+            PopulateGroupPicker(EditGroupPicker, _editingProduct?.GroupId);
         }
     }
 
-    private void PopulateGroupPicker(Picker picker, string? selectedGroupName)
+    private void PopulateGroupPicker(Picker picker, string? selectedGroupKey)
     {
         picker.Items.Clear();
         picker.Items.Add("بدون گروه");
@@ -130,9 +131,10 @@ public partial class ProductEditorPage : ContentPage
         {
             var option = _groupOptions[i];
             picker.Items.Add(option.Name);
-            if (!string.IsNullOrWhiteSpace(selectedGroupName) &&
-                (string.Equals(option.Name, selectedGroupName, StringComparison.Ordinal) ||
-                 option.Name.EndsWith($" / {selectedGroupName}", StringComparison.Ordinal)))
+            if (!string.IsNullOrWhiteSpace(selectedGroupKey) &&
+                (string.Equals(option.GroupId, selectedGroupKey, StringComparison.Ordinal) ||
+                 string.Equals(option.Name, selectedGroupKey, StringComparison.Ordinal) ||
+                 option.Name.EndsWith($" / {selectedGroupKey}", StringComparison.Ordinal)))
             {
                 selectedIndex = i + 1;
             }
@@ -154,9 +156,9 @@ public partial class ProductEditorPage : ContentPage
 
     private void OnAddCustomFieldClicked(object? sender, EventArgs e)
     {
-        if (_customFieldRows.Count >= ProductRegistrationInput.MaxOperatorFieldCount)
+        if (_customFieldRows.Count >= MaxCustomFieldCount)
         {
-            ShowStatus($"حداکثر {ProductRegistrationInput.MaxOperatorFieldCount} فیلد سفارشی قابل افزودن است.", isError: true);
+            ShowStatus($"حداکثر {MaxCustomFieldCount} فیلد سفارشی قابل افزودن است.", isError: true);
             return;
         }
 
@@ -469,7 +471,7 @@ public partial class ProductEditorPage : ContentPage
                 PurchasePriceRials: purchasePriceRials,
                 IncludePurchasePrice: true,
                 GroupId: selectedGroupId,
-                UnassignGroup: EditGroupPicker.SelectedIndex == 0 && _editingProduct.GroupName is not null));
+                UnassignGroup: EditGroupPicker.SelectedIndex == 0 && _editingProduct.GroupId is not null));
 
             _currentVersion = updated.Version;
             if (updated.StockMillis is long stockMillis)

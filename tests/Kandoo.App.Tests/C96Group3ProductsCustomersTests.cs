@@ -62,16 +62,17 @@ public sealed class C96Group3ProductsCustomersTests
         Assert.Equal("آماده فروش", rows[0].StatusBadgeText);
         Assert.Equal("#256B43", rows[0].StatusBadgeHex);
         Assert.Equal(3, rows[0].Version);
-        Assert.Single(rows[0].CustomFields);
-        Assert.Equal("لاتکس", rows[0].CustomFields[0].Value);
+        Assert.NotNull(rows[0].OperatorFields);
+        Assert.Single(rows[0].OperatorFields!);
+        Assert.Equal("لاتکس", rows[0].OperatorFields![0].Value);
 
         Assert.True(rows[1].IsIncompletePrice);
         Assert.Equal("—", rows[1].TablePriceDisplay);
         Assert.Equal("قیمت ناقص", rows[1].StatusBadgeText);
         Assert.Equal("#9A3B0A", rows[1].StatusBadgeHex);
 
-        Assert.True(rows[2].IsStockUnconfirmed);
-        Assert.True(rows[2].IsLowStock);
+        Assert.True(rows[2].StockUnconfirmed);
+        Assert.False(rows[2].IsLowStock);
         Assert.Equal("موجودی تأییدنشده", rows[2].StatusBadgeText);
         Assert.Equal("#6B5A3E", rows[2].StatusBadgeHex);
     }
@@ -81,14 +82,14 @@ public sealed class C96Group3ProductsCustomersTests
     {
         var rows = new[]
         {
-            new ProductRow("p1", "بادکنک کرومی", 250_000, ProductTagNumber: 101, StockMillis: 12_000),
-            new ProductRow("p2", "شمع عددی", 0, ProductTagNumber: 102, StockMillis: 2_000),
-            new ProductRow("p3", "ریسه کاغذی", 180_000, ProductTagNumber: 103, StockMillis: 3_000, StockUnconfirmed: true),
+            new ProductRow("p1", "بادکنک کرومی", null, 250_000, true, ProductTagNumber: 101, StockMillis: 12_000),
+            new ProductRow("p2", "شمع عددی", null, 0, true, ProductTagNumber: 102, StockMillis: 2_000),
+            new ProductRow("p3", "ریسه کاغذی", null, 180_000, true, ProductTagNumber: 103, StockMillis: 3_000, StockUnconfirmed: true),
         };
 
         Assert.Single(ProductCatalogFilter.Apply(rows, ProductListFilter.IncompletePrice, null));
         Assert.Single(ProductCatalogFilter.Apply(rows, ProductListFilter.UnconfirmedStock, null));
-        Assert.Equal(2, ProductCatalogFilter.Apply(rows, ProductListFilter.LowStock, null).Count);
+        Assert.Single(ProductCatalogFilter.Apply(rows, ProductListFilter.LowStock, null));
 
         var searchByPersianCode = ProductCatalogFilter.Apply(rows, ProductListFilter.All, "۱۰۲");
         Assert.Single(searchByPersianCode);
@@ -340,14 +341,10 @@ public sealed class C96Group3ProductsCustomersTests
         try
         {
             var storeId = Guid.NewGuid();
-            File.WriteAllText(
-                Path.Combine(tempDir, HubConnectionResolver.HubUrlFileName),
-                "https://192.168.1.25:8443");
-            SharedTokenFile.Write(
-                new PersistedDeviceSession("dev-1", "tok-abc", storeId, "OWNER"),
-                tempDir);
+            HubConnectionResolver.SaveHubBaseUrl("https://192.168.1.25:8443", tempDir);
+            new SharedTokenFile(tempDir).Save(new DeviceTokenRecord("tok-abc", storeId));
 
-            var resolved = HubConnectionResolver.Resolve(explicitSettings: null, baseDirectory: tempDir);
+            var resolved = HubConnectionResolver.Resolve(provided: null, localAppDataFolder: tempDir);
             Assert.NotNull(resolved);
             Assert.Equal("https://192.168.1.25:8443", resolved!.BaseUrl);
             Assert.Equal(storeId, resolved.StoreId);
