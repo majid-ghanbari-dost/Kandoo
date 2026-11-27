@@ -80,36 +80,47 @@ public sealed class P31VectorReplayTests
                 }
             }
 
-            var (httpStatus, rawBody) = await ExecuteStepAsync(primary, other, step, values, server);
-
-            // Wire format: what the app sent must match the vector's declared request.
-            Assert.Equal(before + 1, server.Requests.Count);
-            var sent = server.Requests[^1];
-            Assert.True(step.TryGetProperty("headers", out var declaredHeaders), $"{id}: vector headers");
-            Assert.True(step.TryGetProperty("expect", out var expect), $"{id}: vector expect");
-            var expectedStatus = expect.GetProperty("http").GetInt32();
-            var expectedBody = expect.GetProperty("body");
-
-            AssertSentRequest(id, step, sent, values);
-
-            // Response: exact status + required body subset (vectors semantics:
-            // object fields are required subsets; arrays and scalars compare exactly).
-            Assert.True(
-                expectedStatus == httpStatus,
-                $"{id}: expected HTTP {expectedStatus}, got {httpStatus}: {rawBody}");
-            using var actualBody = JsonDocument.Parse(rawBody);
-            AssertBodyMatches(id, expectedBody, actualBody.RootElement, values);
-
-            if (expect.TryGetProperty("capture", out var capture))
+            try
             {
-                foreach (var pair in capture.EnumerateObject())
+                var (httpStatus, rawBody) = await ExecuteStepAsync(primary, other, step, values, server);
+
+                // Wire format: what the app sent must match the vector's declared request.
+                Assert.Equal(before + 1, server.Requests.Count);
+                var sent = server.Requests[^1];
+                Assert.True(step.TryGetProperty("headers", out var declaredHeaders), $"{id}: vector headers");
+                Assert.True(step.TryGetProperty("expect", out var expect), $"{id}: vector expect");
+                var expectedStatus = expect.GetProperty("http").GetInt32();
+                var expectedBody = expect.GetProperty("body");
+
+                AssertSentRequest(id, step, sent, values);
+
+                // Response: exact status + required body subset (vectors semantics:
+                // object fields are required subsets; arrays and scalars compare exactly).
+                Assert.True(
+                    expectedStatus == httpStatus,
+                    $"{id}: expected HTTP {expectedStatus}, got {httpStatus}: {rawBody}");
+                using var actualBody = JsonDocument.Parse(rawBody);
+                AssertBodyMatches(id, expectedBody, actualBody.RootElement, values);
+
+                if (expect.TryGetProperty("capture", out var capture))
                 {
-                    var sourceField = pair.Value.GetString()!;
-                    Assert.True(
-                        actualBody.RootElement.TryGetProperty(sourceField, out var captured),
-                        $"{id}: capture source {sourceField} missing");
-                    values[pair.Name] = captured.GetString()!;
+                    foreach (var pair in capture.EnumerateObject())
+                    {
+                        var sourceField = pair.Value.GetString()!;
+                        Assert.True(
+                            actualBody.RootElement.TryGetProperty(sourceField, out var captured),
+                            $"{id}: capture source {sourceField} missing");
+                        values[pair.Name] = captured.GetString()!;
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                // One line: the CI problem matcher keeps only the first message line,
+                // so the case/step context has to live there to be visible in annotations.
+                throw new InvalidOperationException(
+                    $"Assert.True() Failure VECTOR-REPLAY case={lastStepId} step={id} :: " +
+                    ex.Message.Replace("\r", " ").Replace("\n", " | "));
             }
 
             if (id == lastStepId)
