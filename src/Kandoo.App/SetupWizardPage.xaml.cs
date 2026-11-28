@@ -1,6 +1,7 @@
 namespace Kandoo.App;
 
 using System.Diagnostics;
+using System.ComponentModel;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Sockets;
@@ -12,7 +13,7 @@ public partial class SetupWizardPage : ContentPage
 {
     private readonly IUserProfileStore _profiles;
     private readonly SharedTokenFile _tokenFile = new();
-    private readonly HttpClient _http = new();
+    private HttpClient _http = new();
     private string? _lastError;
     private Process? _hubProcess;
     private string? _hubBaseUrl;
@@ -79,6 +80,7 @@ public partial class SetupWizardPage : ContentPage
 
         _lastError = null;
         CopyReportButton.IsVisible = false;
+        StartShopButton.IsEnabled = false;
         AdvanceToStep2();
 
         try
@@ -95,12 +97,21 @@ public partial class SetupWizardPage : ContentPage
             Step1Label.TextColor = Colors.Black;
             Step2Label.TextColor = Colors.Gray;
         }
+        finally
+        {
+            StartShopButton.IsEnabled = true;
+        }
     }
 
     private async Task ConfigureShopAsync(string storeName)
     {
         // C-95: Stop the Hub started by a previous run of this setup, if any.
         StopPreviousHub();
+
+        // BaseAddress cannot be changed after an HttpClient has sent a request.
+        // Each retry starts a new Hub on a new port, so it needs a fresh client.
+        _http.Dispose();
+        _http = new HttpClient();
 
         // C-95 + HOTFIX-1: Locate Hub.exe using HubLocator (install layout: ..\hub\,
         // dev layout: .\hub\). Error lists every path checked.
@@ -129,8 +140,9 @@ public partial class SetupWizardPage : ContentPage
             WorkingDirectory = hubDir,
             UseShellExecute = false,
             CreateNoWindow = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
+            // Undrained redirected pipes can fill and block the Hub.
+            RedirectStandardOutput = false,
+            RedirectStandardError = false,
         };
         startInfo.EnvironmentVariables["Hub__OwnerBootstrapProof"] = bootstrapProof;
         startInfo.EnvironmentVariables["ASPNETCORE_URLS"] = _hubBaseUrl;
@@ -281,5 +293,6 @@ public partial class SetupWizardPage : ContentPage
     }
 
     private static bool IsExpected(Exception exception) => exception is ArgumentException or
-        FormatException or InvalidOperationException or IOException;
+        FormatException or InvalidOperationException or IOException or HttpRequestException or
+        TaskCanceledException or Win32Exception or SocketException;
 }
